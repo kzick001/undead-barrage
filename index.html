@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zombie Defense</title>
+    <style>
+        body { 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background-color: #050505; 
+            color: white;
+            font-family: sans-serif;
+            touch-action: none; 
+            overflow: hidden;
+        }
+        #game-container { 
+            box-shadow: 0 0 30px rgba(0,255,255,0.2); 
+            position: relative;
+        }
+        
+        /* --- Dev Tools UI Styles --- */
+        #dev-ui {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+            font-family: monospace;
+        }
+        .dev-btn {
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffcc;
+            border: 1px solid #00ffcc;
+            padding: 8px 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+        .dev-btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 10px #00ffcc; }
+        .dev-btn.active { background: #00ffcc; color: #000; }
+        #dev-panel { display: none; flex-direction: column; gap: 5px; margin-top: 5px; }
+
+        /* --- UI Overlays --- */
+        .overlay-screen {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 15, 0.95); z-index: 950; flex-direction: column; 
+            justify-content: center; align-items: center; text-align: center;
+        }
+        .overlay-screen h2 { font-size: 40px; margin-bottom: 5px; }
+        
+        #pause-screen { z-index: 900; background: rgba(0, 0, 0, 0.8); }
+        #pause-screen h1 { color: #fff; font-size: 60px; letter-spacing: 5px; text-shadow: 0 0 20px #00ffff; margin: 0; font-style: italic; }
+        .pause-btn { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; font-size: 16px; padding: 8px 16px; }
+
+        #choice-screen { z-index: 960; }
+        #choice-screen h2 { color: #ff3333; text-shadow: 0 0 15px #aa0000; }
+        
+        #upgrade-shop h2 { color: #fde047; text-shadow: 0 0 15px #ca8a04; }
+        #shop-coins { color: #fff; font-size: 24px; font-weight: bold; margin-bottom: 30px; }
+        .shop-item { 
+            background: rgba(255, 255, 255, 0.05); border: 1px solid #333; padding: 15px 20px;
+            margin: 10px 0; width: 80%; display: flex; justify-content: space-between; align-items: center;
+            border-radius: 8px; font-size: 18px;
+        }
+        .shop-item span { color: #ddd; }
+        .shop-btn {
+            background: #ca8a04; color: #000; border: none; padding: 12px 20px;
+            font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px;
+            transition: 0.2s; margin: 5px;
+        }
+        .shop-btn:hover:not(:disabled) { background: #fde047; box-shadow: 0 0 15px #fde047; }
+        .shop-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
+        .action-btn { background: #00ffcc; margin-top: 20px; font-size: 20px; padding: 15px 30px; }
+        .action-btn:hover { background: #fff; box-shadow: 0 0 20px #00ffcc; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <div id="pause-screen" class="overlay-screen"><h1>PAUSED</h1></div>
+        <button id="btn-pause" class="dev-btn pause-btn">⏸️ PAUSE</button>
+
+        <div id="choice-screen" class="overlay-screen">
+            <h2 id="choice-title">WAVE CLEARED</h2>
+            <button id="btn-choice-shop" class="shop-btn">🛒 ENTER UPGRADE SHOP</button>
+            <button id="btn-choice-continue" class="shop-btn action-btn">CONTINUE RUN</button>
+        </div>
+
+        <div id="upgrade-shop" class="overlay-screen">
+            <h2>UPGRADE SHOP</h2>
+            <div id="shop-coins">COINS: 0</div>
+            <div class="shop-item">
+                <span>Reinforced Steel (Barricade +10%)<br><small>Lvl <span id="lvl-barricade">0</span></small></span>
+                <button id="btn-upg-barricade" class="shop-btn">Buy: 10</button>
+            </div>
+            <div class="shop-item">
+                <span>Thruster Upgrade (Speed +10%)<br><small>Lvl <span id="lvl-speed">0</span></small></span>
+                <button id="btn-upg-speed" class="shop-btn">Buy: 10</button>
+            </div>
+            <button id="btn-close-shop" class="shop-btn action-btn">CLOSE SHOP</button>
+        </div>
+
+        <div id="dev-ui">
+            <button id="dev-toggle" class="dev-btn">⚙️ Dev Tools</button>
+            <div id="dev-panel">
+                <button id="btn-god" class="dev-btn">God Mode: OFF</button>
+                <button id="btn-nuke" class="dev-btn">Nuke (Skip Wave)</button>
+                <button id="btn-max" class="dev-btn">Max Stats: OFF</button>
+                <button id="btn-powerup" class="dev-btn">Spawn Powerup</button>
+                <button id="btn-boss" class="dev-btn">Spawn Boss</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- META PROGRESSION SAVE DATA ---
+        const defaultSave = { coins: 0, upgrades: { barricade: 0, speed: 0 } };
+        window.saveData = JSON.parse(localStorage.getItem('zd_save')) || defaultSave;
+
+        function saveGame() {
+            localStorage.setItem('zd_save', JSON.stringify(window.saveData));
+        }
+
+        function getUpgradeCost(level) {
+            return 10 + (level * 15);
+        }
+
+        class GameScene extends Phaser.Scene {
+            constructor() {
+                super('GameScene');
+            }
+
+            preload() {
+                const createSvgUri = (svgStr) => 'data:image/svg+xml;utf8,' + encodeURIComponent(svgStr);
+
+                // --- DYNAMIC PLAYER WEAPON SVGS ---
+                const gunBarrels = [
+                    `<rect x="18" y="10" width="4" height="12" fill="#718096" stroke="#111" stroke-width="1"/>`, // 0: Pea Shooter
+                    `<rect x="17" y="8" width="6" height="14" fill="#4a5568" stroke="#111" stroke-width="1"/>`,  // 1: Heavy Pistol
+                    `<rect x="16" y="10" width="8" height="10" fill="#1a202c" stroke="#111" stroke-width="1"/><rect x="18" y="6" width="4" height="6" fill="#1a202c" stroke="#111" stroke-width="1"/>`, // 2: Uzi
+                    `<rect x="18" y="2" width="4" height="20" fill="#1a202c" stroke="#111" stroke-width="1"/><rect x="17" y="10" width="6" height="8" fill="#9c4221" stroke="#111" stroke-width="1"/>`, // 3: AK-47
+                    `<rect x="17" y="2" width="6" height="20" fill="#2d3748" stroke="#111" stroke-width="1"/><rect x="16" y="8" width="8" height="6" fill="#1a202c" stroke="#111" stroke-width="1"/>`, // 4: AR
+                    `<rect x="16" y="0" width="8" height="22" fill="#1a202c" stroke="#111" stroke-width="1"/><circle cx="20" cy="12" r="6" fill="#4a5568" stroke="#111" stroke-width="1"/>`, // 5: LMG
+                    `<rect x="15" y="0" width="10" height="24" fill="#2d3748" stroke="#111" stroke-width="1.5"/><rect x="13" y="14" width="14" height="6" fill="#1a202c" stroke="#111" stroke-width="1"/>`, // 6: HMG
+                    `<rect x="14" y="-2" width="12" height="24" fill="#4a5568" stroke="#111" stroke-width="1"/><line x1="16" y1="-2" x2="16" y2="22" stroke="#111" stroke-width="1"/><line x1="20" y1="-2" x2="20" y2="22" stroke="#111" stroke-width="1"/><line x1="24" y1="-2" x2="24" y2="22" stroke="#111" stroke-width="1"/>` // 7: Gatling
+                ];
+
+                gunBarrels.forEach((gun, index) => {
+                    this.load.image(`player_${index}`, createSvgUri(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(1, 2)" fill="rgba(0,0,0,0.4)"><ellipse cx="20" cy="26" rx="14" ry="7"/><circle cx="20" cy="22" r="7"/></g>
+                            ${gun}
+                            <ellipse cx="20" cy="26" rx="14" ry="7" fill="#2d3748" stroke="#111" stroke-width="1.5"/>
+                            <circle cx="20" cy="22" r="7" fill="#fbd38d" stroke="#111" stroke-width="1.5"/>
+                        </svg>
+                    `));
+                });
+
+                this.load.image('ally', createSvgUri(`
+                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="translate(1, 1)" fill="rgba(0,0,0,0.4)"><rect x="11" y="4" width="2" height="10"/><ellipse cx="12" cy="14" rx="8" ry="4"/><circle cx="12" cy="12" r="4"/></g>
+                        <rect x="11" y="4" width="2" height="10" fill="#9ca3af" stroke="#111" stroke-width="1"/>
+                        <ellipse cx="12" cy="14" rx="8" ry="4" fill="#1e3a8a" stroke="#111" stroke-width="1"/>
+                        <circle cx="12" cy="12" r="4" fill="#fbd38d" stroke="#111" stroke-width="1"/>
+                    </svg>
+                `));
+
+                // --- ZOMBIE SVGS ---
+                this.load.image('grunt', createSvgUri(`
+                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="translate(1, 2)" fill="rgba(0,0,0,0.4)"><rect x="4" y="8" width="4" height="14" rx="2"/><rect x="16" y="8" width="4" height="14" rx="2"/><ellipse cx="12" cy="8" rx="10" ry="5"/><circle cx="12" cy="10" r="5"/></g>
+                        <rect x="4" y="8" width="4" height="14" rx="2" fill="#e2e8f0" stroke="#111" stroke-width="1"/>
+                        <rect x="16" y="8" width="4" height="14" rx="2" fill="#e2e8f0" stroke="#111" stroke-width="1"/>
+                        <ellipse cx="12" cy="8" rx="10" ry="5" fill="#94a3b8" stroke="#111" stroke-width="1.5"/>
+                        <circle cx="12" cy="10" r="5" fill="#e2e8f0" stroke="#111" stroke-width="1.5"/>
+                    </svg>
+                `));
+
+                this.load.image('sprinter', createSvgUri(`
+                    <svg width="20" height="28" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="translate(1, 2)" fill="rgba(0,0,0,0.4)"><rect x="2" y="6" width="3" height="18" rx="1.5"/><rect x="15" y="6" width="3" height="18" rx="1.5"/><ellipse cx="10" cy="6" rx="7" ry="4"/><circle cx="10" cy="8" r="4"/></g>
+                        <rect x="2" y="6" width="3" height="18" rx="1.5" fill="#f8fafc" stroke="#111" stroke-width="1"/>
+                        <rect x="15" y="6" width="3" height="18" rx="1.5" fill="#f8fafc" stroke="#111" stroke-width="1"/>
+                        <ellipse cx="10" cy="6" rx="7" ry="4" fill="#64748b" stroke="#111" stroke-width="1.5"/>
+                        <circle cx="10" cy="8" r="4" fill="#f8fafc" stroke="#111" stroke-width="1.5"/>
+                    </svg>
+                `));
+
+                this.load.image('tank', createSvgUri(`
+                    <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="translate(2, 3)" fill="rgba(0,0,0,0.4)"><ellipse cx="24" cy="20" rx="20" ry="14"/><rect x="6" y="20" width="10" height="20" rx="5"/><rect x="32" y="20" width="10" height="20" rx="5"/><circle cx="24" cy="26" r="6"/></g>
+                        <rect x="6" y="20" width="10" height="20" rx="5" fill="#cbd5e1" stroke="#111" stroke-width="1.5"/>
+                        <rect x="32" y="20" width="10" height="20" rx="5" fill="#cbd5e1" stroke="#111" stroke-width="1.5"/>
+                        <ellipse cx="24" cy="20" rx="20" ry="14" fill="#475569" stroke="#111" stroke-width="2"/>
+                        <circle cx="24" cy="26" r="6" fill="#cbd5e1" stroke="#111" stroke-width="1.5"/>
+                    </svg>
+                `));
+
+                this.load.image('boss', createSvgUri(`
+                    <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="translate(3, 4)" fill="rgba(0,0,0,0.4)"><ellipse cx="40" cy="30" rx="35" ry="25"/><rect x="10" y="40" width="12" height="30" rx="6"/><rect x="58" y="40" width="12" height="30" rx="6"/><rect x="25" y="45" width="10" height="25" rx="5"/><rect x="45" y="45" width="10" height="25" rx="5"/><circle cx="30" cy="40" r="8"/><circle cx="50" cy="40" r="8"/><circle cx="40" cy="45" r="10"/></g>
+                        <ellipse cx="40" cy="30" rx="35" ry="25" fill="#334155" stroke="#111" stroke-width="3"/>
+                        <rect x="10" y="40" width="12" height="30" rx="6" fill="#f1f5f9" stroke="#111" stroke-width="2"/>
+                        <rect x="58" y="40" width="12" height="30" rx="6" fill="#f1f5f9" stroke="#111" stroke-width="2"/>
+                        <rect x="25" y="45" width="10" height="25" rx="5" fill="#e2e8f0" stroke="#111" stroke-width="2"/>
+                        <rect x="45" y="45" width="10" height="25" rx="5" fill="#e2e8f0" stroke="#111" stroke-width="2"/>
+                        <circle cx="30" cy="40" r="8" fill="#f1f5f9" stroke="#111" stroke-width="2"/>
+                        <circle cx="50" cy="40" r="8" fill="#f1f5f9" stroke="#111" stroke-width="2"/>
+                        <circle cx="40" cy="45" r="10" fill="#cbd5e1" stroke="#111" stroke-width="2"/>
+                    </svg>
+                `));
+
+                // Env & Projectiles
+                this.load.image('barricade', createSvgUri(`<svg width="38" height="20" viewBox="0 0 38 20" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="20" fill="#222222"/><path d="M0,10 L38,10 M12,0 L12,10 M26,0 L26,10 M6,10 L6,20 M20,10 L20,20 M34,10 L34,20" stroke="#111111" stroke-width="2"/><rect width="38" height="20" fill="none" stroke="#555555" stroke-width="2"/></svg>`));
+                this.load.image('bullet', createSvgUri(`<svg width="4" height="10" viewBox="0 0 4 10" xmlns="http://www.w3.org/2000/svg"><rect width="4" height="10" rx="2" fill="#ffff00"/><rect width="2" height="8" x="1" y="1" rx="1" fill="#ffffff"/></svg>`));
+                this.load.image('enemyBullet', createSvgUri(`<svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><circle cx="6" cy="6" r="6" fill="#ff00ff"/><circle cx="6" cy="6" r="3" fill="#ffffff"/></svg>`));
+                this.load.image('coin', createSvgUri(`<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="8" fill="#eab308"/><circle cx="8" cy="8" r="6" fill="#fde047" stroke="#ca8a04" stroke-width="1"/><text x="8" y="11" font-size="8" font-family="sans-serif" font-weight="bold" fill="#ca8a04" text-anchor="middle">$</text></svg>`));
+
+                // Weapon Upgrade Icons
+                this.load.image('gun_pistol', createSvgUri(`<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4,10 L16,10 L16,14 L12,14 L12,20 L8,20 L8,14 L4,14 Z" fill="#ffff00"/></svg>`));
+                this.load.image('gun_uzi', createSvgUri(`<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2,10 L16,10 L16,14 L12,14 L12,22 L8,22 L8,14 L2,14 Z M16,11 L22,11 L22,13 L16,13 Z" fill="#ffff00"/></svg>`));
+                this.load.image('gun_ak47', createSvgUri(`<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2,8 L20,8 L20,12 L12,12 L10,20 L6,18 L8,12 L2,12 Z M20,9 L24,9 L24,11 L20,11 Z" fill="#ffff00"/></svg>`));
+                this.load.image('gun_ar', createSvgUri(`<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2,10 L22,10 L22,14 L14,14 L14,20 L10,20 L10,14 L2,14 Z M8,6 L16,6 L16,9 L8,9 Z M22,11 L24,11 L24,13 L22,13 Z" fill="#ffff00"/></svg>`));
+                this.load.image('gun_lmg', createSvgUri(`<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2,10 L22,10 L22,14 L16,14 L16,22 L8,22 L8,14 L2,14 Z M18,14 L20,20 L18,20 Z M22,11 L24,11 L24,13 L22,13 Z" fill="#ffff00"/></svg>`));
+                this.load.image('gun_hmg', createSvgUri(`<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M0,10 L24,10 L24,14 L16,14 L16,22 L6,22 L6,14 L0,14 Z M10,6 L16,6 L16,9 L10,9 Z" fill="#ffff00"/></svg>`));
+                this.load.image('gun_gatling', createSvgUri(`<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2,8 L24,8 L24,10 L2,10 Z M2,11 L24,11 L24,13 L2,13 Z M2,14 L24,14 L24,16 L2,16 Z M6,16 L12,16 L12,22 L6,22 Z" fill="#ffff00"/></svg>`));
+            }
+
+            create() {
+                if (this.cameras.main.postFX) {
+                    this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 1.0, 1.2);
+                }
+
+                window.gameScene = this;
+                this.devInvincible = false;
+                this.devMaxStatsActive = false;
+                this.savedStats = null;
+                this.isGameOver = false;
+                this.isPaused = false;
+                
+                // Clear UI Overlays on Start
+                document.getElementById('pause-screen').style.display = 'none';
+                document.getElementById('choice-screen').style.display = 'none';
+                document.getElementById('upgrade-shop').style.display = 'none';
+                window.shopCloseCallback = null;
+                window.choiceContinueCallback = null;
+
+                const btnPause = document.getElementById('btn-pause');
+                if (btnPause) { btnPause.innerText = '⏸️ PAUSE'; btnPause.classList.remove('active'); }
+
+                this.currentWave = 1;
+                this.isIntro = true; 
+                this.startTime = this.time.now;
+                this.isIntermission = false; 
+                this.choicePending = false;
+                this.spawningActive = true; 
+                this.bossSpawned = false;
+                this.gunUpgradeSpawnedThisWave = false; 
+                this.waveActiveTime = 20000; 
+                this.intermissionTime = 5000; 
+                this.nextPhaseTime = this.time.now + this.waveActiveTime;
+                this.lastSpawnTime = 0;
+                
+                // Meta Progression Base Stats
+                this.lives = 3;
+                this.sessionCoins = 0;
+                this.baseMoveSpeed = 450 * (1 + (window.saveData.upgrades.speed * 0.1));
+
+                this.gunTiers = [
+                    { name: 'Pea Shooter', speed: 600, delay: 150, damage: 1, ammo: Infinity }, 
+                    { name: 'Heavy Pistol', speed: 700, delay: 130, damage: 2, icon: 'gun_pistol', ammo: Infinity },
+                    { name: 'Uzi', speed: 800, delay: 100, damage: 3, icon: 'gun_uzi', ammo: Infinity }, 
+                    { name: 'AK-47', speed: 900, delay: 80, damage: 5, icon: 'gun_ak47', ammo: 200 }, 
+                    { name: 'Assault Rifle', speed: 1000, delay: 60, damage: 8, icon: 'gun_ar', ammo: 250 }, 
+                    { name: 'LMG', speed: 1100, delay: 40, damage: 12, icon: 'gun_lmg', ammo: 300 }, 
+                    { name: 'Heavy MG', speed: 1200, delay: 25, damage: 18, icon: 'gun_hmg', ammo: 400 }, 
+                    { name: 'Gatling Gun', speed: 1400, delay: 15, damage: 25, icon: 'gun_gatling', ammo: 500 } 
+                ];
+                
+                this.currentGunTier = 0;
+                this.currentAmmo = Infinity;
+                this.baseDamage = this.gunTiers[0].damage;
+                this.bonusDamage = 0;
+                this.baseFireDelay = this.gunTiers[0].delay;
+                this.bonusFireDelay = 0;
+                this.bulletSpeed = this.gunTiers[0].speed;
+                this.playerProjectiles = 1; 
+
+                this.playerDamage = this.baseDamage + this.bonusDamage;
+                this.fireDelay = this.baseFireDelay - this.bonusFireDelay;
+                this.gateMaxLimit = 1; 
+                this.fireLeft = true;
+
+                this.boundaryCenter = 300;
+                this.boundaryWidth = 160; 
+                this.maxBoundaryWidth = 600;
+                
+                this.bgGrid = this.add.grid(300, 400, 800, 1000, 40, 40, 0x050505, 1, 0x111111, 0.5).setDepth(-10);
+                this.bloodLayer = this.add.group();
+
+                this.leftWall = this.add.rectangle(this.boundaryCenter - (this.boundaryWidth / 2), 400, 2, 800, 0x00ffff, 0.3);
+                this.rightWall = this.add.rectangle(this.boundaryCenter + (this.boundaryWidth / 2), 400, 2, 800, 0x00ffff, 0.3);
+                this.engagementLine = this.add.rectangle(300, 100, 600, 2, 0x00ffff, 0.5);
+                this.engagementText = this.add.text(300, 88, 'ENGAGEMENT ZONE', { fontSize: '12px', fill: '#00ffff', fontStyle: 'bold', letterSpacing: 2 }).setOrigin(0.5).setAlpha(0.6);
+
+                this.waveDisplayUI = this.add.text(20, 130, 'WAVE 1', { fontSize: '18px', fill: '#ffffff', fontStyle: 'bold' }).setDepth(100);
+                this.waveText = this.add.text(300, -100, 'WAVE 1', { fontSize: '50px', fill: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+
+                this.tweens.add({
+                    targets: this.waveText, y: 400, ease: 'Bounce.easeOut', duration: 1000,
+                    onComplete: () => {
+                        this.cameras.main.shake(200, 0.02);
+                        this.time.delayedCall(1000, () => {
+                            this.tweens.add({ targets: this.waveText, scaleX: 3, scaleY: 3, alpha: 0, duration: 300 });
+                            this.explodeWaveText(this.waveText.x, this.waveText.y);
+                        });
+                    }
+                });
+
+                this.player = this.physics.add.sprite(300, 600, 'player_0').setDepth(10);
+                this.player.hp = 3; this.player.maxHp = 5; this.player.isInvulnerable = false; 
+                this.cursors = this.input.keyboard.createCursorKeys();
+                
+                this.healthText = this.add.text(20, 20, '', { fontSize: '24px' }).setDepth(100);
+                this.livesTextUI = this.add.text(20, 45, `LIVES: 3`, { fontSize: '14px', fill: '#ff3333', fontStyle: 'bold' }).setDepth(100);
+                this.updateHealthUI();
+
+                this.statsText = this.add.text(20, 65, '', { fontSize: '12px', fill: '#00ffff', lineHeight: 1.5 }).setDepth(100);
+                this.updateStatsUI();
+                
+                this.coinGroup = this.physics.add.group();
+                this.coinTextUI = this.add.text(450, 20, `COINS: 0`, { fontSize: '18px', fill: '#fde047', fontStyle: 'bold' }).setDepth(100);
+                this.coinBankUI = this.add.text(450, 42, `BANK: ${window.saveData.coins}`, { fontSize: '12px', fill: '#ca8a04' }).setDepth(100);
+
+                this.input.addPointer(1); 
+
+                this.barricades = this.physics.add.group();
+                this.buildBarricades();
+
+                this.allies = [];
+                this.allyGroup = this.physics.add.group(); 
+                this.allyOffsets = [ { x: -25, y: 20 }, { x: 25, y: 20 }, { x: -50, y: 40 }, { x: 50, y: 40 }, { x: 0, y: 40 } ];
+
+                this.bullets = this.physics.add.group();
+                this.enemies = this.physics.add.group();
+                this.enemyBullets = this.physics.add.group();
+                this.gates = this.physics.add.group();
+
+                this.physics.add.overlap(this.bullets, this.enemies, this.hitEnemy, null, this);
+                this.physics.add.overlap(this.bullets, this.gates, this.shootGate, null, this); 
+                this.physics.add.overlap(this.player, this.gates, this.collectGate, null, this); 
+                this.physics.add.overlap(this.player, this.enemies, this.hitPlayer, null, this); 
+                this.physics.add.overlap(this.player, this.enemyBullets, this.hitPlayer, null, this); 
+                this.physics.add.overlap(this.allyGroup, this.enemies, this.hitAlly, null, this); 
+                this.physics.add.overlap(this.allyGroup, this.enemyBullets, this.hitAlly, null, this); 
+                this.physics.add.overlap(this.barricades, this.enemies, this.hitBarricade, null, this);
+                this.physics.add.overlap(this.barricades, this.enemyBullets, this.hitBarricade, null, this);
+
+                this.fireTimer = this.time.addEvent({ delay: this.fireDelay, callback: this.fireBullet, callbackScope: this, loop: true });
+                this.time.addEvent({ delay: 15000, callback: this.spawnGate, callbackScope: this, loop: true });
+            }
+
+            getTierColor() {
+                const tier = Math.floor((this.currentWave - 1) / 3);
+                const colors = [0x4ade80, 0xbbf7d0, 0xfca5a5, 0xef4444, 0x7f1d1d, 0x4c1d95];
+                return colors[Math.min(tier, colors.length - 1)];
+            }
+
+            updateHealthUI() { this.healthText.setText('❤️'.repeat(Math.max(0, this.player.hp))); }
+            updateLivesUI() { this.livesTextUI.setText(`LIVES: ${this.lives}`); }
+
+            updateStatsUI() {
+                const bps = (1000 / this.fireDelay).toFixed(1);
+                const ammoDisplay = this.gunTiers[this.currentGunTier].ammo === Infinity ? 'INF' : this.currentAmmo;
+                this.statsText.setText(`WPN: ${this.gunTiers[this.currentGunTier].name.toUpperCase()}\nDMG: ${this.playerDamage}\nSPD: ${this.bulletSpeed}\nBPS: ${bps}\nAMMO: ${ammoDisplay}`);
+            }
+
+            downgradeWeapon() {
+                this.currentGunTier = this.currentWave >= 2 ? 2 : 1; 
+                this.player.setTexture('player_' + this.currentGunTier);
+                const tierStats = this.gunTiers[this.currentGunTier];
+                this.baseDamage = tierStats.damage; this.baseFireDelay = tierStats.delay; this.bulletSpeed = tierStats.speed; this.currentAmmo = Infinity;
+                this.playerDamage = this.baseDamage + this.bonusDamage;
+                this.fireDelay = Math.max(15, this.baseFireDelay - this.bonusFireDelay);
+                this.fireTimer.delay = this.fireDelay;
+                this.updateStatsUI();
+                
+                const feedback = this.add.text(this.player.x, this.player.y - 40, `OUT OF AMMO!`, { fontSize: '16px', fill: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
+                this.tweens.add({ targets: feedback, y: this.player.y - 80, alpha: 0, duration: 1500, onComplete: () => feedback.destroy() });
+            }
+
+            addSingleBarricade(bx) {
+                const block = this.physics.add.sprite(bx, 720, 'barricade').setDepth(5);
+                block.setImmovable(true);
+                block.maxHp = Math.floor(100 * (1 + (window.saveData.upgrades.barricade * 0.1)));
+                block.hp = block.maxHp;
+                this.barricades.add(block);
+            }
+
+            buildBarricades() {
+                const startX = this.boundaryCenter - (this.boundaryWidth / 2) + 20;
+                const endX = this.boundaryCenter + (this.boundaryWidth / 2) - 20;
+                for (let bx = startX; bx <= endX; bx += 40) this.addSingleBarricade(bx);
+            }
+
+            expandArena() {
+                if (this.boundaryWidth < this.maxBoundaryWidth) {
+                    this.boundaryWidth = Math.min(this.maxBoundaryWidth, this.boundaryWidth + 80); 
+                    if (this.leftWall && this.leftWall.active) {
+                        this.leftWall.x = this.boundaryCenter - (this.boundaryWidth / 2);
+                        this.rightWall.x = this.boundaryCenter + (this.boundaryWidth / 2);
+                    }
+                    const leftBx = this.boundaryCenter - (this.boundaryWidth / 2) + 20;
+                    const rightBx = this.boundaryCenter + (this.boundaryWidth / 2) - 20;
+                    this.addSingleBarricade(leftBx);
+                    this.addSingleBarricade(rightBx);
+                }
+            }
+
+            // --- PROGRESSION & INTERMISSION LOGIC ---
+            startIntermission() {
+                const clearedWave = this.currentWave; 
+                this.isIntermission = true;
+                this.bossSpawned = false; 
+                this.gunUpgradeSpawnedThisWave = false; 
+                this.currentWave++;
+                this.gateMaxLimit++;
+                this.nextPhaseTime = this.time.now + this.intermissionTime;
+
+                this.waveText.setText(`WAVE ${this.currentWave}`);
+                this.waveText.y = -100;
+                this.waveText.scale = 1;
+                this.waveText.setAlpha(1);
+                this.waveDisplayUI.setText(`WAVE ${this.currentWave}`);
+
+                this.bloodLayer.getChildren().forEach(b => {
+                    this.tweens.add({ targets: b, alpha: 0, duration: 1500, onComplete: () => b.destroy() });
+                });
+
+                this.tweens.add({
+                    targets: this.waveText,
+                    y: 400, ease: 'Bounce.easeOut', duration: 1000,
+                    onComplete: () => {
+                        this.cameras.main.shake(200, 0.02);
+                        if (clearedWave % 4 === 0) this.expandArena();
+                    }
+                });
+            }
+
+            handleWaveChoice(clearedWave) {
+                document.getElementById('choice-title').innerText = `WAVE ${clearedWave} CLEARED!`;
+                document.getElementById('btn-choice-continue').innerText = 'CONTINUE RUN';
+                document.getElementById('choice-screen').style.display = 'flex';
+
+                window.choiceContinueCallback = () => { this.resumeAfterChoice(); };
+                window.shopCloseCallback = () => { this.resumeAfterChoice(); };
+            }
+
+            handleDeathChoice() {
+                document.getElementById('choice-title').innerText = `SYSTEM BREACH! LIVES: ${this.lives}`;
+                document.getElementById('btn-choice-continue').innerText = 'RESPAWN';
+                document.getElementById('choice-screen').style.display = 'flex';
+
+                window.choiceContinueCallback = () => { this.respawnPlayer(); };
+                window.shopCloseCallback = () => { this.respawnPlayer(); };
+            }
+
+            resumeAfterChoice() {
+                this.choicePending = false;
+                this.startIntermission();
+                this.physics.resume();
+            }
+
+            update() {
+                if (this.isGameOver) return;
+                const now = this.time.now;
+
+                this.bgGrid.y += 1;
+                if (this.bgGrid.y > 440) this.bgGrid.y = 400;
+
+                if (this.currentWave === 1 && this.isIntro && now > this.startTime + 10000) {
+                    this.isIntro = false;
+                    this.spawnGunUpgradeGate(1); 
+                    this.gunUpgradeSpawnedThisWave = true;
+                } else if (this.currentWave > 1 && !this.gunUpgradeSpawnedThisWave && !this.isIntermission && now > this.nextPhaseTime - (this.waveActiveTime / 2)) {
+                    if (this.currentWave === 2) this.spawnGunUpgradeGate(2); 
+                    else if (Math.random() < 0.3) this.spawnGunUpgradeGate(Phaser.Math.Between(3, this.gunTiers.length - 1));
+                    this.gunUpgradeSpawnedThisWave = true;
+                }
+
+                if (this.isIntermission) {
+                    if (now > this.nextPhaseTime) {
+                        this.isIntermission = false;
+                        this.spawningActive = true;
+                        this.nextPhaseTime = now + this.waveActiveTime;
+                        this.tweens.add({ targets: this.waveText, scaleX: 3, scaleY: 3, alpha: 0, duration: 300 });
+                        this.explodeWaveText(this.waveText.x, this.waveText.y);
+                    }
+                } else {
+                    if (this.spawningActive) {
+                        if (this.currentWave % 4 === 0 && !this.bossSpawned && now > this.nextPhaseTime - 2000) {
+                            this.spawnBoss();
+                            this.bossSpawned = true;
+                        }
+                        if (now > this.nextPhaseTime) {
+                            this.spawningActive = false; 
+                        } else {
+                            const spawnDelay = this.isIntro ? 2000 : Math.max(200, 800 - (this.currentWave * 80));
+                            if (now > this.lastSpawnTime + spawnDelay) {
+                                this.spawnEnemy();
+                                this.lastSpawnTime = now;
+                            }
+                        }
+                    } else {
+                        // Check for wave clear and intercepts for choices
+                        if (this.enemies.countActive(true) === 0 && !this.choicePending) {
+                            const clearedWave = this.currentWave; 
+                            
+                            // Every 3rd wave, present Shop Choice
+                            if (clearedWave % 3 === 0) {
+                                this.choicePending = true;
+                                this.time.delayedCall(800, () => {
+                                    this.physics.pause();
+                                    this.handleWaveChoice(clearedWave);
+                                });
+                                return;
+                            }
+                            this.startIntermission();
+                        }
+                    }
+                }
+
+                this.player.body.setVelocityX(0);
+                this.player.body.setVelocityY(0); 
+
+                const pointer = this.input.activePointer;
+                const touchLeft = pointer.isDown && pointer.x < this.player.x - 15;
+                const touchRight = pointer.isDown && pointer.x > this.player.x + 15;
+                const touchUp = pointer.isDown && pointer.y < this.player.y - 15;
+                const touchDown = pointer.isDown && pointer.y > this.player.y + 15;
+
+                if (this.cursors.left.isDown || touchLeft) this.player.body.setVelocityX(-this.baseMoveSpeed);
+                else if (this.cursors.right.isDown || touchRight) this.player.body.setVelocityX(this.baseMoveSpeed);
+
+                if (this.cursors.up.isDown || touchUp) this.player.body.setVelocityY(-this.baseMoveSpeed);
+                else if (this.cursors.down.isDown || touchDown) this.player.body.setVelocityY(this.baseMoveSpeed);
+
+                this.player.setAngle(this.player.body.velocity.x * 0.015);
+
+                const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + 10;
+                const rightLimit = this.boundaryCenter + (this.boundaryWidth / 2) - 10;
+                
+                if (this.player.x < leftLimit) this.player.x = leftLimit;
+                if (this.player.x > rightLimit) this.player.x = rightLimit;
+                if (this.player.y < 200) this.player.y = 200; 
+                if (this.player.y > 680) this.player.y = 680;
+
+                this.allies.forEach((ally, index) => {
+                    ally.x = this.player.x + this.allyOffsets[index].x;
+                    ally.y = this.player.y + this.allyOffsets[index].y;
+                    ally.setAngle(this.player.body.velocity.x * 0.015);
+                });
+
+                this.coinGroup.children.each(coin => {
+                    if (coin.active) {
+                        if (coin.y > 850) { coin.destroy(); return; }
+                        const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, coin.x, coin.y);
+                        if (dist < 50) this.collectCoin(coin);
+                    }
+                });
+
+                this.bullets.children.each(b => { if (b.active && b.y < 100) b.destroy(); });
+                this.enemyBullets.children.each(b => { if (b.active && (b.y > 900 || b.x < -100 || b.x > 700)) b.destroy(); });
+
+                this.enemies.children.each(enemy => {
+                    if (enemy.active && !enemy.isDying) {
+                        if (enemy.y > 750) {
+                            this.triggerGameOver('DEFENSES BREACHED');
+                            enemy.destroy();
+                        } else if (enemy.enemyType === 'boss' && enemy.y > 100) {
+                            if (now > enemy.lastFired + 1000) {
+                                this.fireEnemyBullet(enemy.x, enemy.y + 40);
+                                enemy.lastFired = now;
+                            }
+                        }
+                    }
+                });
+                this.gates.children.each(g => { if (g.active && g.y > 900) g.destroy(); });
+            }
+
+            createBullet(x, y, vx, vy) {
+                const bullet = this.physics.add.sprite(x, y, 'bullet').setDepth(8);
+                this.bullets.add(bullet);
+                bullet.body.setVelocity(vx, vy);
+            }
+
+            fireBullet() {
+                if (this.isGameOver || !this.player.active || this.player.alpha === 0) return; 
+
+                if (this.gunTiers[this.currentGunTier].ammo !== Infinity) {
+                    if (this.currentAmmo <= 0) { this.downgradeWeapon(); return; }
+                    this.currentAmmo--;
+                    this.updateStatsUI();
+                }
+
+                this.fireLeft = !this.fireLeft; 
+                this.fireFrom(this.player.x, this.player.y);
+                this.allies.forEach(ally => this.fireFrom(ally.x, ally.y));
+            }
+
+            fireFrom(sourceX, sourceY) {
+                const offset = this.fireLeft ? -4 : 4;
+                this.createBullet(sourceX + offset, sourceY - 20, 0, -this.bulletSpeed);
+                
+                const flash = this.add.circle(sourceX + offset, sourceY - 20, 8, 0xffff00).setDepth(11);
+                this.tweens.add({ targets: flash, scale: 0, alpha: 0, duration: 80, onComplete: () => flash.destroy() });
+
+                const spreadCount = Math.min(this.playerProjectiles - 1, 5);
+                for (let i = 1; i <= spreadCount; i++) {
+                    this.createBullet(sourceX, sourceY - 20, -i * 50, -this.bulletSpeed);
+                    this.createBullet(sourceX, sourceY - 20, i * 50, -this.bulletSpeed);
+                }
+            }
+
+            fireEnemyBullet(x, y) {
+                const bullet = this.physics.add.sprite(x, y, 'enemyBullet');
+                this.enemyBullets.add(bullet);
+                this.physics.moveToObject(bullet, this.player, 250);
+            }
+
+            spawnEnemy() {
+                if (this.isGameOver) return; 
+                const rand = Math.random();
+                let size = 24, speed = 45, type = 'grunt';
+                let baseHp = 5;
+
+                if (this.currentWave >= 3 && rand < 0.20) {
+                    size = 24; baseHp = 10; speed = 250; type = 'sprinter';
+                } else if (this.currentWave >= 2 && rand < 0.40) {
+                    size = 48; baseHp = 30; speed = 20; type = 'tank';
+                }
+
+                const baseMult = 1 + ((this.currentWave - 1) * 0.4);
+                const spikeMult = Math.floor((this.currentWave - 1) / 3) * 2.5; 
+                const hpMult = baseMult + spikeMult;
+                const hp = Math.floor(baseHp * hpMult);
+
+                const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + (size / 2);
+                const rightLimit = this.boundaryCenter + (this.boundaryWidth / 2) - (size / 2);
+                let safeX = Phaser.Math.Between(leftLimit, rightLimit);
+                
+                if (type === 'tank') {
+                    let attempts = 0; let validSpot = false;
+                    while (attempts < 10 && !validSpot) {
+                        validSpot = true;
+                        this.enemies.getChildren().forEach(e => {
+                            if (e.enemyType === 'tank' && Math.abs(e.x - safeX) < 100 && e.y < 200) validSpot = false;
+                        });
+                        if (!validSpot) safeX = Phaser.Math.Between(leftLimit, rightLimit);
+                        attempts++;
+                    }
+                }
+
+                const paletteColor = this.getTierColor();
+
+                if (type === 'grunt') {
+                    const numClusters = Phaser.Math.Between(2, 4);
+                    for (let c = 0; c < numClusters; c++) {
+                        const offsetX = Phaser.Math.Between(-30, 30);
+                        const offsetY = Phaser.Math.Between(-30, 30);
+                        const clusterX = Phaser.Math.Clamp(safeX + offsetX, leftLimit, rightLimit);
+                        const clusterY = -size + offsetY;
+
+                        let enemy = this.add.container(clusterX, clusterY);
+                        enemy.sprites = [];
+                        enemy.initialSprites = Math.min(hp + 2, 8); 
+                        
+                        for (let i = 0; i < enemy.initialSprites; i++) {
+                            const mini = this.add.sprite(Phaser.Math.Between(-16, 16), Phaser.Math.Between(-16, 16), 'grunt');
+                            mini.setTint(paletteColor);
+                            this.tweens.add({ targets: mini, angle: Phaser.Math.Between(-10, 10), duration: Phaser.Math.Between(300, 600), yoyo: true, repeat: -1 });
+                            enemy.add(mini);
+                            enemy.sprites.push(mini);
+                        }
+                        this.physics.add.existing(enemy);
+                        const hitboxSize = size * 1.5;
+                        enemy.body.setSize(hitboxSize, hitboxSize);
+                        enemy.body.setOffset(-hitboxSize / 2, -hitboxSize / 2);
+                        
+                        enemy.hp = hp; enemy.maxHp = hp; enemy.enemyType = type; enemy.isDying = false; 
+                        this.enemies.add(enemy);
+                        enemy.body.setVelocityY(speed + Phaser.Math.Between(-5, 5)); 
+                    }
+                } else {
+                    let enemy = this.physics.add.sprite(safeX, -size, type);
+                    enemy.setTint(paletteColor);
+                    if (type === 'tank') {
+                        enemy.setScale(Phaser.Math.FloatBetween(0.9, 1.2));
+                        this.tweens.add({ targets: enemy, scaleX: 1.15, scaleY: 0.85, duration: Phaser.Math.Between(800, 1200), yoyo: true, repeat: -1 });
+                    }
+                    enemy.hp = hp; enemy.maxHp = hp; enemy.enemyType = type; enemy.isDying = false; 
+                    this.enemies.add(enemy);
+                    enemy.body.setVelocityY(speed);
+                }
+            }
+
+            spawnBoss() {
+                if (this.isGameOver) return;
+                const size = 80;
+                const baseMult = 1 + ((this.currentWave - 1) * 0.4);
+                const spikeMult = Math.floor((this.currentWave - 1) / 3) * 2.5;
+                const bossHp = Math.floor(300 * (baseMult + spikeMult)); 
+                const paletteColor = this.getTierColor();
+
+                const boss = this.physics.add.sprite(this.boundaryCenter, -size, 'boss');
+                boss.setTint(paletteColor);
+                boss.setScale(Phaser.Math.FloatBetween(0.9, 1.3));
+                this.tweens.add({ targets: boss, scaleX: 1.05, scaleY: 0.95, duration: 1500, yoyo: true, repeat: -1 });
+
+                boss.hp = bossHp; boss.maxHp = bossHp; boss.enemyType = 'boss'; boss.isDying = false; boss.lastFired = this.time.now;
+                
+                this.enemies.add(boss);
+                boss.body.setVelocityY(15); 
+            }
+
+            spawnCoin(x, y) {
+                if (this.isGameOver) return;
+                const coin = this.physics.add.sprite(x, y, 'coin').setDepth(9);
+                this.coinGroup.add(coin);
+                coin.body.setVelocityY(30); 
+                this.tweens.add({ targets: coin, scaleX: 0, duration: 400, yoyo: true, repeat: -1, ease: 'Linear' });
+            }
+
+            collectCoin(coin) {
+                coin.destroy();
+                this.sessionCoins++;
+                this.coinTextUI.setText(`COINS: ${this.sessionCoins}`);
+                
+                const flash = this.add.circle(coin.x, coin.y, 15, 0xfde047, 0.8).setDepth(20);
+                this.tweens.add({ targets: flash, scale: 2, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
+                const floatText = this.add.text(coin.x, coin.y - 10, '+1', { fontSize: '14px', fill: '#fde047', fontStyle: 'bold' }).setOrigin(0.5);
+                this.tweens.add({ targets: floatText, y: coin.y - 40, alpha: 0, duration: 600, onComplete: () => floatText.destroy() });
+            }
+
+            spawnGunUpgradeGate(specificTier = null) {
+                let nextTier;
+                if (specificTier !== null) nextTier = specificTier;
+                else {
+                    if (this.currentGunTier >= this.gunTiers.length - 1) return;
+                    nextTier = this.currentGunTier + 1;
+                }
+                const gunDef = this.gunTiers[nextTier];
+                const gateRadius = 20; 
+                const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + gateRadius;
+                const rightLimit = this.boundaryCenter + (this.boundaryWidth / 2) - gateRadius;
+                const safeX = (leftLimit < rightLimit) ? Phaser.Math.Between(leftLimit, rightLimit) : this.boundaryCenter;
+                
+                const circle = this.add.circle(0, 0, gateRadius, 0x222222, 0.9);
+                circle.setStrokeStyle(2, 0xffff00); 
+                const icon = this.add.sprite(0, 0, gunDef.icon).setDisplaySize(24, 24);
+                
+                const gate = this.add.container(safeX, -50, [circle, icon]);
+                this.physics.add.existing(gate);
+                this.gates.add(gate);
+                gate.body.setSize(40, 40); gate.body.setOffset(-20, -20); gate.body.setVelocityY(80);
+                gate.isGunUpgrade = true; gate.gunDef = gunDef; gate.tierIndex = nextTier; gate.gateValue = 0; gate.gateMax = 4 + (nextTier * 2); gate.currentHits = 0; gate.circleObj = circle;
+            }
+
+            spawnGate() {
+                if (this.isGameOver || this.isIntermission) return;
+
+                const gateTypes = [
+                    { type: 'Damage', abbr: 'DMG', isTemp: false, baseReq: 3, reqGrowth: 2, gateCap: 10 },
+                    { type: 'Fire Rate', abbr: 'SPD', isTemp: false, baseReq: 6, reqGrowth: 3, gateCap: 5 },
+                    { type: 'Spread', abbr: 'SPR', isTemp: true, baseReq: 4, reqGrowth: 3, gateCap: 3 }, 
+                    { type: 'Ally', abbr: 'ALY', isTemp: false, baseReq: 10, reqGrowth: 4, gateCap: 5 },
+                    { type: 'Health', abbr: 'HLT', isTemp: false, baseReq: 3, reqGrowth: 2, gateCap: 3 }
+                ];
+                if (this.currentGunTier > 2) gateTypes.push({ type: 'Ammo', abbr: 'AMMO', isTemp: false, baseReq: 2, reqGrowth: 1, gateCap: 1 });
+                
+                const typeDef = Phaser.Math.RND.pick(gateTypes);
+                const value = 1; const maxLimit = Math.min(typeDef.gateCap, this.gateMaxLimit);
+                const isAmmo = typeDef.abbr === 'AMMO';
+                const gateColor = isAmmo ? 0x00aa00 : 0x0044ff; 
+                
+                const gateRadius = 14;
+                const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + gateRadius;
+                const rightLimit = this.boundaryCenter + (this.boundaryWidth / 2) - gateRadius;
+                const safeX = (leftLimit < rightLimit) ? Phaser.Math.Between(leftLimit, rightLimit) : this.boundaryCenter;
+                
+                const elements = [];
+                let pulseRing = null;
+                if (typeDef.isTemp) {
+                    pulseRing = this.add.circle(0, 0, gateRadius, 0x000000, 0);
+                    pulseRing.setStrokeStyle(2, 0xffff00);
+                    this.tweens.add({ targets: pulseRing, scaleX: 1.8, scaleY: 1.8, alpha: 0, duration: 800, repeat: -1 });
+                    elements.push(pulseRing);
+                }
+
+                const circle = this.add.circle(0, 0, gateRadius, gateColor, 0.8);
+                circle.setStrokeStyle(2, typeDef.isTemp ? 0xffff00 : 0xffffff); 
+                elements.push(circle);
+
+                const topText = typeDef.abbr === 'HLT' ? '❤️' : typeDef.abbr;
+                const topFontSize = typeDef.abbr === 'HLT' ? '12px' : '9px';
+                const textAbbr = this.add.text(0, -4, topText, { fontSize: topFontSize, fill: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+                const textVal = this.add.text(0, 5, isAmmo ? `FULL` : `+${value}`, { fontSize: '9px', fill: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+                elements.push(textAbbr, textVal);
+                
+                const gate = this.add.container(safeX, -50, elements);
+                this.physics.add.existing(gate); this.gates.add(gate);
+                gate.body.setSize(28, 28); gate.body.setOffset(-14, -14); gate.body.setVelocityY(80);
+                gate.typeDef = typeDef; gate.gateValue = value; gate.gateMax = maxLimit; gate.currentHits = 0; gate.circleObj = circle; gate.textVal = textVal;
+
+                this.updateGateVisuals(gate);
+            }
+
+            updateGateVisuals(gate) {
+                if (gate.isGunUpgrade) { gate.circleObj.setStrokeStyle(3, 0xffff00); return; }
+                const isAmmo = gate.typeDef.abbr === 'AMMO';
+                const gateColor = isAmmo ? 0x00aa00 : 0x0044ff; 
+                if (!isAmmo) gate.textVal.setText(`+${gate.gateValue}`);
+
+                if (gate.gateValue >= gate.gateMax) {
+                    gate.circleObj.setStrokeStyle(2, 0xffff00); gate.circleObj.setFillStyle(gateColor, 0.8); 
+                } else {
+                    gate.circleObj.setStrokeStyle(2, gate.typeDef.isTemp ? 0xffff00 : 0xffffff); gate.circleObj.setFillStyle(gateColor, 0.8);
+                }
+            }
+
+            shootGate(bullet, gate) {
+                if (gate.y < 100) return; 
+                bullet.destroy();
+
+                if (!gate.isGunUpgrade && gate.gateValue >= gate.gateMax) { this.collectGate(null, gate); return; }
+
+                gate.currentHits += 1; 
+                const req = gate.isGunUpgrade ? gate.gateMax : gate.typeDef.baseReq + (gate.gateValue * gate.typeDef.reqGrowth);
+                if (gate.currentHits >= req) {
+                    if (gate.isGunUpgrade) { this.collectGate(null, gate); return; }
+                    gate.gateValue += 1; gate.currentHits = 0; 
+                    if (gate.gateValue >= gate.gateMax) { this.collectGate(null, gate); return; }
+                    this.tweens.add({ targets: gate, scaleX: 1.2, scaleY: 1.2, yoyo: true, duration: 100 });
+                }
+
+                this.updateGateVisuals(gate);
+                gate.circleObj.setFillStyle(0xffffff, 1);
+                this.time.delayedCall(50, () => {
+                    if (gate && gate.active) {
+                        if (gate.isGunUpgrade) gate.circleObj.setFillStyle(0x222222, 0.9);
+                        else this.updateGateVisuals(gate);
+                    }
+                });
+            }
+
+            collectGate(player, gate) {
+                if (gate.isGunUpgrade) {
+                    if (this.currentGunTier !== gate.tierIndex) {
+                        this.currentGunTier = gate.tierIndex;
+                        this.player.setTexture('player_' + this.currentGunTier);
+                    }
+                    const tierStats = this.gunTiers[this.currentGunTier];
+                    this.baseDamage = tierStats.damage; this.baseFireDelay = tierStats.delay; this.bulletSpeed = tierStats.speed; this.currentAmmo = tierStats.ammo; 
+                    this.playerDamage = this.baseDamage + this.bonusDamage;
+                    this.fireDelay = Math.max(15, this.baseFireDelay - this.bonusFireDelay);
+                    this.fireTimer.delay = this.fireDelay;
+                    this.updateStatsUI();
+                    
+                    const feedback = this.add.text(gate.x, gate.y, `${tierStats.name.toUpperCase()} ACQUIRED!`, { fontSize: '20px', fill: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
+                    this.tweens.add({ targets: feedback, y: gate.y - 50, alpha: 0, duration: 1500, onComplete: () => feedback.destroy() });
+                    const ring = this.add.circle(gate.x, gate.y, 30, 0xffff00, 0.8);
+                    this.tweens.add({ targets: ring, scaleX: 4, scaleY: 4, alpha: 0, duration: 400, onComplete: () => ring.destroy() });
+                    gate.destroy();
+                    return;
+                }
+
+                let actualGain = gate.gateValue; let isTemp = gate.typeDef.isTemp; let gateColorHex = 0x0044ff; let feedbackText = '';
+
+                if (gate.typeDef.abbr === 'DMG') {
+                    this.bonusDamage += actualGain; this.playerDamage = this.baseDamage + this.bonusDamage; this.updateStatsUI();
+                    feedbackText = `+${actualGain} DMG!`;
+                } else if (gate.typeDef.abbr === 'SPD') {
+                    const oldDelay = this.fireDelay; this.bonusFireDelay += (actualGain * 5);
+                    this.fireDelay = Math.max(15, this.baseFireDelay - this.bonusFireDelay);
+                    actualGain = (oldDelay - this.fireDelay) / 5; this.fireTimer.delay = this.fireDelay; this.updateStatsUI();
+                    feedbackText = `+${actualGain} SPD!`;
+                } else if (gate.typeDef.abbr === 'SPR') {
+                    const oldProj = this.playerProjectiles; this.playerProjectiles = Math.min(6, this.playerProjectiles + actualGain);
+                    actualGain = this.playerProjectiles - oldProj; feedbackText = `+${actualGain} SPR (10s)!`;
+                } else if (gate.typeDef.abbr === 'ALY') {
+                    const availableSpaces = 5 - this.allies.length; actualGain = Math.min(actualGain, availableSpaces);
+                    for (let i = 0; i < actualGain; i++) {
+                        const index = this.allies.length;
+                        const ally = this.physics.add.sprite(this.player.x + this.allyOffsets[index].x, this.player.y + this.allyOffsets[index].y, 'ally');
+                        ally.hp = 2; this.allyGroup.add(ally); this.allies.push(ally);
+                    }
+                    feedbackText = `+${actualGain} ALY!`;
+                } else if (gate.typeDef.abbr === 'HLT') {
+                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + actualGain); this.updateHealthUI();
+                    this.allies.forEach(ally => { ally.hp = 2; ally.setAlpha(1); if (ally.pulseTween) { ally.pulseTween.stop(); ally.pulseTween = null; } });
+                    feedbackText = `+${actualGain} HLT!`;
+                } else if (gate.typeDef.abbr === 'AMMO') {
+                    gateColorHex = 0x00aa00;
+                    if (this.gunTiers[this.currentGunTier].ammo !== Infinity) {
+                        this.currentAmmo = this.gunTiers[this.currentGunTier].ammo; this.updateStatsUI(); feedbackText = `+FULL AMMO!`;
+                    } else feedbackText = `AMMO FULL!`;
+                }
+
+                if (actualGain <= 0 && gate.typeDef.abbr !== 'AMMO') feedbackText = 'MAXED!';
+                if (actualGain > 0 && isTemp) {
+                    this.time.delayedCall(10000, () => { if (this.isGameOver) return; if (gate.typeDef.abbr === 'SPR') this.playerProjectiles -= actualGain; });
+                }
+
+                const feedback = this.add.text(gate.x, gate.y, feedbackText, { fontSize: '20px', fill: gateColorHex === 0x00aa00 ? '#00ff00' : '#00ffff', fontStyle: 'bold' }).setOrigin(0.5);
+                this.tweens.add({ targets: feedback, y: gate.y - 50, alpha: 0, duration: 1000, onComplete: () => feedback.destroy() });
+                const ring = this.add.circle(gate.x, gate.y, 25, gateColorHex, 0.8);
+                this.tweens.add({ targets: ring, scaleX: 3, scaleY: 3, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
+                gate.destroy();
+            }
+
+            flashEnemy(enemy) {
+                if (enemy.sprites) {
+                    enemy.sprites.forEach(s => { if(s.setTintFill) s.setTintFill(0xffffff); else s.setFillStyle(0xffffff); });
+                    this.time.delayedCall(50, () => {
+                        if (enemy && enemy.active && enemy.sprites) {
+                            enemy.sprites.forEach(s => { if(s.clearTint) { s.clearTint(); s.setTint(this.getTierColor()); } });
+                        }
+                    });
+                } else {
+                    enemy.setTintFill(0xffffff);
+                    this.time.delayedCall(50, () => {
+                        if (enemy && enemy.active) { enemy.clearTint(); enemy.setTint(this.getTierColor()); }
+                    });
+                }
+            }
+
+            spawnGore(x, y, count = 6) {
+                const redTones = [0x8a0303, 0xa81c1c, 0x550000];
+                for (let i = 0; i < count; i++) {
+                    const color = Phaser.Math.RND.pick(redTones);
+                    const particle = this.add.rectangle(x, y, Phaser.Math.Between(2, 4), Phaser.Math.Between(2, 4), color);
+                    this.physics.add.existing(particle);
+                    particle.body.setVelocity(Phaser.Math.Between(-150, 150), Phaser.Math.Between(-150, 150));
+                    
+                    this.tweens.add({
+                        targets: particle, scaleX: 0, scaleY: 0, alpha: 0, duration: Phaser.Math.Between(300, 600),
+                        onComplete: () => {
+                            if (this.isGameOver) return;
+                            const splatter = this.add.circle(particle.x, particle.y, Phaser.Math.Between(2, 5), color, 0.3).setDepth(1);
+                            this.bloodLayer.add(splatter);
+                            this.tweens.add({ targets: splatter, alpha: 0, duration: 25000 });
+                            particle.destroy();
+                        }
+                    });
+                }
+            }
+
+            explodeWaveText(x, y) {
+                this.cameras.main.flash(400, 255, 150, 50); 
+                this.cameras.main.shake(800, 0.02); 
+                for (let i = 0; i < 8; i++) {
+                    this.time.delayedCall(Phaser.Math.Between(0, 400), () => {
+                        if (this.isGameOver) return;
+                        const exX = x + Phaser.Math.Between(-120, 120); const exY = y + Phaser.Math.Between(-40, 40);
+                        const explosion = this.add.circle(exX, exY, 15, 0xff5500, 0.9).setDepth(20);
+                        this.tweens.add({ targets: explosion, scaleX: 8, scaleY: 8, alpha: 0, duration: Phaser.Math.Between(400, 600), ease: 'Cubic.easeOut', onComplete: () => explosion.destroy() });
+                        const core = this.add.circle(exX, exY, 8, 0xffff00, 1).setDepth(21);
+                        this.tweens.add({ targets: core, scaleX: 5, scaleY: 5, alpha: 0, duration: Phaser.Math.Between(200, 300), ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
+                    });
+                }
+            }
+
+            triggerTankExplosion(x, y) {
+                this.cameras.main.shake(300, 0.03); 
+                const explosion = this.add.circle(x, y, 7, 0xff5500, 0.9).setDepth(20);
+                this.tweens.add({ targets: explosion, scaleX: 8, scaleY: 8, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => explosion.destroy() });
+                const core = this.add.circle(x, y, 4, 0xffff00, 1).setDepth(21);
+                this.tweens.add({ targets: core, scaleX: 5, scaleY: 5, alpha: 0, duration: 150, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
+                this.spawnGore(x, y, 10); 
+
+                const radius = 70; const explosionDamage = 25; 
+                const enemiesInRange = this.enemies.getChildren().filter(enemy => {
+                    if (!enemy.active || enemy.isDying) return false;
+                    const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+                    return dist <= radius;
+                });
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage));
+            }
+
+            triggerPlayerHitExplosion(x, y) {
+                const shockwave = this.add.circle(x, y, 10, 0xffffff, 0.8).setDepth(20);
+                this.tweens.add({ targets: shockwave, scaleX: 8, scaleY: 8, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => shockwave.destroy() });
+                const radius = 80;
+                const enemiesInRange = this.enemies.getChildren().filter(enemy => {
+                    if (!enemy.active || enemy.isDying) return false;
+                    const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+                    return dist <= radius;
+                });
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, 50));
+            }
+
+            damageEnemy(enemy, amount) {
+                if (enemy.isDying) return;
+                enemy.hp -= amount;
+                
+                if (enemy.enemyType === 'grunt' && enemy.sprites) {
+                    const expectedSprites = Math.ceil((enemy.hp / enemy.maxHp) * enemy.initialSprites);
+                    while (enemy.sprites.length > expectedSprites && enemy.sprites.length > 0) {
+                        const s = enemy.sprites.pop(); s.destroy();
+                    }
+                }
+
+                if (enemy.hp <= 0) {
+                    enemy.isDying = true;
+                    let dropChance = 0.3; 
+                    if (enemy.enemyType === 'sprinter') dropChance = 0.5;
+                    if (enemy.enemyType === 'tank') dropChance = 1.0;
+                    if (enemy.enemyType === 'boss') dropChance = 1.0;
+
+                    if (Math.random() < dropChance) {
+                        let coinsToDrop = enemy.enemyType === 'boss' ? 15 : (enemy.enemyType === 'tank' ? 5 : 1);
+                        for(let i = 0; i < coinsToDrop; i++) {
+                            this.time.delayedCall(i * 100, () => {
+                                this.spawnCoin(enemy.x + Phaser.Math.Between(-15, 15), enemy.y + Phaser.Math.Between(-15, 15));
+                            });
+                        }
+                    }
+
+                    if (enemy.enemyType === 'boss') {
+                        enemy.body.setVelocity(0, 0); this.cameras.main.shake(1500, 0.04);
+                        this.time.addEvent({
+                            delay: 150, repeat: 8, callback: () => {
+                                if (!enemy.active) return;
+                                const exX = enemy.x + Phaser.Math.Between(-50, 50); const exY = enemy.y + Phaser.Math.Between(-50, 50);
+                                this.triggerTankExplosion(exX, exY); 
+                            }
+                        });
+                        this.time.delayedCall(1500, () => {
+                            if (enemy.active) {
+                                this.triggerTankExplosion(enemy.x, enemy.y); this.spawnGore(enemy.x, enemy.y, 25); enemy.destroy();
+                            }
+                        });
+                    } else if (enemy.enemyType === 'tank') {
+                        this.time.delayedCall(50 + Math.random() * 100, () => {
+                            if (enemy.active) { this.triggerTankExplosion(enemy.x, enemy.y); enemy.destroy(); }
+                        });
+                    } else {
+                        this.spawnGore(enemy.x, enemy.y, 4); enemy.destroy();
+                    }
+                } else {
+                    this.flashEnemy(enemy);
+                }
+            }
+
+            hitEnemy(bullet, enemy) {
+                if (enemy.y < 100) return; 
+                bullet.destroy(); this.damageEnemy(enemy, this.playerDamage);
+            }
+
+            hitBarricade(barricade, hazard) {
+                if (hazard.y < 100) return; 
+                if (this.devInvincible) return; 
+                
+                let incomingDamage = 10;
+                if (hazard.enemyType === 'boss') incomingDamage = 50;
+                if (hazard.enemyType === 'sprinter') incomingDamage = 50;
+                if (!hazard.enemyType) incomingDamage = hazard.maxHp || 10; 
+                
+                if (hazard.enemyType) this.damageEnemy(hazard, 1000); 
+                else hazard.destroy(); 
+
+                barricade.hp -= incomingDamage;
+                barricade.setAlpha(Math.max(0.2, barricade.hp / barricade.maxHp));
+
+                if (barricade.hp <= 0) {
+                    barricade.destroy();
+                }
+            }
+
+            hitAlly(ally, hazard) {
+                if (hazard.y < 100 || ally.isDying) return;
+                if (this.devInvincible) return; 
+                if (hazard.enemyType) this.damageEnemy(hazard, 1000); 
+                else hazard.destroy();
+
+                ally.hp -= 1;
+                if (ally.hp <= 0) {
+                    ally.isDying = true; if (ally.pulseTween) ally.pulseTween.stop();
+                    const idx = this.allies.indexOf(ally); if (idx > -1) this.allies.splice(idx, 1);
+                    ally.destroy();
+                } else if (ally.hp === 1 && !ally.pulseTween) {
+                    ally.pulseTween = this.tweens.add({ targets: ally, alpha: 0.3, yoyo: true, repeat: -1, duration: 200 });
+                }
+            }
+
+            hitPlayer(player, hazard) {
+                if (this.isGameOver) return;
+                if (hazard.y < 100) return; 
+                if (this.devInvincible) return; 
+                if (this.player.isInvulnerable) return;
+
+                this.player.isInvulnerable = true;
+                this.triggerPlayerHitExplosion(this.player.x, this.player.y);
+
+                this.player.hp -= 1; this.updateHealthUI(); this.cameras.main.shake(300, 0.03);
+
+                if (this.player.hp <= 0) {
+                    this.handlePlayerDeath();
+                } else {
+                    this.player.setTintFill(0xffffff); 
+                    this.time.delayedCall(100, () => { if (this.player && this.player.active) this.player.clearTint(); });
+                    this.time.delayedCall(500, () => { if (this.player) this.player.isInvulnerable = false; });
+                }
+            }
+            
+            respawnPlayer() {
+                this.player.x = 300;
+                this.player.y = 600;
+                this.player.hp = this.player.maxHp;
+                this.updateHealthUI();
+                
+                this.physics.resume();
+                
+                // I-Frames after respawn
+                this.tweens.add({ targets: this.player, alpha: 1, duration: 200, yoyo: true, repeat: 5 });
+                this.time.delayedCall(1500, () => { 
+                    this.player.isInvulnerable = false; 
+                    this.player.setAlpha(1); 
+                });
+            }
+
+            handlePlayerDeath() {
+                this.lives -= 1;
+                this.updateLivesUI();
+
+                if (this.lives <= 0) {
+                    this.triggerPermadeath();
+                } else {
+                    this.physics.pause();
+                    this.player.setAlpha(0);
+                    
+                    // Knock remaining enemies back slightly so player doesn't instantly die on respawn
+                    this.enemies.children.each(e => {
+                        if (e.y > -50) e.y -= 150; 
+                    });
+                    
+                    // Clear dangerous projectiles
+                    this.bullets.clear(true, true);
+                    this.enemyBullets.clear(true, true);
+
+                    if (this.currentWave > 3) {
+                        this.handleDeathChoice();
+                    } else {
+                        // Just respawn automatically if early in the run
+                        this.time.delayedCall(1000, () => {
+                            this.respawnPlayer();
+                        });
+                    }
+                }
+            }
+
+            triggerGameOver(message = 'DEFENSES BREACHED') {
+                this.lives = 0;
+                this.updateLivesUI();
+                this.triggerPermadeath();
+            }
+
+            triggerPermadeath() {
+                this.isGameOver = true; 
+                this.physics.pause(); 
+                
+                // Extreme Juice for Permadeath
+                this.cameras.main.shake(2000, 0.05);
+                this.spawnGore(this.player.x, this.player.y, 50); // Massive gore explosion
+                this.player.setVisible(false);
+
+                // Fullscreen Dark Red Drip Overlay
+                const bloodOverlay = this.add.rectangle(300, 400, 600, 800, 0x550000, 0).setDepth(300);
+                this.tweens.add({ targets: bloodOverlay, alpha: 0.8, duration: 3000 });
+
+                // Individual Blood drips
+                for (let i = 0; i < 25; i++) {
+                    const dropX = Phaser.Math.Between(0, 600);
+                    const drop = this.add.rectangle(dropX, -100, Phaser.Math.Between(10, 40), Phaser.Math.Between(50, 200), 0x770000).setDepth(301);
+                    this.tweens.add({
+                        targets: drop,
+                        y: Phaser.Math.Between(800, 1000),
+                        duration: Phaser.Math.Between(2000, 6000),
+                        ease: 'Power1',
+                        delay: Phaser.Math.Between(0, 1500)
+                    });
+                }
+                
+                // Delay UI to let animation play
+                this.time.delayedCall(3000, () => {
+                    window.saveData.coins += this.sessionCoins;
+                    saveGame();
+                    
+                    document.getElementById('choice-title').innerText = 'PERMANENT DEATH';
+                    document.getElementById('btn-choice-continue').innerText = 'DEPLOY NEXT RUN';
+                    document.getElementById('choice-screen').style.display = 'flex';
+
+                    // Force restart scene on any action since run is dead
+                    window.choiceContinueCallback = () => { this.scene.restart(); };
+                    window.shopCloseCallback = () => { this.scene.restart(); };
+                });
+            }
+        }
+
+        const config = {
+            type: Phaser.AUTO, width: 600, height: 800, parent: 'game-container',
+            physics: { default: 'arcade', arcade: { debug: false, gravity: { y: 0 } } },
+            scene: [GameScene]
+        };
+
+        new Phaser.Game(config);
+
+        // --- UPGRADE SHOP UI LOGIC ---
+        function updateShopUI() {
+            document.getElementById('shop-coins').innerText = `COINS: ${window.saveData.coins}`;
+            
+            const barCost = getUpgradeCost(window.saveData.upgrades.barricade);
+            document.getElementById('lvl-barricade').innerText = window.saveData.upgrades.barricade;
+            const barBtn = document.getElementById('btn-upg-barricade');
+            barBtn.innerText = `Buy: ${barCost}`;
+            barBtn.disabled = window.saveData.coins < barCost;
+
+            const spdCost = getUpgradeCost(window.saveData.upgrades.speed);
+            document.getElementById('lvl-speed').innerText = window.saveData.upgrades.speed;
+            const spdBtn = document.getElementById('btn-upg-speed');
+            spdBtn.innerText = `Buy: ${spdCost}`;
+            spdBtn.disabled = window.saveData.coins < spdCost;
+        }
+
+        // JS Listeners for Shop Overlay
+        document.getElementById('btn-choice-shop').addEventListener('click', () => {
+            document.getElementById('choice-screen').style.display = 'none';
+            document.getElementById('upgrade-shop').style.display = 'flex';
+            updateShopUI();
+        });
+
+        document.getElementById('btn-choice-continue').addEventListener('click', () => {
+            document.getElementById('choice-screen').style.display = 'none';
+            if (window.choiceContinueCallback) window.choiceContinueCallback();
+        });
+
+        document.getElementById('btn-close-shop').addEventListener('click', () => {
+            document.getElementById('upgrade-shop').style.display = 'none';
+            if (window.shopCloseCallback) window.shopCloseCallback();
+        });
+
+
+        // Meta Purchases
+        document.getElementById('btn-upg-barricade').addEventListener('click', () => {
+            const cost = getUpgradeCost(window.saveData.upgrades.barricade);
+            if (window.saveData.coins >= cost) {
+                window.saveData.coins -= cost; window.saveData.upgrades.barricade += 1;
+                saveGame(); updateShopUI();
+            }
+        });
+        document.getElementById('btn-upg-speed').addEventListener('click', () => {
+            const cost = getUpgradeCost(window.saveData.upgrades.speed);
+            if (window.saveData.coins >= cost) {
+                window.saveData.coins -= cost; window.saveData.upgrades.speed += 1;
+                saveGame(); updateShopUI();
+            }
+        });
+
+
+        // --- Dev/Pause UI Listeners ---
+        document.getElementById('dev-toggle').addEventListener('click', () => {
+            const panel = document.getElementById('dev-panel'); panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+        });
+        document.getElementById('btn-god').addEventListener('click', (e) => {
+            if (!window.gameScene) return; window.gameScene.devInvincible = !window.gameScene.devInvincible;
+            e.target.innerText = window.gameScene.devInvincible ? 'God Mode: ON' : 'God Mode: OFF';
+            if (window.gameScene.devInvincible) e.target.classList.add('active'); else e.target.classList.remove('active');
+        });
+        document.getElementById('btn-nuke').addEventListener('click', () => { if (window.gameScene) window.gameScene.devNukeEnemies(); });
+        document.getElementById('btn-max').addEventListener('click', (e) => {
+            if (!window.gameScene) return; window.gameScene.toggleMaxStats();
+            e.target.innerText = window.gameScene.devMaxStatsActive ? 'Max Stats: ON' : 'Max Stats: OFF';
+            if (window.gameScene.devMaxStatsActive) e.target.classList.add('active'); else e.target.classList.remove('active');
+        });
+        document.getElementById('btn-powerup').addEventListener('click', () => { if (window.gameScene) window.gameScene.spawnGate(); });
+        document.getElementById('btn-boss').addEventListener('click', () => { if (window.gameScene) window.gameScene.spawnBoss(); });
+
+        const btnPause = document.getElementById('btn-pause'); const pauseScreen = document.getElementById('pause-screen');
+        btnPause.addEventListener('click', () => {
+            if (!window.gameScene || window.gameScene.isGameOver) return;
+            const scene = window.gameScene; scene.isPaused = !scene.isPaused;
+            if (scene.isPaused) { scene.scene.pause(); pauseScreen.style.display = 'flex'; btnPause.innerText = '▶️ RESUME'; btnPause.classList.add('active'); } 
+            else { scene.scene.resume(); pauseScreen.style.display = 'none'; btnPause.innerText = '⏸️ PAUSE'; btnPause.classList.remove('active'); }
+        });
+        document.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'p' || e.key === 'Escape') btnPause.click(); });
+    </script>
+</body>
+</html>
