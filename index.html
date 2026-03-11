@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zombie Defense</title>
+    <title>Undead Barrage: Escalation</title>
     <style>
         body { 
             margin: 0; 
@@ -20,13 +20,16 @@
         #game-container { 
             box-shadow: 0 0 30px rgba(0,255,255,0.2); 
             position: relative;
+            width: 600px;
+            height: 800px;
         }
         
         /* --- Dev Tools UI Styles --- */
         #dev-ui {
             position: absolute;
-            top: 10px;
+            top: 50%;
             right: 10px;
+            transform: translateY(-50%);
             z-index: 1000;
             display: flex;
             flex-direction: column;
@@ -50,131 +53,368 @@
         .dev-btn.active { background: #00ffcc; color: #000; }
         #dev-panel { display: none; flex-direction: column; gap: 5px; margin-top: 5px; }
 
+        /* --- Touch Controls (Revamped for Phase 4) --- */
+        #touch-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 800;
+        }
+        .touch-group { display: flex; gap: 8px; }
+        .game-btn {
+            pointer-events: auto;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 11px;
+            text-shadow: 1px 1px 2px #000;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            transition: transform 0.1s;
+        }
+        
+        #btn-swap { background: rgba(50, 150, 255, 0.3); color: #fff; border: 2px solid #3399ff; }
+        #btn-swap:active, #btn-swap.active { background: rgba(50, 150, 255, 0.8); box-shadow: 0 0 20px #3399ff; transform: scale(0.95); }
+        
+        #btn-dash { background: rgba(255, 150, 50, 0.3); color: #fff; border: 2px solid #ff9933; }
+        #btn-dash:active, #btn-dash.active { background: rgba(255, 150, 50, 0.8); box-shadow: 0 0 20px #ff9933; transform: scale(0.95); }
+
+        #btn-fire { background: rgba(255, 50, 50, 0.3); color: #fff; border: 2px solid #ff3333; width: 65px; height: 65px; font-size: 13px; }
+        #btn-fire:active, #btn-fire.active { background: rgba(255, 50, 50, 0.8); box-shadow: 0 0 20px #ff3333; transform: scale(0.95); }
+        
+        #btn-alt { background: rgba(168, 85, 247, 0.3); color: #fff; border: 2px solid #a855f7; }
+        #btn-alt:active, #btn-alt.active { background: rgba(168, 85, 247, 0.8); box-shadow: 0 0 20px #a855f7; transform: scale(0.95); }
+        
+        #btn-grenade { background: rgba(50, 255, 50, 0.3); color: #fff; border: 2px solid #33ff33; }
+        #btn-grenade:active, #btn-grenade.active { background: rgba(50, 255, 50, 0.8); box-shadow: 0 0 20px #33ff33; transform: scale(0.95); }
+
         /* --- UI Overlays --- */
         .overlay-screen {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(10, 10, 15, 0.95); z-index: 950; flex-direction: column; 
             justify-content: center; align-items: center; text-align: center;
         }
-        .overlay-screen h2 { font-size: 40px; margin-bottom: 5px; }
+        .overlay-screen h2 { font-size: 40px; margin-bottom: 5px; transition: color 0.3s, text-shadow 0.3s; }
         
         #pause-screen { z-index: 900; background: rgba(0, 0, 0, 0.8); }
         #pause-screen h1 { color: #fff; font-size: 60px; letter-spacing: 5px; text-shadow: 0 0 20px #00ffff; margin: 0; font-style: italic; }
-        .pause-btn { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; font-size: 16px; padding: 8px 16px; }
+        .pause-btn { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); z-index: 1000; font-size: 14px; padding: 12px 10px; writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 2px;}
 
         #choice-screen { z-index: 960; }
-        #choice-screen h2 { color: #ff3333; text-shadow: 0 0 15px #aa0000; }
+        #choice-title { color: #ff3333; text-shadow: 0 0 15px #aa0000; }
+        #choice-buttons { display: flex; flex-direction: column; align-items: center; width: 100%; }
         
-        /* --- UPGRADE SHOP UI --- */
-        #upgrade-shop h2 { color: #fde047; text-shadow: 0 0 15px #ca8a04; margin-top: 20px;}
-        #shop-coins { color: #fff; font-size: 24px; font-weight: bold; margin-bottom: 15px; }
-        
-        .tab-container { display: flex; width: 90%; justify-content: center; gap: 10px; margin-bottom: 15px; }
-        .tab-btn { 
-            background: #222; color: #aaa; border: 2px solid #444; padding: 10px 15px; 
-            cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 16px; flex: 1; transition: 0.2s;
+        /* Mutation Draft UI */
+        #draft-container {
+            display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 550px; margin-top: 20px;
         }
-        .tab-btn:hover { background: #333; color: #fff; }
-        .tab-btn.active { background: #ca8a04; border-color: #fde047; color: #000; }
-        
-        .tab-content { 
-            display: none; width: 90%; flex-direction: column; align-items: center; 
-            max-height: 400px; overflow-y: auto; padding-right: 5px; gap: 10px;
+        .mutation-card {
+            background: rgba(15, 23, 42, 0.95); border: 2px solid #a855f7; border-radius: 12px;
+            padding: 20px; width: 33%; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); opacity: 0; transform: translateY(30px);
+            animation: cardEnter 0.5s forwards;
         }
-        .tab-content.active { display: flex; }
+        .mutation-card:nth-child(1) { animation-delay: 0.1s; }
+        .mutation-card:nth-child(2) { animation-delay: 0.2s; }
+        .mutation-card:nth-child(3) { animation-delay: 0.3s; }
         
-        /* Custom Scrollbar */
-        .tab-content::-webkit-scrollbar { width: 8px; }
-        .tab-content::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
-        .tab-content::-webkit-scrollbar-thumb { background: #ca8a04; border-radius: 4px; }
+        @keyframes cardEnter { to { opacity: 1; transform: translateY(0); } }
+
+        .mutation-card:hover {
+            transform: translateY(-10px) scale(1.05); box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+            background: rgba(30, 41, 59, 0.95); border-color: #d8b4fe;
+        }
+        .mutation-card h3 {
+            color: #d8b4fe; font-size: 16px; margin: 0 0 10px 0; text-transform: uppercase;
+            letter-spacing: 1px; text-shadow: 0 0 10px #a855f7; line-height: 1.2;
+        }
+        .mutation-card p { color: #e2e8f0; font-size: 12px; line-height: 1.4; margin: 0; }
+
+        /* --- Categorized Shop UI (Phase 2) --- */
+        #upgrade-shop { z-index: 960; overflow-y: auto; padding: 20px 0; justify-content: flex-start; align-items: center; }
+        #upgrade-shop h2 { color: #fde047; text-shadow: 0 0 15px #ca8a04; margin-top: 20px; }
+        #shop-coins { color: #fff; font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        
+        .shop-category {
+            width: 85%; margin: 25px 0 10px 0; font-size: 16px; color: #a855f7; 
+            border-bottom: 1px solid #a855f7; padding-bottom: 5px; font-weight: bold; 
+            text-align: left; letter-spacing: 2px; text-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+        }
 
         .shop-item { 
-            background: rgba(255, 255, 255, 0.05); border: 1px solid #333; padding: 15px 20px;
-            width: 100%; display: flex; justify-content: space-between; align-items: center;
-            border-radius: 8px; font-size: 16px; box-sizing: border-box; text-align: left;
+            background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; padding: 15px 20px;
+            margin: 6px 0; width: 85%; display: flex; justify-content: space-between; align-items: center;
+            border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: border-color 0.2s, transform 0.2s;
         }
-        .shop-item span { color: #ddd; line-height: 1.4; }
-        .shop-item small { color: #888; font-size: 12px; }
+        .shop-item:hover { border-color: #475569; }
+        .item-info { display: flex; flex-direction: column; flex-grow: 1; text-align: left; }
+        .item-info span { color: #f8fafc; font-weight: bold; font-size: 16px; letter-spacing: 0.5px; }
+        .item-info small { color: #94a3b8; font-size: 12px; margin-top: 4px; }
         
+        .tier-bar { display: flex; gap: 4px; margin-top: 8px; height: 6px; }
+        .tier-pip { width: 14px; height: 100%; background: #1e293b; border: 1px solid #0f172a; border-radius: 2px; transition: all 0.3s; }
+        .tier-pip.filled { background: #00ffcc; border-color: #fff; box-shadow: 0 0 5px #00ffcc; }
+        .tier-pip.maxed { background: #fde047; border-color: #fff; box-shadow: 0 0 5px #fde047; }
+
         .shop-btn {
-            background: #ca8a04; color: #000; border: none; padding: 10px 15px; min-width: 100px;
+            background: #0ea5e9; color: #000; border: none; padding: 10px 15px;
             font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 4px;
-            transition: 0.2s; text-transform: uppercase;
+            transition: all 0.2s; margin-left: 15px; min-width: 110px;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
         }
-        .shop-btn:hover:not(:disabled) { background: #fde047; box-shadow: 0 0 15px #fde047; }
-        .shop-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .shop-btn:hover:not(:disabled) { background: #38bdf8; box-shadow: 0 0 15px #38bdf8; transform: scale(1.05); }
+        .shop-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; border: 1px solid #1e293b; }
+        .shop-btn.maxed-btn { background: #ca8a04; color: #000; box-shadow: 0 0 15px #ca8a04; border: 1px solid #fde047; opacity: 0.8; }
         
-        .action-btn { background: #00ffcc; margin-top: 15px; font-size: 18px; padding: 12px 30px; margin-bottom: 20px;}
+        .action-btn { background: #00ffcc; margin-top: 20px; font-size: 20px; padding: 15px 30px; margin-bottom: 30px; box-shadow: 0 0 10px rgba(0,255,204,0.4); }
         .action-btn:hover { background: #fff; box-shadow: 0 0 20px #00ffcc; }
+
+        @keyframes buyPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); transform: scale(1); }
+            50% { box-shadow: 0 0 20px 10px rgba(0, 255, 204, 0); transform: scale(1.02); border-color: #00ffcc; }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); transform: scale(1); }
+        }
+        .purchased-pulse { animation: buyPulse 0.4s ease-out; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.js"></script>
 </head>
-<body>
+<body oncontextmenu="return false;">
     <div id="game-container">
+        
+        <div id="touch-controls">
+            <div class="touch-left">
+                <button id="btn-swap" class="game-btn">SWAP</button>
+                <button id="btn-dash" class="game-btn">DASH</button>
+            </div>
+            <div class="touch-right">
+                <button id="btn-grenade" class="game-btn">BOMB</button>
+                <button id="btn-alt" class="game-btn">ALT</button>
+                <button id="btn-fire" class="game-btn">FIRE</button>
+            </div>
+        </div>
+
         <div id="pause-screen" class="overlay-screen"><h1>PAUSED</h1></div>
         <button id="btn-pause" class="dev-btn pause-btn">⏸️ PAUSE</button>
 
-        <!-- Wave Clear / Death Choice Screen -->
         <div id="choice-screen" class="overlay-screen">
             <h2 id="choice-title">WAVE CLEARED</h2>
-            <button id="btn-choice-shop" class="shop-btn" style="padding: 15px 25px; font-size: 18px; margin-bottom: 10px;">🛒 ENTER UPGRADE SHOP</button>
-            <button id="btn-choice-continue" class="shop-btn action-btn">CONTINUE RUN</button>
+            <div id="choice-buttons">
+                <button id="btn-choice-shop" class="shop-btn action-btn">🛒 ENTER UPGRADE SHOP</button>
+                <button id="btn-choice-continue" class="shop-btn action-btn">CONTINUE RUN</button>
+            </div>
+            <div id="draft-container" style="display:none;"></div>
         </div>
 
-        <!-- Upgrade Shop -->
         <div id="upgrade-shop" class="overlay-screen">
-            <h2>THE ARMORY</h2>
+            <h2>THE GARAGE</h2>
             <div id="shop-coins">COINS: 0</div>
             
-            <div class="tab-container">
-                <button class="tab-btn active" data-target="shop-stats">STATS</button>
-                <button class="tab-btn" data-target="shop-weapons">WEAPONS</button>
-                <button class="tab-btn" data-target="shop-powerups">POWERUPS</button>
+            <div class="shop-category">--- TIER 1: FOUNDATION ---</div>
+            
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>❤️ Vitality Serum</span>
+                    <small>Increases Maximum HP per life.</small>
+                    <div class="tier-bar" id="tier-vitality"></div>
+                </div>
+                <button id="btn-upg-vitality" class="shop-btn">Buy</button>
             </div>
 
-            <!-- STATS TAB -->
-            <div id="shop-stats" class="tab-content active">
-                <div class="shop-item"><span>Damage Upgrade<br><small>Lvl <span id="lvl-dmg">0</span> (+1 Base DMG)</small></span><button id="btn-upg-dmg" class="shop-btn stat-btn" data-stat="dmg">Buy</button></div>
-                <div class="shop-item"><span>Fire Rate Overclock<br><small>Lvl <span id="lvl-spd">0</span> (Faster Auto-Fire)</small></span><button id="btn-upg-spd" class="shop-btn stat-btn" data-stat="spd">Buy</button></div>
-                <div class="shop-item"><span>Thruster Speed<br><small>Lvl <span id="lvl-move">0</span> (+10% Move Speed)</small></span><button id="btn-upg-move" class="shop-btn stat-btn" data-stat="move">Buy</button></div>
-                <div class="shop-item"><span>Hull Integrity<br><small>Lvl <span id="lvl-maxhp">0</span> (+1 Max Health & Heal)</small></span><button id="btn-upg-maxhp" class="shop-btn stat-btn" data-stat="maxhp">Buy</button></div>
-                <div class="shop-item"><span>Reinforce Barricades<br><small>Lvl <span id="lvl-barricade">0</span> (+10% Trench HP)</small></span><button id="btn-upg-barricade" class="shop-btn stat-btn" data-stat="barricade">Buy</button></div>
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>⚡ Evasion Tactics</span>
+                    <small>Unlocks lateral DASH. Upgrades reduce cooldown.</small>
+                    <div class="tier-bar" id="tier-evasion"></div>
+                </div>
+                <button id="btn-upg-evasion" class="shop-btn">Buy</button>
             </div>
 
-            <!-- WEAPONS TAB -->
-            <div id="shop-weapons" class="tab-content"></div>
-
-            <!-- POWERUPS TAB -->
-            <div id="shop-powerups" class="tab-content">
-                <div class="shop-item"><span>Deploy Wingman<br><small>Spawns temporary firing ally (30s)</small></span><button id="btn-buy-ally" class="shop-btn">Buy: 40</button></div>
-                <div class="shop-item"><span>Emergency Repair<br><small>Restores 1 Player HP</small></span><button id="btn-buy-heal" class="shop-btn">Buy: 20</button></div>
-                <div class="shop-item"><span>Ammo Drop<br><small>Fully restores current heavy weapon</small></span><button id="btn-buy-ammo" class="shop-btn">Buy: 15</button></div>
-                <div class="shop-item"><span>Rebuild Trench<br><small>Fully repairs all barricades to Max HP</small></span><button id="btn-buy-repair" class="shop-btn">Buy: 30</button></div>
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>🛡️ Kevlar Weave</span>
+                    <small>Deploy with additional backup lives.</small>
+                    <div class="tier-bar" id="tier-armor"></div>
+                </div>
+                <button id="btn-upg-armor" class="shop-btn">Buy</button>
             </div>
 
-            <button id="btn-close-shop" class="shop-btn action-btn">DEPLOY</button>
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>💣 Frag Grenades (+3)</span>
+                    <small>Consumable panic buttons. Current Stock: <strong id="stock-grenades" style="color:#00ffcc;">0</strong></small>
+                </div>
+                <button id="btn-buy-grenades" class="shop-btn">Buy</button>
+            </div>
+
+            <div class="shop-category">--- TIER 2: TACTICAL ---</div>
+
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>🔫 Weapon License</span>
+                    <small>Unlocks new guns & alt-fires. Swap mid-run!</small>
+                    <div class="tier-bar" id="tier-weapon"></div>
+                </div>
+                <button id="btn-upg-weapon" class="shop-btn">Buy</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>💥 Explosive Yield</span>
+                    <small>Increases grenade blast radius and damage.</small>
+                    <div class="tier-bar" id="tier-yield"></div>
+                </div>
+                <button id="btn-upg-yield" class="shop-btn">Buy</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>🔋 Overdrive Capacitor</span>
+                    <small>Extends duration of temporary Frenzy Gate buffs.</small>
+                    <div class="tier-bar" id="tier-overdrive"></div>
+                </div>
+                <button id="btn-upg-overdrive" class="shop-btn">Buy</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>⚙️ Auto-Fire Protocol</span>
+                    <small>Automates primary weapon discharge.</small>
+                    <div class="tier-bar" id="tier-autofire"></div>
+                </div>
+                <button id="btn-upg-autofire" class="shop-btn">Buy</button>
+            </div>
+
+            <div class="shop-category">--- TIER 3: DOMINATION ---</div>
+
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>💰 Greed Protocol</span>
+                    <small>Chance for collected coins to be worth double.</small>
+                    <div class="tier-bar" id="tier-greed"></div>
+                </div>
+                <button id="btn-upg-greed" class="shop-btn">Buy</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>🧲 Magnetic Field</span>
+                    <small>Increases proximity collection radius for coins.</small>
+                    <div class="tier-bar" id="tier-magnet"></div>
+                </div>
+                <button id="btn-upg-magnet" class="shop-btn">Buy</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>🏗️ Reinforced Steel</span>
+                    <small>Increases maximum barricade health by 10%.</small>
+                    <div class="tier-bar" id="tier-barricade"></div>
+                </div>
+                <button id="btn-upg-barricade" class="shop-btn">Buy</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="item-info">
+                    <span>🚀 Thruster Upgrade</span>
+                    <small>Increases base movement speed by 10%.</small>
+                    <div class="tier-bar" id="tier-speed"></div>
+                </div>
+                <button id="btn-upg-speed" class="shop-btn">Buy</button>
+            </div>
+
+            <button id="btn-close-shop" class="shop-btn action-btn">CLOSE SHOP</button>
         </div>
 
         <div id="dev-ui">
-            <button id="dev-toggle" class="dev-btn">⚙️ Dev Tools</button>
+            <button id="dev-toggle" class="dev-btn">⚙️ DEV</button>
             <div id="dev-panel">
                 <button id="btn-god" class="dev-btn">God Mode: OFF</button>
-                <button id="btn-nuke" class="dev-btn">Nuke (Skip Wave)</button>
+                <button id="btn-next-wave" class="dev-btn">Force Next Wave</button>
                 <button id="btn-max" class="dev-btn">Max Stats: OFF</button>
                 <button id="btn-powerup" class="dev-btn">Spawn Powerup</button>
                 <button id="btn-boss" class="dev-btn">Spawn Boss</button>
+                <button id="btn-coins" class="dev-btn">+1000 Coins</button>
+                <button id="btn-reset-save" class="dev-btn" style="border-color:#ff3333; color:#ff3333;">Wipe Save Data</button>
             </div>
         </div>
     </div>
 
     <script>
         // --- META PROGRESSION SAVE DATA ---
-        window.saveData = JSON.parse(localStorage.getItem('zd_save')) || { coins: 0 };
-        if(window.saveData.upgrades) window.saveData.upgrades = undefined; 
+        const defaultSave = { 
+            coins: 0, 
+            upgrades: { 
+                barricade: 0, speed: 0, weapon: 0, autoFire: 0, grenades: 3, magnet: 0, armor: 0, greed: 0,
+                evasion: 0, vitality: 0, yield: 0, overdrive: 0 
+            } 
+        };
+        window.saveData = JSON.parse(localStorage.getItem('zd_save')) || defaultSave;
         
+        // Ensure new properties exist for old saves
+        ['weapon', 'autoFire', 'grenades', 'magnet', 'armor', 'greed', 'evasion', 'vitality', 'yield', 'overdrive'].forEach(prop => {
+            if(window.saveData.upgrades[prop] === undefined) {
+                window.saveData.upgrades[prop] = prop === 'grenades' ? 3 : 0;
+            }
+        });
+
         function saveGame() {
-            localStorage.setItem('zd_save', JSON.stringify({ coins: window.saveData.coins }));
+            localStorage.setItem('zd_save', JSON.stringify(window.saveData));
         }
+
+        function getUpgradeCost(type, level) {
+            if (type === 'weapon') return 50 + (level * 75);
+            if (type === 'autofire') return 200;
+            if (type === 'grenades') return 15;
+            if (type === 'magnet') return 25 + (level * 25);
+            if (type === 'armor') return 100 + (level * 100);
+            if (type === 'greed') return 50 + (level * 50);
+            if (type === 'evasion') return 100 + (level * 100);
+            if (type === 'vitality') return 50 + (level * 50);
+            if (type === 'yield') return 75 + (level * 75);
+            if (type === 'overdrive') return 150 + (level * 100);
+            return 10 + (level * 15); // Base formula for barricade/speed
+        }
+
+        function triggerBuyPulse(btnId) {
+            const el = document.getElementById(btnId);
+            if (!el) return;
+            const itemCard = el.closest('.shop-item');
+            if (itemCard) {
+                itemCard.classList.remove('purchased-pulse');
+                void itemCard.offsetWidth; 
+                itemCard.classList.add('purchased-pulse');
+            }
+        }
+
+        // --- Global Touch/HTML Input State ---
+        window.inputState = { fire: false, grenade: false, alt: false, swap: false, dash: false };
+        const bindBtn = (id, key) => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            const activate = (e) => { e.preventDefault(); window.inputState[key] = true; el.classList.add('active'); };
+            const deactivate = (e) => { e.preventDefault(); window.inputState[key] = false; el.classList.remove('active'); };
+            el.addEventListener('touchstart', activate, {passive: false});
+            el.addEventListener('touchend', deactivate, {passive: false});
+            el.addEventListener('mousedown', activate);
+            el.addEventListener('mouseup', deactivate);
+            el.addEventListener('mouseleave', deactivate);
+        };
+        bindBtn('btn-fire', 'fire');
+        bindBtn('btn-grenade', 'grenade');
+        bindBtn('btn-alt', 'alt');
+        bindBtn('btn-swap', 'swap');
+        bindBtn('btn-dash', 'dash');
 
         class GameScene extends Phaser.Scene {
             constructor() {
@@ -206,15 +446,6 @@
                         </svg>
                     `));
                 });
-
-                this.load.image('ally', createSvgUri(`
-                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <g transform="translate(1, 1)" fill="rgba(0,0,0,0.4)"><rect x="11" y="4" width="2" height="10"/><ellipse cx="12" cy="14" rx="8" ry="4"/><circle cx="12" cy="12" r="4"/></g>
-                        <rect x="11" y="4" width="2" height="10" fill="#9ca3af" stroke="#111" stroke-width="1"/>
-                        <ellipse cx="12" cy="14" rx="8" ry="4" fill="#1e3a8a" stroke="#111" stroke-width="1"/>
-                        <circle cx="12" cy="12" r="4" fill="#fbd38d" stroke="#111" stroke-width="1"/>
-                    </svg>
-                `));
 
                 // --- ZOMBIE SVGS ---
                 this.load.image('grunt', createSvgUri(`
@@ -280,6 +511,46 @@
                 this.isGameOver = false;
                 this.isPaused = false;
                 
+                // Trackers for Post-Run Analytics
+                this.enemiesDefeated = 0;
+                
+                // Mutation State Management
+                this.activeMutations = [];
+                this.scavengerActive = false;
+                this.trenchFootStacks = 0;
+                this.lastTrenchFootTime = 0;
+                this.consecutiveHits = 0;
+
+                this.mutationPool = [
+                    { id: 'scavenger', name: "Scavenger's Momentum", desc: "Collecting a coin grants +Speed and Invulnerability (1s)." },
+                    { id: 'trench_foot', name: "Trench Foot", desc: "Stand still to increase Fire Rate up to +50%. Moving resets it." },
+                    { id: 'executioner', name: "Executioner's Payload", desc: "Every 10th consecutive hit fires a 3x damage piercing missile." },
+                    { id: 'blood_money', name: "Blood Money", desc: "Uncollected coins act as proximity mines." },
+                    { id: 'pay_it_forward', name: "Pay It Forward", desc: "Whenever the Barricade takes damage, gain a massive 3s damage buff." },
+                    { id: 'kinetic_conversion', name: "Kinetic Conversion", desc: "Taking damage instantly reloads your current grenade." }
+                ];
+                
+                // Input handling & Keys
+                this.input.mouse.disableContextMenu(); 
+                this.fireKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL);
+                this.grenadeKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+                this.altKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q); 
+                this.swapKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+                this.dashKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT); 
+                
+                this.lastFiredTime = 0;
+                this.lastGrenadeTime = 0;
+                this.lastAltFireTime = -8000; 
+                this.altFireCooldown = 8000;
+                this.grenadeFired = false;
+                this.altFired = false;
+                this.swapFired = false;
+                this.dashFired = false;
+                this.lastDashTime = -5000;
+                this.isDashing = false;
+                this.frenzyActive = false;
+                this.frenzyEndTime = 0;
+                
                 // Clear UI Overlays on Start
                 document.getElementById('pause-screen').style.display = 'none';
                 document.getElementById('choice-screen').style.display = 'none';
@@ -291,7 +562,6 @@
                 if (btnPause) { btnPause.innerText = '⏸️ PAUSE'; btnPause.classList.remove('active'); }
 
                 this.currentWave = 1;
-                this.isIntro = true; 
                 this.startTime = this.time.now;
                 this.isIntermission = false; 
                 this.choicePending = false;
@@ -302,64 +572,50 @@
                 this.nextPhaseTime = this.time.now + this.waveActiveTime;
                 this.lastSpawnTime = 0;
                 
-                // --- RUN-BASED STATS ---
-                this.runStats = {
-                    dmgLvl: 0,
-                    spdLvl: 0,
-                    moveLvl: 0,
-                    maxHpLvl: 0,
-                    barricadeLvl: 0
-                };
+                // Meta Progression Base Stats (VITALITY ADDED HERE)
+                this.lives = 3 + (window.saveData.upgrades.armor || 0);
+                this.maxHpScaling = 5 + (window.saveData.upgrades.vitality || 0);
                 
-                this.lives = 3;
                 this.sessionCoins = 0;
-                
-                // Weapon Economy Definitions
-                this.gunPrices = [0, 15, 35, 75, 150, 300, 600, 1200];
+                this.sessionGrenades = window.saveData.upgrades.grenades || 0;
+                this.baseMoveSpeed = 450 * (1 + (window.saveData.upgrades.speed * 0.1));
+
+                // --- ARSENAL DEFINITIONS ---
                 this.gunTiers = [
-                    { name: 'Pea Shooter', speed: 600, delay: 150, damage: 1, ammo: Infinity }, 
-                    { name: 'Heavy Pistol', speed: 700, delay: 130, damage: 2, ammo: Infinity },
-                    { name: 'Uzi', speed: 800, delay: 100, damage: 3, ammo: Infinity }, 
-                    { name: 'AK-47', speed: 900, delay: 80, damage: 5, ammo: 200 }, 
-                    { name: 'Assault Rifle', speed: 1000, delay: 60, damage: 8, ammo: 250 }, 
-                    { name: 'LMG', speed: 1100, delay: 40, damage: 12, ammo: 300 }, 
-                    { name: 'Heavy MG', speed: 1200, delay: 25, damage: 18, ammo: 400 }, 
-                    { name: 'Gatling Gun', speed: 1400, delay: 15, damage: 25, ammo: 500 } 
+                    { name: 'Pea Shooter', speed: 600, delay: 150, damage: 1, pattern: 'single', element: 'none' }, 
+                    { name: 'Heavy Pistol', speed: 700, delay: 130, damage: 2, pattern: 'single', element: 'none' },
+                    { name: 'Uzi', speed: 800, delay: 100, damage: 3, pattern: 'burst', element: 'none' }, 
+                    { name: 'AK-47', speed: 900, delay: 80, damage: 5, pattern: 'single', element: 'fire' }, 
+                    { name: 'Assault Rifle', speed: 1000, delay: 60, damage: 8, pattern: 'twin', element: 'fire' }, 
+                    { name: 'LMG', speed: 1100, delay: 40, damage: 12, pattern: 'spread', element: 'ice' }, 
+                    { name: 'Heavy MG', speed: 1200, delay: 25, damage: 18, pattern: 'twin_spread', element: 'ice' }, 
+                    { name: 'Gatling Gun', speed: 1400, delay: 15, damage: 25, pattern: 'gatling', element: 'ice' } 
                 ];
                 
-                this.currentGunTier = 0;
-                this.baseDamage = this.gunTiers[0].damage;
-                this.baseFireDelay = this.gunTiers[0].delay;
-                this.bulletSpeed = this.gunTiers[0].speed;
-                this.currentAmmo = Infinity;
+                // --- WEAPON SWAP LOGIC ---
+                const maxUnlocked = Math.min(this.gunTiers.length - 1, window.saveData.upgrades.weapon || 0);
+                this.unlockedGuns = [];
+                for (let i = 0; i <= maxUnlocked; i++) this.unlockedGuns.push(i);
                 
-                this.playerProjectiles = 1; 
+                this.activeWeaponIndex = this.unlockedGuns.length - 1; // Default to best weapon
+                this.currentGunTier = this.unlockedGuns[this.activeWeaponIndex];
+                
+                this.vengeanceBonus = 0;
+                this.bonusDamage = 0;
+                this.bonusFireDelay = 0;
+                this.gateMaxLimit = 1; 
                 this.fireLeft = true;
-                this.allyExpirationTime = 0;
 
                 this.boundaryCenter = 300;
                 this.boundaryWidth = 160; 
                 this.maxBoundaryWidth = 600;
                 
-                // --- DYNAMIC SCROLLING ENVIRONMENT ---
-                this.bgBase = this.add.rectangle(300, 400, 600, 800, 0x050505).setDepth(-20);
-                this.roadSurface = this.add.rectangle(300, 400, this.boundaryWidth, 800, 0x111111).setDepth(-15);
-                
-                this.roadLines = this.add.group();
-                for(let i = 0; i < 8; i++) {
-                    let dash = this.add.rectangle(this.boundaryCenter, i * 150, 6, 60, 0x4ade80, 0.2).setDepth(-14);
-                    this.roadLines.add(dash);
-                }
-                
-                this.leftWallGlow = this.add.rectangle(this.boundaryCenter - (this.boundaryWidth / 2), 400, 16, 800, 0x4ade80, 0.1).setDepth(-15);
-                this.leftWall = this.add.rectangle(this.boundaryCenter - (this.boundaryWidth / 2), 400, 4, 800, 0x4ade80, 0.5).setDepth(-14);
-                
-                this.rightWallGlow = this.add.rectangle(this.boundaryCenter + (this.boundaryWidth / 2), 400, 16, 800, 0x4ade80, 0.1).setDepth(-15);
-                this.rightWall = this.add.rectangle(this.boundaryCenter + (this.boundaryWidth / 2), 400, 4, 800, 0x4ade80, 0.5).setDepth(-14);
-                
-                this.engagementLine = this.add.rectangle(300, 100, 600, 2, 0x4ade80, 0.2).setDepth(-14);
-                
+                this.bgGrid = this.add.grid(300, 400, 800, 1000, 40, 40, 0x050505, 1, 0x111111, 0.5).setDepth(-10);
                 this.bloodLayer = this.add.group();
+
+                this.leftWall = this.add.rectangle(this.boundaryCenter - (this.boundaryWidth / 2), 400, 2, 800, 0x00ffff, 0.3);
+                this.rightWall = this.add.rectangle(this.boundaryCenter + (this.boundaryWidth / 2), 400, 2, 800, 0x00ffff, 0.3);
+                this.engagementLine = this.add.rectangle(300, 100, 600, 2, 0x00ffff, 0.5);
 
                 this.waveDisplayUI = this.add.text(20, 130, 'WAVE 1', { fontSize: '18px', fill: '#ffffff', fontStyle: 'bold' }).setDepth(100);
                 this.waveText = this.add.text(300, -100, 'WAVE 1', { fontSize: '50px', fill: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
@@ -367,7 +623,6 @@
                 this.tweens.add({
                     targets: this.waveText, y: 400, ease: 'Bounce.easeOut', duration: 1000,
                     onComplete: () => {
-                        this.cameras.main.shake(200, 0.02);
                         this.time.delayedCall(1000, () => {
                             this.tweens.add({ targets: this.waveText, scaleX: 3, scaleY: 3, alpha: 0, duration: 300 });
                             this.explodeWaveText(this.waveText.x, this.waveText.y);
@@ -375,28 +630,35 @@
                     }
                 });
 
-                this.player = this.physics.add.sprite(300, 600, 'player_0').setDepth(10);
-                this.player.maxHp = 5;
+                this.player = this.physics.add.sprite(300, 600, 'player_' + this.currentGunTier).setDepth(10);
+                this.player.maxHp = this.maxHpScaling; 
                 this.player.hp = this.player.maxHp; 
                 this.player.isInvulnerable = false; 
+                this.player.scavengerInvuln = false; 
                 this.cursors = this.input.keyboard.createCursorKeys();
                 
                 this.healthText = this.add.text(20, 20, '', { fontSize: '24px' }).setDepth(100);
-                this.livesTextUI = this.add.text(20, 45, `LIVES: 3`, { fontSize: '14px', fill: '#ff3333', fontStyle: 'bold' }).setDepth(100);
+                this.livesTextUI = this.add.text(20, 45, `LIVES: ${this.lives}`, { fontSize: '14px', fill: '#ff3333', fontStyle: 'bold' }).setDepth(100);
+                this.updateHealthUI();
+
                 this.statsText = this.add.text(20, 65, '', { fontSize: '12px', fill: '#00ffff', lineHeight: 1.5 }).setDepth(100);
+                
+                // Initialize Gun Stats correctly now that all UI elements are created
+                this.updateGunStats();
                 
                 this.coinGroup = this.physics.add.group();
                 this.coinTextUI = this.add.text(450, 20, `COINS: 0`, { fontSize: '18px', fill: '#fde047', fontStyle: 'bold' }).setDepth(100);
                 this.coinBankUI = this.add.text(450, 42, `BANK: ${window.saveData.coins}`, { fontSize: '12px', fill: '#ca8a04' }).setDepth(100);
+                
+                this.altTextUI = this.add.text(450, 65, 'OVERCHARGE: READY', { fontSize: '12px', fill: '#a855f7', fontStyle: 'bold' }).setDepth(100);
+                this.dashTextUI = this.add.text(450, 80, '', { fontSize: '12px', fill: '#ff9933', fontStyle: 'bold' }).setDepth(100);
+                
+                if((window.saveData.upgrades.evasion || 0) > 0) this.dashTextUI.setText('DASH: READY');
 
                 this.input.addPointer(1); 
 
                 this.barricades = this.physics.add.group();
                 this.buildBarricades();
-
-                this.allies = [];
-                this.allyGroup = this.physics.add.group(); 
-                this.allyOffsets = [ { x: -25, y: 20 }, { x: 25, y: 20 }, { x: -50, y: 40 }, { x: 50, y: 40 }, { x: 0, y: 40 } ];
 
                 this.bullets = this.physics.add.group();
                 this.enemies = this.physics.add.group();
@@ -408,108 +670,67 @@
                 this.physics.add.overlap(this.player, this.gates, this.collectGate, null, this); 
                 this.physics.add.overlap(this.player, this.enemies, this.hitPlayer, null, this); 
                 this.physics.add.overlap(this.player, this.enemyBullets, this.hitPlayer, null, this); 
-                this.physics.add.overlap(this.allyGroup, this.enemies, this.hitAlly, null, this); 
-                this.physics.add.overlap(this.allyGroup, this.enemyBullets, this.hitAlly, null, this); 
                 this.physics.add.overlap(this.barricades, this.enemies, this.hitBarricade, null, this);
                 this.physics.add.overlap(this.barricades, this.enemyBullets, this.hitBarricade, null, this);
 
-                this.fireTimer = this.time.addEvent({ delay: 1000, callback: this.fireBullet, callbackScope: this, loop: true });
-                this.updatePlayerStats(); 
-                
-                this.time.addEvent({ delay: 25000, callback: this.spawnGate, callbackScope: this, loop: true });
+                this.time.addEvent({ delay: 15000, callback: this.spawnGate, callbackScope: this, loop: true });
             }
-
-            // --- RUN STAT MANAGERS ---
-            updatePlayerStats() {
-                this.bonusDamage = this.runStats.dmgLvl;
-                this.bonusFireDelay = this.runStats.spdLvl * 5;
-                this.playerDamage = this.baseDamage + this.bonusDamage;
-                
-                this.fireDelay = Math.max(15, this.baseFireDelay - this.bonusFireDelay);
-                if (this.fireTimer) this.fireTimer.delay = this.fireDelay;
-                
-                this.baseMoveSpeed = 450 * (1 + (this.runStats.moveLvl * 0.1));
-                
-                this.player.maxHp = 5 + this.runStats.maxHpLvl;
-                
-                this.updateStatsUI();
-                this.updateHealthUI();
-                this.updateLivesUI();
-            }
-
-            equipWeapon(tierIndex) {
-                if (this.devMaxStatsActive) return; 
-                this.currentGunTier = tierIndex;
-                this.player.setTexture('player_' + this.currentGunTier);
+            
+            updateGunStats() {
                 const tierStats = this.gunTiers[this.currentGunTier];
+                this.baseDamage = tierStats.damage;
+                this.baseFireDelay = tierStats.delay;
+                this.bulletSpeed = tierStats.speed;
+                this.playerDamage = this.baseDamage + this.bonusDamage;
+                this.fireDelay = Math.max(15, this.baseFireDelay - this.bonusFireDelay);
                 
-                this.baseDamage = tierStats.damage; 
-                this.baseFireDelay = tierStats.delay; 
-                this.bulletSpeed = tierStats.speed; 
-                this.currentAmmo = tierStats.ammo; 
-                
-                this.updatePlayerStats();
-                
-                this.cameras.main.flash(300, 255, 255, 0);
-                const floatText = this.add.text(this.player.x, this.player.y - 30, `${tierStats.name} EQUIPPED`, { fontSize: '16px', fill: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
-                this.tweens.add({ targets: floatText, y: this.player.y - 70, alpha: 0, duration: 1500, onComplete: () => floatText.destroy() });
-            }
-
-            upgradeStat(statName) {
-                if (statName === 'dmg') this.runStats.dmgLvl++;
-                else if (statName === 'spd') this.runStats.spdLvl++;
-                else if (statName === 'move') this.runStats.moveLvl++;
-                else if (statName === 'maxhp') {
-                    this.runStats.maxHpLvl++;
-                    this.healPlayer(1); 
+                if(this.player && this.player.active) {
+                    this.player.setTexture('player_' + this.currentGunTier);
+                    this.cameras.main.shake(100, 0.01);
                 }
-                else if (statName === 'barricade') {
-                    this.runStats.barricadeLvl++;
-                    this.barricades.children.each(b => { 
-                        b.maxHp = Math.floor(100 * (1 + (this.runStats.barricadeLvl * 0.1)));
-                        b.hp = b.maxHp; 
-                        b.setAlpha(1); 
-                    });
-                }
-                this.updatePlayerStats();
-                this.cameras.main.flash(200, 0, 255, 100);
+                this.updateStatsUI();
             }
 
-            deployAlly() {
-                if (this.allies.length === 0) {
-                    const ally = this.physics.add.sprite(this.player.x + this.allyOffsets[0].x, this.player.y + this.allyOffsets[0].y, 'ally');
-                    ally.hp = 2; this.allyGroup.add(ally); this.allies.push(ally);
-                    this.allyExpirationTime = this.time.now + 30000;
-                } else {
-                    this.allyExpirationTime += 30000;
-                    this.allies[0].hp = 2; this.allies[0].setAlpha(1); this.allies[0].clearTint();
-                    if (this.allies[0].pulseTween) { this.allies[0].pulseTween.stop(); this.allies[0].pulseTween = null; }
-                }
-                this.cameras.main.flash(200, 0, 100, 255);
-            }
-
-            healPlayer(amount = 1) {
-                this.player.hp = Math.min(this.player.maxHp, this.player.hp + amount);
-                this.updateHealthUI();
-                this.player.setTintFill(0x00ff00);
-                this.time.delayedCall(150, () => { if(this.player) this.player.clearTint(); });
-            }
-
-            refillAmmo() {
-                if (this.gunTiers[this.currentGunTier].ammo !== Infinity) {
-                    this.currentAmmo = this.gunTiers[this.currentGunTier].ammo;
+            // Dev Tool Methods
+            toggleMaxStats() {
+                this.devMaxStatsActive = !this.devMaxStatsActive;
+                if (this.devMaxStatsActive) {
+                    this.savedStats = { 
+                        dmg: this.bonusDamage, 
+                        spd: this.bonusFireDelay, 
+                        hp: this.player.hp, 
+                        maxHp: this.player.maxHp,
+                        grenades: this.sessionGrenades
+                    };
+                    this.bonusDamage = 999;
+                    this.playerDamage = this.baseDamage + this.bonusDamage;
+                    this.bonusFireDelay = this.baseFireDelay - 15;
+                    this.fireDelay = 15;
+                    this.player.maxHp = 999;
+                    this.player.hp = 999;
+                    this.sessionGrenades = 99;
+                    this.updateHealthUI();
                     this.updateStatsUI();
-                    this.cameras.main.flash(200, 255, 255, 0);
+                } else if (this.savedStats) {
+                    this.bonusDamage = this.savedStats.dmg;
+                    this.bonusFireDelay = this.savedStats.spd;
+                    this.player.hp = this.savedStats.hp;
+                    this.player.maxHp = this.savedStats.maxHp;
+                    this.sessionGrenades = this.savedStats.grenades;
+                    
+                    this.playerDamage = this.baseDamage + this.bonusDamage;
+                    this.fireDelay = Math.max(15, this.baseFireDelay - this.bonusFireDelay);
+                    this.updateHealthUI();
+                    this.updateStatsUI();
                 }
             }
 
-            repairBarricades() {
-                this.barricades.children.each(b => {
-                    b.hp = b.maxHp;
-                    b.setAlpha(1);
-                });
-                this.buildBarricades();
-                this.cameras.main.shake(200, 0.01);
+            devForceNextWave() {
+                if (this.isGameOver || this.choicePending || this.isIntermission) return;
+                this.spawningActive = false;
+                this.nextPhaseTime = this.time.now;
+                this.enemies.clear(true, true);
+                this.enemyBullets.clear(true, true);
             }
 
             getTierColor() {
@@ -518,36 +739,48 @@
                 return colors[Math.min(tier, colors.length - 1)];
             }
 
-            updateHealthUI() { this.healthText.setText('❤️'.repeat(Math.max(0, this.player.hp))); }
+            updateHealthUI() { 
+                if(!this.healthText) return;
+                this.healthText.setText('❤️'.repeat(Math.max(0, this.player.hp))); 
+            }
             updateLivesUI() { this.livesTextUI.setText(`LIVES: ${this.lives}`); }
 
             updateStatsUI() {
-                const bps = (1000 / this.fireDelay).toFixed(1);
-                const ammoDisplay = this.gunTiers[this.currentGunTier].ammo === Infinity ? 'INF' : this.currentAmmo;
-                this.statsText.setText(`WPN: ${this.gunTiers[this.currentGunTier].name.toUpperCase()}\nDMG: ${this.playerDamage}\nSPD: ${this.bulletSpeed}\nBPS: ${bps}\nAMMO: ${ammoDisplay}`);
-            }
-
-            downgradeWeapon() {
-                this.currentGunTier = this.currentWave >= 2 ? 2 : 1; 
-                this.player.setTexture('player_' + this.currentGunTier);
-                const tierStats = this.gunTiers[this.currentGunTier];
-                this.baseDamage = tierStats.damage; this.baseFireDelay = tierStats.delay; this.bulletSpeed = tierStats.speed; this.currentAmmo = Infinity;
-                this.updatePlayerStats();
+                if(!this.statsText) return; // Guard to prevent accessing before initialization
+                let activeFireDelay = this.fireDelay;
+                if (this.trenchFootStacks > 0) {
+                    activeFireDelay = Math.max(15, activeFireDelay * (1 - (this.trenchFootStacks * 0.1)));
+                }
+                if (this.frenzyActive) {
+                    activeFireDelay = Math.max(10, activeFireDelay * 0.4);
+                }
+                const bps = (1000 / activeFireDelay).toFixed(1);
                 
-                const feedback = this.add.text(this.player.x, this.player.y - 40, `OUT OF AMMO!`, { fontSize: '16px', fill: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
-                this.tweens.add({ targets: feedback, y: this.player.y - 80, alpha: 0, duration: 1500, onComplete: () => feedback.destroy() });
+                let extraStr = '';
+                if (this.activeMutations.includes('executioner')) extraStr += `\nCOMBO: ${this.consecutiveHits}/10`;
+                if (this.trenchFootStacks > 0) extraStr += `\nTRENCH FOOT: +${this.trenchFootStacks * 10}%`;
+                if (this.frenzyActive) {
+                    const frenzLeft = ((this.frenzyEndTime - this.time.now) / 1000).toFixed(1);
+                    extraStr += `\nFRENZY: ${frenzLeft}s`;
+                }
+
+                const totalDmg = this.playerDamage + (this.vengeanceBonus || 0);
+
+                const element = this.gunTiers[this.currentGunTier].element;
+                let elemStr = '';
+                if (element === 'fire') elemStr = ' [INCENDIARY]';
+                if (element === 'ice') elemStr = ' [CRYO]';
+
+                this.statsText.setText(`WPN: ${this.gunTiers[this.currentGunTier].name.toUpperCase()}${elemStr}\nDMG: ${totalDmg}\nSPD: ${this.bulletSpeed}\nBPS: ${bps}\nBOMBS: ${this.sessionGrenades}${extraStr}`);
             }
 
             addSingleBarricade(bx) {
-                let exists = false;
-                this.barricades.children.each(b => { if (Math.abs(b.x - bx) < 5) exists = true; });
-                if (exists) return;
-
                 const block = this.physics.add.sprite(bx, 720, 'barricade').setDepth(5);
                 block.setImmovable(true);
-                block.maxHp = Math.floor(100 * (1 + (this.runStats.barricadeLvl * 0.1)));
+                block.maxHp = Math.floor(100 * (1 + (window.saveData.upgrades.barricade * 0.1)));
                 block.hp = block.maxHp;
                 this.barricades.add(block);
+                return block;
             }
 
             buildBarricades() {
@@ -557,30 +790,58 @@
             }
 
             expandArena() {
-                if (this.boundaryWidth < this.maxBoundaryWidth) {
-                    this.boundaryWidth = Math.min(this.maxBoundaryWidth, this.boundaryWidth + 80); 
-                    
-                    this.roadSurface.width = this.boundaryWidth;
-                    
-                    this.leftWall.x = this.boundaryCenter - (this.boundaryWidth / 2);
-                    this.leftWallGlow.x = this.leftWall.x;
-                    
-                    this.rightWall.x = this.boundaryCenter + (this.boundaryWidth / 2);
-                    this.rightWallGlow.x = this.rightWall.x;
-                    
-                    const leftBx = this.boundaryCenter - (this.boundaryWidth / 2) + 20;
-                    const rightBx = this.boundaryCenter + (this.boundaryWidth / 2) - 20;
-                    this.addSingleBarricade(leftBx);
-                    this.addSingleBarricade(rightBx);
+                if (this.boundaryWidth >= this.maxBoundaryWidth) return;
+                
+                const newWidth = Math.min(this.maxBoundaryWidth, this.boundaryWidth + 80);
+                const targetLeftX = this.boundaryCenter - (newWidth / 2);
+                const targetRightX = this.boundaryCenter + (newWidth / 2);
+
+                this.cameras.main.shake(1500, 0.01); 
+
+                const warnText = this.add.text(300, 400, 'WARNING: SECTOR EXPANDING', { fontSize: '24px', fill: '#fde047', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+                this.tweens.add({ targets: warnText, alpha: 0, duration: 1500, onComplete: () => warnText.destroy() });
+
+                if (this.leftWall && this.leftWall.active) {
+                    this.tweens.add({ targets: [this.leftWall], x: targetLeftX, duration: 1500, ease: 'Power2' });
                 }
+
+                if (this.rightWall && this.rightWall.active) {
+                    this.tweens.add({
+                        targets: [this.rightWall],
+                        x: targetRightX,
+                        duration: 1500,
+                        ease: 'Power2',
+                        onUpdate: (tween, target) => {
+                            this.boundaryWidth = (target.x - this.boundaryCenter) * 2;
+                        },
+                        onComplete: () => {
+                            this.boundaryWidth = newWidth;
+                            const leftBx = this.boundaryCenter - (this.boundaryWidth / 2) + 20;
+                            const rightBx = this.boundaryCenter + (this.boundaryWidth / 2) - 20;
+                            
+                            const b1 = this.addSingleBarricade(leftBx);
+                            const b2 = this.addSingleBarricade(rightBx);
+                            if (b1) { b1.setScale(0); this.tweens.add({targets: b1, scale: 1, duration: 300, ease: 'Back.easeOut'}); }
+                            if (b2) { b2.setScale(0); this.tweens.add({targets: b2, scale: 1, duration: 300, ease: 'Back.easeOut'}); }
+                        }
+                    });
+                }
+
+                this.time.addEvent({
+                    delay: 100, repeat: 14,
+                    callback: () => {
+                        if(this.leftWall && this.leftWall.active) this.spawnGore(this.leftWall.x, Phaser.Math.Between(200, 800), 2, 0x888888);
+                        if(this.rightWall && this.rightWall.active) this.spawnGore(this.rightWall.x, Phaser.Math.Between(200, 800), 2, 0x888888);
+                    }
+                });
             }
 
-            // --- PROGRESSION & INTERMISSION LOGIC ---
             startIntermission() {
                 const clearedWave = this.currentWave; 
                 this.isIntermission = true;
                 this.bossSpawned = false; 
                 this.currentWave++;
+                this.gateMaxLimit++;
                 this.nextPhaseTime = this.time.now + this.intermissionTime;
 
                 this.waveText.setText(`WAVE ${this.currentWave}`);
@@ -588,15 +849,6 @@
                 this.waveText.scale = 1;
                 this.waveText.setAlpha(1);
                 this.waveDisplayUI.setText(`WAVE ${this.currentWave}`);
-
-                // Update environmental glow colors based on Tier
-                const newColor = this.getTierColor();
-                this.leftWall.fillColor = newColor;
-                this.leftWallGlow.fillColor = newColor;
-                this.rightWall.fillColor = newColor;
-                this.rightWallGlow.fillColor = newColor;
-                this.engagementLine.fillColor = newColor;
-                this.roadLines.children.each(dash => dash.fillColor = newColor);
 
                 this.bloodLayer.getChildren().forEach(b => {
                     this.tweens.add({ targets: b, alpha: 0, duration: 1500, onComplete: () => b.destroy() });
@@ -606,23 +858,86 @@
                     targets: this.waveText,
                     y: 400, ease: 'Bounce.easeOut', duration: 1000,
                     onComplete: () => {
-                        this.cameras.main.shake(200, 0.02);
                         if (clearedWave % 4 === 0) this.expandArena();
                     }
                 });
             }
 
             handleWaveChoice(clearedWave) {
-                document.getElementById('choice-title').innerText = `WAVE ${clearedWave} CLEARED!`;
+                const title = document.getElementById('choice-title');
+                title.innerHTML = `WAVE ${clearedWave} CLEARED!`;
+                title.style.color = '#ff3333';
+                title.style.textShadow = '0 0 15px #aa0000';
+
+                document.getElementById('choice-buttons').style.display = 'flex';
+                document.getElementById('btn-choice-shop').style.display = 'inline-block';
                 document.getElementById('btn-choice-continue').innerText = 'CONTINUE RUN';
+                
+                document.getElementById('draft-container').style.display = 'none';
                 document.getElementById('choice-screen').style.display = 'flex';
 
                 window.choiceContinueCallback = () => { this.resumeAfterChoice(); };
                 window.shopCloseCallback = () => { this.resumeAfterChoice(); };
             }
 
+            handleBossDraft(clearedWave) {
+                const title = document.getElementById('choice-title');
+                title.innerHTML = `BOSS DEFEATED: DRAFT MUTATION`;
+                title.style.color = '#d8b4fe';
+                title.style.textShadow = '0 0 20px #a855f7';
+
+                document.getElementById('choice-buttons').style.display = 'none';
+                
+                const draftContainer = document.getElementById('draft-container');
+                draftContainer.style.display = 'flex';
+                draftContainer.innerHTML = '';
+
+                let available = this.mutationPool.filter(m => !this.activeMutations.includes(m.id));
+                if (available.length < 3) available = [...this.mutationPool]; 
+                
+                Phaser.Utils.Array.Shuffle(available);
+                const choices = available.slice(0, 3);
+
+                choices.forEach((mut) => {
+                    const card = document.createElement('div');
+                    card.className = 'mutation-card';
+                    card.innerHTML = `<h3>${mut.name}</h3><p>${mut.desc}</p>`;
+                    
+                    card.onclick = () => {
+                        this.activeMutations.push(mut.id);
+                        this.updateStatsUI(); 
+                        
+                        card.style.background = '#fff';
+                        card.style.transform = 'scale(1.1)';
+                        
+                        const flash = this.add.rectangle(300, 400, 600, 800, 0xd8b4fe, 0.4).setDepth(1000);
+                        this.tweens.add({ targets: flash, alpha: 0, duration: 500, onComplete: () => flash.destroy() });
+                        
+                        const floatText = this.add.text(300, 300, `MUTATION ACQUIRED:\n${mut.name}`, { fontSize: '24px', fill: '#d8b4fe', fontStyle: 'bold', align: 'center' }).setOrigin(0.5).setDepth(1001);
+                        this.tweens.add({ targets: floatText, y: 200, alpha: 0, duration: 2500, onComplete: () => floatText.destroy() });
+
+                        setTimeout(() => {
+                            document.getElementById('choice-screen').style.display = 'none';
+                            this.resumeAfterChoice();
+                        }, 250);
+                    };
+                    draftContainer.appendChild(card);
+                });
+
+                document.getElementById('choice-screen').style.display = 'flex';
+            }
+
             handleDeathChoice() {
-                document.getElementById('choice-title').innerText = `SYSTEM BREACH! LIVES: ${this.lives}`;
+                const title = document.getElementById('choice-title');
+                
+                title.innerHTML = `SYSTEM BREACH!<br><span style="font-size:18px; color:#aaa; text-shadow:none; display:block; margin-top:10px;">WAVES SURVIVED: <span style="color:#fff;">${this.currentWave}</span> &nbsp;|&nbsp; KILLS: <span style="color:#fff;">${this.enemiesDefeated}</span> &nbsp;|&nbsp; COINS EXTRACTED: <span style="color:#fde047;">${this.sessionCoins}</span></span>`;
+                title.style.color = '#ff3333';
+                title.style.textShadow = '0 0 15px #aa0000';
+
+                document.getElementById('choice-buttons').style.display = 'flex';
+                document.getElementById('btn-choice-shop').style.display = 'none';
+                document.getElementById('draft-container').style.display = 'none';
+
                 document.getElementById('btn-choice-continue').innerText = 'RESPAWN';
                 document.getElementById('choice-screen').style.display = 'flex';
 
@@ -636,20 +951,173 @@
                 this.physics.resume();
             }
 
+            // --- PHASE 3C: FLOATING COMBAT TEXT AGGREGATOR ---
+            popDamageText(x, y, amount, isSpecial = false) {
+                const color = isSpecial ? '#ffaa00' : '#ffffff';
+                const size = isSpecial ? '20px' : '12px';
+                const strAmt = amount > 1000 ? (amount/1000).toFixed(1) + 'k' : amount.toString();
+                
+                const text = this.add.text(x, y - 10, strAmt, { fontSize: size, fill: color, fontStyle: 'bold' }).setOrigin(0.5).setDepth(150);
+                this.tweens.add({ targets: text, y: y - 50, alpha: 0, duration: 400, ease: 'Cubic.easeOut', onComplete: () => text.destroy() });
+            }
+
             update() {
-                if (this.isGameOver) return;
+                if (this.isGameOver || this.choicePending) return;
                 const now = this.time.now;
 
-                // Move environment down to simulate flight/driving
-                this.roadLines.children.each(dash => {
-                    dash.y += 3 + (this.currentWave * 0.2);
-                    if(dash.y > 850) dash.y = -100;
-                });
+                this.bgGrid.y += 1;
+                if (this.bgGrid.y > 440) this.bgGrid.y = 400;
 
-                if (this.currentWave === 1 && this.isIntro && now > this.startTime + 10000) {
-                    this.isIntro = false;
+                // --- INPUTS ---
+                const pointer = this.input.activePointer;
+                const pointerFire = pointer.isDown && pointer.leftButtonDown();
+                const pointerGrenade = pointer.isDown && pointer.rightButtonDown();
+                
+                const wantsToFire = this.fireKey.isDown || pointerFire || window.inputState.fire;
+                const wantsToGrenade = Phaser.Input.Keyboard.JustDown(this.grenadeKey) || pointerGrenade || window.inputState.grenade;
+                const wantsToAlt = Phaser.Input.Keyboard.JustDown(this.altKey) || window.inputState.alt;
+                const wantsToSwap = Phaser.Input.Keyboard.JustDown(this.swapKey) || window.inputState.swap;
+                const wantsToDash = Phaser.Input.Keyboard.JustDown(this.dashKey) || window.inputState.dash;
+
+                // --- PHASE 4A: WEAPON SWAP LOGIC ---
+                if (wantsToSwap && this.unlockedGuns.length > 1 && !this.swapFired) {
+                    this.activeWeaponIndex = (this.activeWeaponIndex + 1) % this.unlockedGuns.length;
+                    this.currentGunTier = this.unlockedGuns[this.activeWeaponIndex];
+                    this.updateGunStats();
+                    this.swapFired = true;
+                    
+                    const swapText = this.add.text(this.player.x, this.player.y - 40, 'SWAPPED', { fontSize: '14px', fill: '#3399ff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+                    this.tweens.add({ targets: swapText, y: this.player.y - 70, alpha: 0, duration: 500, onComplete: () => swapText.destroy() });
+                }
+                if (!wantsToSwap) this.swapFired = false;
+
+                // Update UI Timers
+                if (now < this.lastAltFireTime + this.altFireCooldown) {
+                    const left = ((this.lastAltFireTime + this.altFireCooldown - now) / 1000).toFixed(1);
+                    this.altTextUI.setText(`OVERCHARGE: ${left}s`);
+                    this.altTextUI.setFill('#888888');
+                } else {
+                    this.altTextUI.setText('OVERCHARGE: READY');
+                    this.altTextUI.setFill('#a855f7');
                 }
 
+                // --- PHASE 2B: EVASION TACTICS (DASH) ---
+                const evasionLvl = window.saveData.upgrades.evasion || 0;
+                const dashCooldown = Math.max(1000, 5000 - (evasionLvl * 1000));
+                
+                if (evasionLvl > 0) {
+                    if (now < this.lastDashTime + dashCooldown) {
+                        const left = ((this.lastDashTime + dashCooldown - now) / 1000).toFixed(1);
+                        this.dashTextUI.setText(`DASH: ${left}s`);
+                        this.dashTextUI.setFill('#888888');
+                    } else {
+                        this.dashTextUI.setText('DASH: READY');
+                        this.dashTextUI.setFill('#ff9933');
+                    }
+                }
+
+                if (wantsToDash && evasionLvl > 0 && now > this.lastDashTime + dashCooldown && !this.dashFired) {
+                    this.isDashing = true;
+                    this.player.isInvulnerable = true;
+                    this.lastDashTime = now;
+                    this.dashFired = true;
+                    
+                    let dir = 0;
+                    if (this.cursors.left.isDown) dir = -1;
+                    else if (this.cursors.right.isDown) dir = 1;
+                    else dir = this.fireLeft ? -1 : 1; // Default to fire side if stationary
+                    
+                    this.player.body.setVelocityX(dir * 1200);
+                    this.cameras.main.shake(100, 0.01);
+                    
+                    // Dash Ghost Trail
+                    this.time.addEvent({
+                        delay: 30, repeat: 4, callback: () => {
+                            if (!this.player || !this.player.active) return;
+                            const ghost = this.add.sprite(this.player.x, this.player.y, 'player_' + this.currentGunTier).setDepth(9);
+                            ghost.setTint(0xff9933);
+                            ghost.setAlpha(0.5);
+                            this.tweens.add({ targets: ghost, alpha: 0, duration: 300, onComplete: () => ghost.destroy() });
+                        }
+                    });
+
+                    this.time.delayedCall(200, () => {
+                        this.isDashing = false;
+                        this.player.isInvulnerable = false;
+                    });
+                }
+                if (!wantsToDash) this.dashFired = false;
+
+                // --- MUTATION: Trench Foot Handling ---
+                const touchLeft = pointer.isDown && pointer.x < this.player.x - 15 && pointer.y < 700;
+                const touchRight = pointer.isDown && pointer.x > this.player.x + 15 && pointer.y < 700;
+                const touchUp = pointer.isDown && pointer.y < this.player.y - 15 && pointer.y < 700;
+                const touchDown = pointer.isDown && pointer.y > this.player.y + 15 && pointer.y < 700;
+                
+                const isMoving = this.cursors.left.isDown || this.cursors.right.isDown || this.cursors.up.isDown || this.cursors.down.isDown || touchLeft || touchRight || touchUp || touchDown;
+                
+                if (this.activeMutations.includes('trench_foot')) {
+                    if (isMoving) {
+                        if (this.trenchFootStacks > 0) {
+                            this.trenchFootStacks = 0;
+                            this.updateStatsUI();
+                        }
+                    } else {
+                        if (now > this.lastTrenchFootTime + 1000) {
+                            if (this.trenchFootStacks < 5) {
+                                this.trenchFootStacks++;
+                                this.updateStatsUI();
+                                const pulse = this.add.circle(this.player.x, this.player.y, 25, 0xffaa00, 0.5).setDepth(9);
+                                this.tweens.add({ targets: pulse, scale: 1.5, alpha: 0, duration: 400, onComplete: () => pulse.destroy() });
+                            }
+                            this.lastTrenchFootTime = now;
+                        }
+                    }
+                }
+
+                // --- PHASE 2C: FRENZY GATE TIMEOUT ---
+                if (this.frenzyActive && now > this.frenzyEndTime) {
+                    this.frenzyActive = false;
+                    this.updateStatsUI();
+                    const msg = this.add.text(this.player.x, this.player.y - 40, 'FRENZY ENDED', { fontSize: '14px', fill: '#ff5500', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+                    this.tweens.add({ targets: msg, y: this.player.y - 70, alpha: 0, duration: 800, onComplete: () => msg.destroy() });
+                }
+
+                // Dynamic Fire Rate calculation
+                let activeFireDelay = this.fireDelay;
+                if (this.trenchFootStacks > 0) activeFireDelay = Math.max(15, activeFireDelay * (1 - (this.trenchFootStacks * 0.1)));
+                if (this.frenzyActive) activeFireDelay = Math.max(10, activeFireDelay * 0.4);
+
+                // Handle Auto/Manual Firing
+                if (window.saveData.upgrades.autoFire > 0) {
+                    if (now > this.lastFiredTime + activeFireDelay) {
+                        this.fireBullet();
+                        this.lastFiredTime = now;
+                    }
+                } else {
+                    if (wantsToFire && now > this.lastFiredTime + activeFireDelay) {
+                        this.fireBullet();
+                        this.lastFiredTime = now;
+                    }
+                }
+
+                // Handle Grenade Firing
+                if (wantsToGrenade && now > this.lastGrenadeTime + 500 && this.sessionGrenades > 0 && !this.grenadeFired) {
+                    this.fireGrenade();
+                    this.lastGrenadeTime = now;
+                    this.grenadeFired = true;
+                }
+                if (!wantsToGrenade && (!pointer.isDown || !pointer.rightButtonDown())) this.grenadeFired = false;
+
+                // Handle Overcharge (Alt-Fire)
+                if (wantsToAlt && now > this.lastAltFireTime + this.altFireCooldown && !this.altFired) {
+                    this.fireAltWeapon();
+                    this.lastAltFireTime = now;
+                    this.altFired = true;
+                }
+                if (!wantsToAlt) this.altFired = false;
+
+                // Phase Timing & Spawning
                 if (this.isIntermission) {
                     if (now > this.nextPhaseTime) {
                         this.isIntermission = false;
@@ -667,7 +1135,7 @@
                         if (now > this.nextPhaseTime) {
                             this.spawningActive = false; 
                         } else {
-                            const spawnDelay = this.isIntro ? 2000 : Math.max(200, 800 - (this.currentWave * 80));
+                            const spawnDelay = Math.max(300, 1200 - (this.currentWave * 100));
                             if (now > this.lastSpawnTime + spawnDelay) {
                                 this.spawnEnemy();
                                 this.lastSpawnTime = now;
@@ -676,8 +1144,14 @@
                     } else {
                         if (this.enemies.countActive(true) === 0 && !this.choicePending) {
                             const clearedWave = this.currentWave; 
-                            
-                            if (clearedWave % 3 === 0) {
+                            if (clearedWave % 4 === 0) {
+                                this.choicePending = true;
+                                this.time.delayedCall(800, () => {
+                                    this.physics.pause();
+                                    this.handleBossDraft(clearedWave);
+                                });
+                                return;
+                            } else if (clearedWave % 3 === 0) {
                                 this.choicePending = true;
                                 this.time.delayedCall(800, () => {
                                     this.physics.pause();
@@ -690,22 +1164,22 @@
                     }
                 }
 
-                this.player.body.setVelocityX(0);
-                this.player.body.setVelocityY(0); 
+                // --- MOVEMENT ---
+                if (!this.isDashing) {
+                    this.player.body.setVelocityX(0);
+                    this.player.body.setVelocityY(0); 
 
-                const pointer = this.input.activePointer;
-                const touchLeft = pointer.isDown && pointer.x < this.player.x - 15;
-                const touchRight = pointer.isDown && pointer.x > this.player.x + 15;
-                const touchUp = pointer.isDown && pointer.y < this.player.y - 15;
-                const touchDown = pointer.isDown && pointer.y > this.player.y + 15;
+                    let currentSpeed = this.baseMoveSpeed;
+                    if (this.scavengerActive) currentSpeed *= 1.5;
 
-                if (this.cursors.left.isDown || touchLeft) this.player.body.setVelocityX(-this.baseMoveSpeed);
-                else if (this.cursors.right.isDown || touchRight) this.player.body.setVelocityX(this.baseMoveSpeed);
+                    if (this.cursors.left.isDown || touchLeft) this.player.body.setVelocityX(-currentSpeed);
+                    else if (this.cursors.right.isDown || touchRight) this.player.body.setVelocityX(currentSpeed);
 
-                if (this.cursors.up.isDown || touchUp) this.player.body.setVelocityY(-this.baseMoveSpeed);
-                else if (this.cursors.down.isDown || touchDown) this.player.body.setVelocityY(this.baseMoveSpeed);
+                    if (this.cursors.down.isDown || touchDown) this.player.body.setVelocityY(currentSpeed);
+                    else if (this.cursors.up.isDown || touchUp) this.player.body.setVelocityY(-currentSpeed);
 
-                this.player.setAngle(this.player.body.velocity.x * 0.015);
+                    this.player.setAngle(this.player.body.velocity.x * 0.015);
+                }
 
                 const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + 10;
                 const rightLimit = this.boundaryCenter + (this.boundaryWidth / 2) - 10;
@@ -715,40 +1189,112 @@
                 if (this.player.y < 200) this.player.y = 200; 
                 if (this.player.y > 680) this.player.y = 680;
 
-                this.allies.forEach((ally, index) => {
-                    ally.x = this.player.x + this.allyOffsets[index].x;
-                    ally.y = this.player.y + this.allyOffsets[index].y;
-                    ally.setAngle(this.player.body.velocity.x * 0.015);
-                });
-
-                if (this.allies.length > 0 && now > this.allyExpirationTime) {
-                    this.allies.forEach(ally => {
-                        if (ally.pulseTween) ally.pulseTween.stop();
-                        this.spawnGore(ally.x, ally.y, 8); 
-                        ally.destroy();
-                    });
-                    this.allies = [];
-                    this.allyGroup.clear(true, true);
-                } else if (this.allies.length > 0 && this.allyExpirationTime - now < 3000) {
-                    this.allies.forEach(ally => {
-                        if (Math.floor(now / 150) % 2 === 0) ally.setTintFill(0xff0000);
-                        else ally.clearTint();
-                    });
+                // Tints & Auras
+                if (this.scavengerActive && Math.random() > 0.5) {
+                    const trail = this.add.circle(this.player.x, this.player.y, 18, 0xfde047, 0.4).setDepth(9);
+                    this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 300, onComplete: () => trail.destroy() });
                 }
+
+                if (!this.player.isInvulnerable && !this.isDashing) { 
+                    if (this.frenzyActive) {
+                        this.player.setTint(0xff5500);
+                    } else if (this.scavengerActive) {
+                        this.player.setTint(0xfde047);
+                    } else if (this.trenchFootStacks > 0) {
+                        const colors = [0xffffff, 0xffddaa, 0xffbb55, 0xff9900, 0xff6600, 0xff0000];
+                        this.player.setTint(colors[this.trenchFootStacks]);
+                    } else {
+                        this.player.clearTint();
+                    }
+                }
+
+                // Magnetic Field Coin Pull
+                const magnetRadius = 50 + ((window.saveData.upgrades.magnet || 0) * 60); 
+                const hasBloodMoney = this.activeMutations.includes('blood_money');
 
                 this.coinGroup.children.each(coin => {
                     if (coin.active) {
                         if (coin.y > 850) { coin.destroy(); return; }
-                        const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, coin.x, coin.y);
-                        if (dist < 50) this.collectCoin(coin);
+                        
+                        if (hasBloodMoney) {
+                            let detonated = false;
+                            this.enemies.children.each(enemy => {
+                                if (detonated || !enemy.active || enemy.isDying) return;
+                                const dist = Phaser.Math.Distance.Between(coin.x, coin.y, enemy.x, enemy.y);
+                                if (dist < 60) { 
+                                    detonated = true;
+                                    this.triggerCoinMineExplosion(coin.x, coin.y);
+                                    coin.destroy();
+                                }
+                            });
+                            if (detonated) return; 
+                        }
+
+                        const distToPlayer = Phaser.Math.Distance.Between(this.player.x, this.player.y, coin.x, coin.y);
+                        if (distToPlayer < 40) {
+                            this.collectCoin(coin);
+                        } else if ((window.saveData.upgrades.magnet || 0) > 0 && distToPlayer < magnetRadius) {
+                            this.physics.moveToObject(coin, this.player, 500);
+                        }
                     }
                 });
 
-                this.bullets.children.each(b => { if (b.active && b.y < 100) b.destroy(); });
+                this.bullets.children.each(b => { 
+                    if (b.active && !b.isGrenade) {
+                        if (b.y < 100 && !b.isExecutioner) {
+                            if (b.isStandardBullet && this.consecutiveHits > 0) {
+                                this.consecutiveHits = 0; 
+                                this.updateStatsUI();
+                            }
+                            b.destroy(); 
+                        } else if (b.y < -100 && b.isExecutioner) {
+                            b.destroy(); 
+                        }
+                    }
+                    if (b.isExecutioner && b.active && Math.random() > 0.4) {
+                        const trail = this.add.circle(b.x, b.y, 6, 0xd8b4fe, 0.6).setDepth(7);
+                        this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 300, onComplete: () => trail.destroy() });
+                    }
+                });
+
                 this.enemyBullets.children.each(b => { if (b.active && (b.y > 900 || b.x < -100 || b.x > 700)) b.destroy(); });
 
+                // --- ENEMIES & FCT ---
                 this.enemies.children.each(enemy => {
                     if (enemy.active && !enemy.isDying) {
+                        
+                        // FCT Aggregator Output
+                        if (enemy.dmgAccum > 0 && now > enemy.lastDmgTime + 250) {
+                            if (enemy.dmgAccum >= this.baseDamage * 2) { 
+                                this.popDamageText(enemy.x, enemy.y, enemy.dmgAccum, false);
+                            }
+                            enemy.dmgAccum = 0;
+                        }
+
+                        // Status Effects
+                        if (enemy.status === 'burning') {
+                            if (now > enemy.statusEndTime) {
+                                enemy.status = 'none';
+                                this.flashEnemy(enemy); 
+                            } else {
+                                enemy.setTint(0xffaa00);
+                                if (Math.random() < 0.2) this.spawnGore(enemy.x, enemy.y - 10, 1, 0xff5500); 
+                                if (now > enemy.lastStatusTick + 500) {
+                                    this.damageEnemy(enemy, this.baseDamage); 
+                                    enemy.lastStatusTick = now;
+                                }
+                            }
+                        } else if (enemy.status === 'frozen') {
+                            if (now > enemy.statusEndTime) {
+                                enemy.status = 'none';
+                                enemy.body.setVelocityY(enemy.baseSpeed); 
+                                this.flashEnemy(enemy);
+                            } else {
+                                enemy.setTint(0x00ffff);
+                                if (Math.random() < 0.1) this.spawnGore(enemy.x, enemy.y, 1, 0x00ffff); 
+                            }
+                        }
+
                         if (enemy.y > 750) {
                             this.triggerGameOver('DEFENSES BREACHED');
                             enemy.destroy();
@@ -761,40 +1307,228 @@
                     }
                 });
                 this.gates.children.each(g => { if (g.active && g.y > 900) g.destroy(); });
+                if(this.frenzyActive && now % 10 === 0) this.updateStatsUI(); 
             }
 
             createBullet(x, y, vx, vy) {
                 const bullet = this.physics.add.sprite(x, y, 'bullet').setDepth(8);
                 this.bullets.add(bullet);
                 bullet.body.setVelocity(vx, vy);
+                return bullet;
             }
 
             fireBullet() {
-                if (this.isGameOver || !this.player.active || this.player.alpha === 0) return; 
-
-                if (this.gunTiers[this.currentGunTier].ammo !== Infinity) {
-                    if (this.currentAmmo <= 0) { this.downgradeWeapon(); return; }
-                    this.currentAmmo--;
-                    this.updateStatsUI();
-                }
+                if (this.isGameOver || !this.player.active || this.player.alpha === 0 || this.isDashing) return; 
 
                 this.fireLeft = !this.fireLeft; 
-                this.fireFrom(this.player.x, this.player.y);
-                this.allies.forEach(ally => this.fireFrom(ally.x, ally.y));
+                this.fireFrom(this.player.x, this.player.y, true);
             }
 
-            fireFrom(sourceX, sourceY) {
+            fireFrom(sourceX, sourceY, isPlayer) {
+                const weaponDef = this.gunTiers[this.currentGunTier];
+                const pattern = weaponDef.pattern;
+                const element = weaponDef.element;
                 const offset = this.fireLeft ? -4 : 4;
-                this.createBullet(sourceX + offset, sourceY - 20, 0, -this.bulletSpeed);
                 
-                const flash = this.add.circle(sourceX + offset, sourceY - 20, 8, 0xffff00).setDepth(11);
+                let flashColor = 0xffff00;
+                let flashScale = 1;
+                if (pattern === 'burst' || pattern === 'twin') { flashColor = 0xffaa00; flashScale = 1.2; }
+                else if (pattern === 'spread') { flashColor = 0x00ffff; flashScale = 1.5; }
+                else if (pattern === 'twin_spread' || pattern === 'gatling') { flashColor = 0xffffff; flashScale = 2; }
+                
+                const flash = this.add.circle(sourceX + offset, sourceY - 20, 8 * flashScale, flashColor).setDepth(11);
                 this.tweens.add({ targets: flash, scale: 0, alpha: 0, duration: 80, onComplete: () => flash.destroy() });
 
-                const spreadCount = Math.min(this.playerProjectiles - 1, 5);
-                for (let i = 1; i <= spreadCount; i++) {
-                    this.createBullet(sourceX, sourceY - 20, -i * 50, -this.bulletSpeed);
-                    this.createBullet(sourceX, sourceY - 20, i * 50, -this.bulletSpeed);
+                const createStd = (x, y, vx, vy) => {
+                    let b = this.createBullet(x, y, vx, vy);
+                    if (isPlayer) {
+                        b.isStandardBullet = true;
+                        if (element === 'fire') b.setTint(0xff5500);
+                        if (element === 'ice') b.setTint(0x00ffff);
+                    }
+                    return b;
+                };
+
+                const isMax = this.devMaxStatsActive || this.frenzyActive;
+
+                if (pattern === 'single' && !isMax) {
+                    createStd(sourceX + offset, sourceY - 20, 0, -this.bulletSpeed);
+                } 
+                else if (pattern === 'burst' && !isMax) {
+                    createStd(sourceX + offset, sourceY - 20, 0, -this.bulletSpeed);
+                    createStd(sourceX + offset, sourceY - 5, 0, -this.bulletSpeed);
+                    createStd(sourceX + offset, sourceY + 10, 0, -this.bulletSpeed);
                 }
+                else if (pattern === 'twin' && !isMax) {
+                    createStd(sourceX - 6, sourceY - 20, 0, -this.bulletSpeed);
+                    createStd(sourceX + 6, sourceY - 20, 0, -this.bulletSpeed);
+                } 
+                else if (pattern === 'spread' && !isMax) {
+                    createStd(sourceX, sourceY - 20, 0, -this.bulletSpeed);
+                    createStd(sourceX, sourceY - 20, -50, -this.bulletSpeed);
+                    createStd(sourceX, sourceY - 20, 50, -this.bulletSpeed);
+                } 
+                else if (pattern === 'twin_spread' && !isMax) {
+                    createStd(sourceX - 6, sourceY - 20, 0, -this.bulletSpeed);
+                    createStd(sourceX + 6, sourceY - 20, 0, -this.bulletSpeed);
+                    createStd(sourceX - 6, sourceY - 20, -75, -this.bulletSpeed);
+                    createStd(sourceX + 6, sourceY - 20, 75, -this.bulletSpeed);
+                    if (isPlayer) this.cameras.main.shake(40, 0.002);
+                } 
+                else if (pattern === 'gatling' || isMax) {
+                    createStd(sourceX, sourceY - 20, 0, -this.bulletSpeed);
+                    createStd(sourceX - 4, sourceY - 20, -40, -this.bulletSpeed);
+                    createStd(sourceX + 4, sourceY - 20, 40, -this.bulletSpeed);
+                    createStd(sourceX - 8, sourceY - 20, -80, -this.bulletSpeed);
+                    createStd(sourceX + 8, sourceY - 20, 80, -this.bulletSpeed);
+                    if (isPlayer) this.cameras.main.shake(30, 0.005);
+                }
+            }
+            
+            fireAltWeapon() {
+                if (this.isGameOver || !this.player.active || this.player.alpha === 0 || this.isDashing) return; 
+
+                this.cameras.main.shake(300, 0.03);
+                this.player.y = Math.min(680, this.player.y + 15);
+
+                const floatText = this.add.text(this.player.x, this.player.y - 40, 'OVERCHARGE!', { fontSize: '16px', fill: '#a855f7', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+                this.tweens.add({ targets: floatText, y: this.player.y - 80, alpha: 0, duration: 800, onComplete: () => floatText.destroy() });
+
+                const tier = this.currentGunTier;
+                const isMax = this.devMaxStatsActive;
+
+                if (tier <= 1 && !isMax) {
+                    const slug = this.physics.add.sprite(this.player.x, this.player.y - 30, 'bullet').setDepth(8);
+                    slug.setTintFill(0x00ffff);
+                    slug.setScale(4, 8);
+                    this.bullets.add(slug);
+                    slug.body.setVelocityY(-2000);
+                    slug.isExecutioner = true; 
+                    slug.hitEnemies = new Set();
+                    slug.altDamage = this.playerDamage * 8; 
+                    
+                    const beam = this.add.rectangle(this.player.x, this.player.y - 400, 10, 800, 0x00ffff, 0.5).setDepth(7);
+                    this.tweens.add({ targets: beam, scaleX: 3, alpha: 0, duration: 300, onComplete: () => beam.destroy() });
+
+                } else if (tier <= 4 && !isMax) {
+                    for(let i = -5; i <= 5; i++) {
+                        const b = this.createBullet(this.player.x, this.player.y - 20, i * 60, -this.bulletSpeed * 1.2);
+                        b.isStandardBullet = false; 
+                        b.setTintFill(0xffaa00);
+                        b.setScale(1.5);
+                        b.altDamage = this.playerDamage * 2;
+                    }
+                } else {
+                    for(let i = -1; i <= 1; i++) {
+                        const m = this.physics.add.sprite(this.player.x + (i * 20), this.player.y - 20, 'bullet').setDepth(8);
+                        m.setTintFill(0xff3333);
+                        m.setScale(2, 4);
+                        this.bullets.add(m);
+                        m.body.setVelocity(i * 150, -this.bulletSpeed * 0.8);
+                        m.isExplosiveAlt = true; 
+                        m.altDamage = this.playerDamage * 5;
+                    }
+                }
+            }
+
+            fireExecutionerMissile() {
+                const missile = this.physics.add.sprite(this.player.x, this.player.y - 20, 'bullet');
+                missile.setTintFill(0xd8b4fe);
+                missile.setScale(3);
+                this.bullets.add(missile); 
+                missile.body.setVelocityY(-this.bulletSpeed * 1.5);
+                
+                missile.isExecutioner = true;
+                missile.hitEnemies = new Set(); 
+                
+                this.cameras.main.shake(150, 0.02);
+                const floatText = this.add.text(this.player.x, this.player.y - 40, 'EXECUTION!', { fontSize: '14px', fill: '#d8b4fe', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+                this.tweens.add({ targets: floatText, y: this.player.y - 80, alpha: 0, duration: 600, onComplete: () => floatText.destroy() });
+            }
+
+            fireGrenade() {
+                if (this.isGameOver || !this.player.active || this.player.alpha === 0 || this.isDashing) return; 
+                
+                this.sessionGrenades--;
+                this.updateStatsUI();
+                
+                const grenade = this.physics.add.sprite(this.player.x, this.player.y - 20, 'coin');
+                grenade.setTintFill(0x00ff00);
+                grenade.setScale(1.5);
+                this.bullets.add(grenade); 
+                grenade.body.setVelocityY(-400);
+                grenade.body.setAngularVelocity(300);
+                grenade.isGrenade = true;
+                
+                this.time.delayedCall(600, () => {
+                    if(grenade.active) {
+                        this.triggerGrenadeExplosion(grenade.x, grenade.y);
+                        grenade.destroy();
+                    }
+                });
+            }
+
+            triggerSmallExplosion(x, y, damage) {
+                this.cameras.main.shake(150, 0.02);
+                const explosion = this.add.circle(x, y, 30, 0xff3333, 0.9).setDepth(20);
+                this.tweens.add({ targets: explosion, scaleX: 3, scaleY: 3, alpha: 0, duration: 250, ease: 'Cubic.easeOut', onComplete: () => explosion.destroy() });
+                const core = this.add.circle(x, y, 15, 0xffffff, 1).setDepth(21);
+                this.tweens.add({ targets: core, scaleX: 2, scaleY: 2, alpha: 0, duration: 150, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
+                
+                const radius = 80;
+                const enemiesInRange = this.enemies.getChildren().filter(enemy => {
+                    if (!enemy.active || enemy.isDying) return false;
+                    const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+                    return dist <= radius;
+                });
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, damage, true));
+            }
+
+            // --- PHASE 2C: EXPLOSIVE YIELD (SCALING RADIUS & DAMAGE) ---
+            triggerGrenadeExplosion(x, y) {
+                this.cameras.main.shake(250, 0.02); 
+                const explosion = this.add.circle(x, y, 10, 0x00ff00, 0.9).setDepth(20);
+                this.tweens.add({ targets: explosion, scaleX: 9, scaleY: 9, alpha: 0, duration: 350, ease: 'Cubic.easeOut', onComplete: () => explosion.destroy() });
+                const core = this.add.circle(x, y, 6, 0xffffff, 1).setDepth(21);
+                this.tweens.add({ targets: core, scaleX: 6, scaleY: 6, alpha: 0, duration: 200, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
+                this.spawnGore(x, y, 10); 
+
+                const yieldLvl = window.saveData.upgrades.yield || 0;
+                const radius = 90 + (yieldLvl * 20); 
+                const explosionDamage = 50 + (yieldLvl * 25); 
+                
+                const enemiesInRange = this.enemies.getChildren().filter(enemy => {
+                    if (!enemy.active || enemy.isDying) return false;
+                    const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+                    return dist <= radius;
+                });
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage, true));
+            }
+            
+            triggerCoinMineExplosion(x, y) {
+                this.cameras.main.shake(200, 0.03); 
+                const explosion = this.add.circle(x, y, 15, 0xff3333, 0.9).setDepth(20);
+                this.tweens.add({ targets: explosion, scaleX: 8, scaleY: 8, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => explosion.destroy() });
+                const core = this.add.circle(x, y, 8, 0xfde047, 1).setDepth(21);
+                this.tweens.add({ targets: core, scaleX: 5, scaleY: 5, alpha: 0, duration: 200, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
+                
+                const floatText = this.add.text(x, y - 20, 'MINE!', { fontSize: '14px', fill: '#ff3333', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+                this.tweens.add({ targets: floatText, y: y - 50, alpha: 0, duration: 600, onComplete: () => floatText.destroy() });
+
+                const radius = 100; 
+                const explosionDamage = 150; 
+                
+                const enemiesInRange = this.enemies.getChildren().filter(enemy => {
+                    if (!enemy.active || enemy.isDying) return false;
+                    const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+                    return dist <= radius;
+                });
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage, true));
+            }
+
+            triggerPiercingExplosion(x, y) {
+                const ring = this.add.circle(x, y, 15, 0xd8b4fe, 0.8).setDepth(20);
+                this.tweens.add({ targets: ring, scale: 3, alpha: 0, duration: 200, onComplete: () => ring.destroy() });
             }
 
             fireEnemyBullet(x, y) {
@@ -806,25 +1540,13 @@
             spawnEnemy() {
                 if (this.isGameOver) return; 
                 const rand = Math.random();
-                
-                // Difficulty Rollercoaster Control
-                let tankChance = 0;
-                let sprinterChance = 0;
-                
-                if (this.currentWave === 2) {
-                    tankChance = 0.05; // Extremely rare early tank introduction
-                } else if (this.currentWave >= 3) {
-                    tankChance = Math.min(0.25, 0.05 + (this.currentWave - 3) * 0.05);
-                    sprinterChance = Math.min(0.15, 0.02 + (this.currentWave - 3) * 0.03); 
-                }
-
                 let size = 24, speed = 45, type = 'grunt';
-                let baseHp = 4; // Lowered baseline for waves 1-3 to allow Pea Shooter clear 
+                let baseHp = 3;
 
-                if (rand < sprinterChance) {
-                    size = 24; baseHp = 10; speed = 200 + (this.currentWave * 10); type = 'sprinter';
-                } else if (rand < sprinterChance + tankChance) {
-                    size = 48; baseHp = 35; speed = 25; type = 'tank'; // Scary, but low enough HP to be killable early
+                if (this.currentWave >= 3 && rand < 0.20) {
+                    size = 24; baseHp = 8; speed = 180; type = 'sprinter';
+                } else if (this.currentWave >= 2 && rand < 0.40) {
+                    size = 48; baseHp = 20; speed = 20; type = 'tank';
                 }
 
                 const baseMult = 1 + ((this.currentWave - 1) * 0.4);
@@ -851,8 +1573,7 @@
                 const paletteColor = this.getTierColor();
 
                 if (type === 'grunt') {
-                    // Easier clusters early on
-                    const numClusters = (this.currentWave <= 2) ? Phaser.Math.Between(1, 2) : Phaser.Math.Between(2, 4);
+                    const numClusters = this.currentWave < 3 ? Phaser.Math.Between(1, 2) : Phaser.Math.Between(2, 4);
                     for (let c = 0; c < numClusters; c++) {
                         const offsetX = Phaser.Math.Between(-30, 30);
                         const offsetY = Phaser.Math.Between(-30, 30);
@@ -876,8 +1597,13 @@
                         enemy.body.setOffset(-hitboxSize / 2, -hitboxSize / 2);
                         
                         enemy.hp = hp; enemy.maxHp = hp; enemy.enemyType = type; enemy.isDying = false; 
+                        enemy.baseSpeed = speed + Phaser.Math.Between(-5, 5);
+                        enemy.status = 'none'; 
+                        enemy.dmgAccum = 0;
+                        enemy.lastDmgTime = 0;
+                        
                         this.enemies.add(enemy);
-                        enemy.body.setVelocityY(speed + Phaser.Math.Between(-5, 5)); 
+                        enemy.body.setVelocityY(enemy.baseSpeed); 
                     }
                 } else {
                     let enemy = this.physics.add.sprite(safeX, -size, type);
@@ -887,8 +1613,13 @@
                         this.tweens.add({ targets: enemy, scaleX: 1.15, scaleY: 0.85, duration: Phaser.Math.Between(800, 1200), yoyo: true, repeat: -1 });
                     }
                     enemy.hp = hp; enemy.maxHp = hp; enemy.enemyType = type; enemy.isDying = false; 
+                    enemy.baseSpeed = speed;
+                    enemy.status = 'none';
+                    enemy.dmgAccum = 0;
+                    enemy.lastDmgTime = 0;
+                    
                     this.enemies.add(enemy);
-                    enemy.body.setVelocityY(speed);
+                    enemy.body.setVelocityY(enemy.baseSpeed);
                 }
             }
 
@@ -906,9 +1637,13 @@
                 this.tweens.add({ targets: boss, scaleX: 1.05, scaleY: 0.95, duration: 1500, yoyo: true, repeat: -1 });
 
                 boss.hp = bossHp; boss.maxHp = bossHp; boss.enemyType = 'boss'; boss.isDying = false; boss.lastFired = this.time.now;
+                boss.baseSpeed = 15;
+                boss.status = 'none';
+                boss.dmgAccum = 0;
+                boss.lastDmgTime = 0;
                 
                 this.enemies.add(boss);
-                boss.body.setVelocityY(15); 
+                boss.body.setVelocityY(boss.baseSpeed); 
             }
 
             spawnCoin(x, y) {
@@ -920,18 +1655,36 @@
             }
 
             collectCoin(coin) {
+                let coinValue = 1;
+                let greedChance = (window.saveData.upgrades.greed || 0) * 0.20;
+                let isDouble = Math.random() < greedChance;
+                
+                if (isDouble) coinValue = 2;
+
                 coin.destroy();
-                this.sessionCoins++;
-                window.saveData.coins++; // Bank immediately
-                saveGame();
+                this.sessionCoins += coinValue;
+                window.saveData.coins += coinValue;
+                saveGame(); 
+                
+                if (this.activeMutations.includes('scavenger')) {
+                    this.scavengerActive = true;
+                    this.player.scavengerInvuln = true;
+                    if (this.scavengerTimer) this.scavengerTimer.remove();
+                    this.scavengerTimer = this.time.delayedCall(1000, () => {
+                        this.scavengerActive = false;
+                        this.player.scavengerInvuln = false;
+                    });
+                }
                 
                 this.coinTextUI.setText(`COINS: ${this.sessionCoins}`);
                 this.coinBankUI.setText(`BANK: ${window.saveData.coins}`);
-                this.tweens.add({ targets: this.coinBankUI, scaleX: 1.2, scaleY: 1.2, duration: 100, yoyo: true });
                 
-                const flash = this.add.circle(coin.x, coin.y, 15, 0xfde047, 0.8).setDepth(20);
+                const floatColor = isDouble ? '#00ffcc' : '#fde047';
+                const fontSizeStr = isDouble ? '20px' : '14px';
+                
+                const flash = this.add.circle(coin.x, coin.y, isDouble ? 25 : 15, isDouble ? 0x00ffcc : 0xfde047, 0.8).setDepth(20);
                 this.tweens.add({ targets: flash, scale: 2, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
-                const floatText = this.add.text(coin.x, coin.y - 10, '+1', { fontSize: '14px', fill: '#fde047', fontStyle: 'bold' }).setOrigin(0.5);
+                const floatText = this.add.text(coin.x, coin.y - 10, `+${coinValue}`, { fontSize: fontSizeStr, fill: floatColor, fontStyle: 'bold' }).setOrigin(0.5);
                 this.tweens.add({ targets: floatText, y: coin.y - 40, alpha: 0, duration: 600, onComplete: () => floatText.destroy() });
             }
 
@@ -939,16 +1692,22 @@
                 if (this.isGameOver || this.isIntermission) return;
 
                 const gateTypes = [
-                    { type: 'Damage', abbr: 'DMG', isTemp: false, baseReq: 4 },
-                    { type: 'Fire Rate', abbr: 'SPD', isTemp: false, baseReq: 6 },
-                    { type: 'Spread', abbr: 'SPR', isTemp: true, baseReq: 5 }, 
-                    { type: 'Health', abbr: 'HLT', isTemp: false, baseReq: 3 }
+                    { type: 'Damage', abbr: 'DMG', baseReq: 3, reqGrowth: 2, gateCap: 10 },
+                    { type: 'Fire Rate', abbr: 'SPD', baseReq: 6, reqGrowth: 3, gateCap: 5 },
+                    { type: 'Health', abbr: 'HLT', baseReq: 3, reqGrowth: 2, gateCap: 3 },
+                    { type: 'Frenzy', abbr: 'FNZ', baseReq: 5, reqGrowth: 3, gateCap: 1, isTemp: true }
                 ];
-                if (this.currentGunTier > 2) gateTypes.push({ type: 'Ammo', abbr: 'AMMO', isTemp: false, baseReq: 3 });
                 
-                const typeDef = Phaser.Math.RND.pick(gateTypes);
-                const isAmmo = typeDef.abbr === 'AMMO';
-                const gateColor = isAmmo ? 0x00aa00 : 0x0044ff; 
+                const rand = Math.random();
+                let typeDef;
+                if (rand < 0.40) typeDef = gateTypes[0];      
+                else if (rand < 0.70) typeDef = gateTypes[1]; 
+                else if (rand < 0.90) typeDef = gateTypes[2]; 
+                else typeDef = gateTypes[3];                  
+
+                const value = 1; 
+                const maxLimit = Math.min(typeDef.gateCap, this.gateMaxLimit);
+                const gateColor = 0x0044ff; 
                 
                 const gateRadius = 14;
                 const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + gateRadius;
@@ -956,9 +1715,9 @@
                 const safeX = (leftLimit < rightLimit) ? Phaser.Math.Between(leftLimit, rightLimit) : this.boundaryCenter;
                 
                 const elements = [];
-                let pulseRing = null;
+
                 if (typeDef.isTemp) {
-                    pulseRing = this.add.circle(0, 0, gateRadius, 0x000000, 0);
+                    let pulseRing = this.add.circle(0, 0, gateRadius, 0x000000, 0);
                     pulseRing.setStrokeStyle(2, 0xffff00);
                     this.tweens.add({ targets: pulseRing, scaleX: 1.8, scaleY: 1.8, alpha: 0, duration: 800, repeat: -1 });
                     elements.push(pulseRing);
@@ -968,65 +1727,102 @@
                 circle.setStrokeStyle(2, typeDef.isTemp ? 0xffff00 : 0xffffff); 
                 elements.push(circle);
 
-                const topText = typeDef.abbr === 'HLT' ? '❤️' : typeDef.abbr;
-                const topFontSize = typeDef.abbr === 'HLT' ? '12px' : '9px';
+                const topText = typeDef.abbr === 'HLT' ? '❤️' : (typeDef.abbr === 'FNZ' ? '🔥' : typeDef.abbr);
+                const topFontSize = (typeDef.abbr === 'HLT' || typeDef.abbr === 'FNZ') ? '12px' : '9px';
                 const textAbbr = this.add.text(0, -4, topText, { fontSize: topFontSize, fill: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-                const textVal = this.add.text(0, 5, isAmmo ? `FULL` : `+1`, { fontSize: '9px', fill: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+                const textVal = this.add.text(0, 5, typeDef.isTemp ? `TEMP` : `+${value}`, { fontSize: '9px', fill: typeDef.isTemp ? '#xffff00' : '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
                 elements.push(textAbbr, textVal);
                 
                 const gate = this.add.container(safeX, -50, elements);
                 this.physics.add.existing(gate); this.gates.add(gate);
                 gate.body.setSize(28, 28); gate.body.setOffset(-14, -14); gate.body.setVelocityY(80);
-                gate.typeDef = typeDef; gate.currentHits = 0; gate.circleObj = circle; gate.textVal = textVal;
+                gate.typeDef = typeDef; gate.gateValue = value; gate.gateMax = maxLimit; gate.currentHits = 0; gate.circleObj = circle; gate.textVal = textVal;
+
+                this.updateGateVisuals(gate);
             }
 
             updateGateVisuals(gate) {
-                gate.circleObj.setStrokeStyle(2, gate.typeDef.isTemp ? 0xffff00 : 0xffffff);
+                const gateColor = 0x0044ff; 
+                if(!gate.typeDef.isTemp) gate.textVal.setText(`+${gate.gateValue}`);
+
+                if (gate.gateValue >= gate.gateMax) {
+                    gate.circleObj.setStrokeStyle(2, 0xffff00); gate.circleObj.setFillStyle(gateColor, 0.8); 
+                } else {
+                    gate.circleObj.setStrokeStyle(2, gate.typeDef.isTemp ? 0xffff00 : 0xffffff); gate.circleObj.setFillStyle(gateColor, 0.8);
+                }
             }
 
             shootGate(bullet, gate) {
                 if (gate.y < 100) return; 
-                bullet.destroy();
-
-                gate.currentHits += 1; 
-                if (gate.currentHits >= gate.typeDef.baseReq) {
+                
+                if (bullet.isGrenade) {
+                    this.triggerGrenadeExplosion(bullet.x, bullet.y);
+                    bullet.destroy();
+                    this.collectGate(null, gate);
+                    return;
+                }
+                
+                if (bullet.isExecutioner) {
+                    this.triggerPiercingExplosion(bullet.x, bullet.y);
                     this.collectGate(null, gate);
                     return;
                 }
 
+                if (bullet.isExplosiveAlt) {
+                    this.triggerSmallExplosion(bullet.x, bullet.y, bullet.altDamage);
+                    bullet.destroy();
+                    this.collectGate(null, gate);
+                    return;
+                }
+                
+                bullet.destroy();
+                if (gate.gateValue >= gate.gateMax) { this.collectGate(null, gate); return; }
+
+                gate.currentHits += 1; 
+                const req = gate.typeDef.baseReq + (gate.gateValue * gate.typeDef.reqGrowth);
+                if (gate.currentHits >= req) {
+                    gate.gateValue += 1; gate.currentHits = 0; 
+                    if (gate.gateValue >= gate.gateMax) { this.collectGate(null, gate); return; }
+                    this.tweens.add({ targets: gate, scaleX: 1.2, scaleY: 1.2, yoyo: true, duration: 100 });
+                }
+
+                this.updateGateVisuals(gate);
                 gate.circleObj.setFillStyle(0xffffff, 1);
                 this.time.delayedCall(50, () => {
                     if (gate && gate.active) {
-                        const isAmmo = gate.typeDef.abbr === 'AMMO';
-                        gate.circleObj.setFillStyle(isAmmo ? 0x00aa00 : 0x0044ff, 0.8);
+                        this.updateGateVisuals(gate);
                     }
                 });
             }
 
             collectGate(player, gate) {
-                let isTemp = gate.typeDef.isTemp; let gateColorHex = 0x0044ff; let feedbackText = '';
+                let actualGain = gate.gateValue; let gateColorHex = 0x0044ff; let feedbackText = '';
 
                 if (gate.typeDef.abbr === 'DMG') {
-                    this.upgradeStat('dmg');
-                    feedbackText = `+1 DMG!`;
+                    this.bonusDamage += actualGain; this.playerDamage = this.baseDamage + this.bonusDamage; this.updateStatsUI();
+                    feedbackText = `+${actualGain} DMG!`;
                 } else if (gate.typeDef.abbr === 'SPD') {
-                    this.upgradeStat('spd');
-                    feedbackText = `+1 SPD!`;
-                } else if (gate.typeDef.abbr === 'SPR') {
-                    this.playerProjectiles = Math.min(6, this.playerProjectiles + 1);
-                    feedbackText = `+1 SPR (10s)!`;
-                    this.time.delayedCall(10000, () => { if (!this.isGameOver) this.playerProjectiles -= 1; });
+                    const oldDelay = this.fireDelay; this.bonusFireDelay += (actualGain * 5);
+                    this.fireDelay = Math.max(15, this.baseFireDelay - this.bonusFireDelay);
+                    actualGain = (oldDelay - this.fireDelay) / 5; this.updateStatsUI();
+                    feedbackText = `+${actualGain} SPD!`;
                 } else if (gate.typeDef.abbr === 'HLT') {
-                    this.healPlayer(1);
-                    feedbackText = `+1 HLT!`;
-                } else if (gate.typeDef.abbr === 'AMMO') {
+                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + actualGain); this.updateHealthUI();
+                    feedbackText = `+${actualGain} HLT!`;
                     gateColorHex = 0x00aa00;
-                    if (this.gunTiers[this.currentGunTier].ammo !== Infinity) {
-                        this.refillAmmo(); feedbackText = `+FULL AMMO!`;
-                    } else feedbackText = `AMMO FULL!`;
+                } else if (gate.typeDef.abbr === 'FNZ') {
+                    // --- PHASE 2C: OVERDRIVE CAPACITOR HOOK ---
+                    const overdriveBonus = (window.saveData.upgrades.overdrive || 0) * 5000;
+                    this.frenzyActive = true;
+                    this.frenzyEndTime = this.time.now + 10000 + overdriveBonus;
+                    this.updateStatsUI();
+                    feedbackText = `FRENZY!`;
+                    gateColorHex = 0xffaa00;
                 }
 
-                const feedback = this.add.text(gate.x, gate.y, feedbackText, { fontSize: '20px', fill: gateColorHex === 0x00aa00 ? '#00ff00' : '#00ffff', fontStyle: 'bold' }).setOrigin(0.5);
+                if (actualGain <= 0 && !gate.typeDef.isTemp) feedbackText = 'MAXED!';
+
+                const feedback = this.add.text(gate.x, gate.y, feedbackText, { fontSize: '20px', fill: gateColorHex === 0x00aa00 ? '#00ff00' : (gateColorHex === 0xffaa00 ? '#ffaa00' : '#00ffff'), fontStyle: 'bold' }).setOrigin(0.5);
                 this.tweens.add({ targets: feedback, y: gate.y - 50, alpha: 0, duration: 1000, onComplete: () => feedback.destroy() });
                 const ring = this.add.circle(gate.x, gate.y, 25, gateColorHex, 0.8);
                 this.tweens.add({ targets: ring, scaleX: 3, scaleY: 3, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
@@ -1034,36 +1830,41 @@
             }
 
             flashEnemy(enemy) {
+                if (enemy.status === 'burning') return; 
+                if (enemy.status === 'frozen') return;
+
                 if (enemy.sprites) {
                     enemy.sprites.forEach(s => { if(s.setTintFill) s.setTintFill(0xffffff); else s.setFillStyle(0xffffff); });
                     this.time.delayedCall(50, () => {
-                        if (enemy && enemy.active && enemy.sprites) {
+                        if (enemy && enemy.active && enemy.sprites && enemy.status === 'none') {
                             enemy.sprites.forEach(s => { if(s.clearTint) { s.clearTint(); s.setTint(this.getTierColor()); } });
                         }
                     });
                 } else {
                     enemy.setTintFill(0xffffff);
                     this.time.delayedCall(50, () => {
-                        if (enemy && enemy.active) { enemy.clearTint(); enemy.setTint(this.getTierColor()); }
+                        if (enemy && enemy.active && enemy.status === 'none') { 
+                            enemy.clearTint(); enemy.setTint(this.getTierColor()); 
+                        }
                     });
                 }
             }
 
-            spawnGore(x, y, count = 12) {
-                const redTones = [0x8a0303, 0xa81c1c, 0x550000, 0x990000];
+            spawnGore(x, y, count = 6, colorOverride = null) {
+                const redTones = [0x8a0303, 0xa81c1c, 0x550000];
                 for (let i = 0; i < count; i++) {
-                    const color = Phaser.Math.RND.pick(redTones);
-                    const particle = this.add.rectangle(x, y, Phaser.Math.Between(2, 5), Phaser.Math.Between(2, 5), color).setDepth(15);
+                    const color = colorOverride || Phaser.Math.RND.pick(redTones);
+                    const particle = this.add.rectangle(x, y, Phaser.Math.Between(2, 4), Phaser.Math.Between(2, 4), color);
                     this.physics.add.existing(particle);
-                    particle.body.setVelocity(Phaser.Math.Between(-200, 200), Phaser.Math.Between(-200, 200));
+                    particle.body.setVelocity(Phaser.Math.Between(-150, 150), Phaser.Math.Between(-150, 150));
                     
                     this.tweens.add({
                         targets: particle, scaleX: 0, scaleY: 0, alpha: 0, duration: Phaser.Math.Between(300, 600),
                         onComplete: () => {
                             if (this.isGameOver) return;
-                            const splatter = this.add.circle(particle.x, particle.y, Phaser.Math.Between(3, 7), color, 0.4).setDepth(-1);
+                            const splatter = this.add.circle(particle.x, particle.y, Phaser.Math.Between(2, 5), color, 0.3).setDepth(1);
                             this.bloodLayer.add(splatter);
-                            this.tweens.add({ targets: splatter, alpha: 0, duration: 8000, onComplete: () => splatter.destroy() });
+                            this.tweens.add({ targets: splatter, alpha: 0, duration: 25000 });
                             particle.destroy();
                         }
                     });
@@ -1071,29 +1872,28 @@
             }
 
             explodeWaveText(x, y) {
-                this.cameras.main.flash(400, 255, 150, 50); 
-                this.cameras.main.shake(800, 0.02); 
-                for (let i = 0; i < 8; i++) {
-                    this.time.delayedCall(Phaser.Math.Between(0, 400), () => {
-                        if (this.isGameOver) return;
-                        const exX = x + Phaser.Math.Between(-120, 120); const exY = y + Phaser.Math.Between(-40, 40);
-                        const explosion = this.add.circle(exX, exY, 15, 0xff5500, 0.9).setDepth(20);
-                        this.tweens.add({ targets: explosion, scaleX: 8, scaleY: 8, alpha: 0, duration: Phaser.Math.Between(400, 600), ease: 'Cubic.easeOut', onComplete: () => explosion.destroy() });
-                        const core = this.add.circle(exX, exY, 8, 0xffff00, 1).setDepth(21);
-                        this.tweens.add({ targets: core, scaleX: 5, scaleY: 5, alpha: 0, duration: Phaser.Math.Between(200, 300), ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
-                    });
-                }
+                this.cameras.main.flash(200, 255, 255, 255); 
+                const ring = this.add.circle(x, y, 50, 0x00ffff, 0.5).setDepth(20);
+                ring.setStrokeStyle(4, 0x00ffff);
+                ring.setFillStyle(0, 0); 
+                this.tweens.add({ 
+                    targets: ring, scaleX: 6, scaleY: 6, alpha: 0, duration: 500, ease: 'Quad.easeOut', onComplete: () => ring.destroy() 
+                });
+                const beam = this.add.rectangle(x, y, 600, 10, 0x00ffff, 0.8).setDepth(20);
+                this.tweens.add({
+                    targets: beam, scaleY: 0, alpha: 0, duration: 300, ease: 'Power2', onComplete: () => beam.destroy()
+                });
             }
 
             triggerTankExplosion(x, y) {
-                this.cameras.main.shake(300, 0.03); 
-                const explosion = this.add.circle(x, y, 7, 0xff5500, 0.9).setDepth(20);
-                this.tweens.add({ targets: explosion, scaleX: 8, scaleY: 8, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => explosion.destroy() });
-                const core = this.add.circle(x, y, 4, 0xffff00, 1).setDepth(21);
-                this.tweens.add({ targets: core, scaleX: 5, scaleY: 5, alpha: 0, duration: 150, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
+                this.cameras.main.shake(400, 0.04); 
+                const splat = this.add.circle(x, y, 15, 0x8a0303, 0.9).setDepth(20);
+                this.tweens.add({ targets: splat, scaleX: 8, scaleY: 8, alpha: 0, duration: 400, ease: 'Cubic.easeOut', onComplete: () => splat.destroy() });
+                const core = this.add.circle(x, y, 8, 0x550000, 1).setDepth(21);
+                this.tweens.add({ targets: core, scaleX: 5, scaleY: 5, alpha: 0, duration: 250, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
                 this.spawnGore(x, y, 30); 
 
-                const radius = 70; const explosionDamage = 25; 
+                const radius = 90; const explosionDamage = 25; 
                 const enemiesInRange = this.enemies.getChildren().filter(enemy => {
                     if (!enemy.active || enemy.isDying) return false;
                     const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
@@ -1111,14 +1911,21 @@
                     const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
                     return dist <= radius;
                 });
-                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, 50));
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, 50, true));
             }
 
-            damageEnemy(enemy, amount) {
+            // --- PHASE 3C: FCT AGGREGATOR IMPLEMENTATION ---
+            damageEnemy(enemy, amount, isSpecial = false) {
                 if (enemy.isDying) return;
+                
                 enemy.hp -= amount;
                 
-                this.spawnGore(enemy.x, enemy.y, Phaser.Math.Between(1, 3));
+                if (isSpecial) {
+                    this.popDamageText(enemy.x, enemy.y, amount, true);
+                } else {
+                    enemy.dmgAccum += amount;
+                    enemy.lastDmgTime = this.time.now;
+                }
                 
                 if (enemy.enemyType === 'grunt' && enemy.sprites) {
                     const expectedSprites = Math.ceil((enemy.hp / enemy.maxHp) * enemy.initialSprites);
@@ -1128,7 +1935,11 @@
                 }
 
                 if (enemy.hp <= 0) {
+                    if (enemy.dmgAccum > 0) this.popDamageText(enemy.x, enemy.y, enemy.dmgAccum, false);
+                    
                     enemy.isDying = true;
+                    this.enemiesDefeated++; 
+                    
                     let dropChance = 0.3; 
                     if (enemy.enemyType === 'sprinter') dropChance = 0.5;
                     if (enemy.enemyType === 'tank') dropChance = 1.0;
@@ -1154,7 +1965,7 @@
                         });
                         this.time.delayedCall(1500, () => {
                             if (enemy.active) {
-                                this.triggerTankExplosion(enemy.x, enemy.y); this.spawnGore(enemy.x, enemy.y, 60); enemy.destroy();
+                                this.triggerTankExplosion(enemy.x, enemy.y); this.spawnGore(enemy.x, enemy.y, 25); enemy.destroy();
                             }
                         });
                     } else if (enemy.enemyType === 'tank') {
@@ -1162,16 +1973,72 @@
                             if (enemy.active) { this.triggerTankExplosion(enemy.x, enemy.y); enemy.destroy(); }
                         });
                     } else {
-                        this.spawnGore(enemy.x, enemy.y, 12); enemy.destroy();
+                        if (enemy.status === 'frozen') {
+                            this.spawnGore(enemy.x, enemy.y, 8, 0x00ffff);
+                        } else {
+                            this.spawnGore(enemy.x, enemy.y, 4);
+                        }
+                        enemy.destroy();
                     }
                 } else {
                     this.flashEnemy(enemy);
                 }
             }
 
-            hitEnemy(bullet, enemy) {
+            hitEnemy(projectile, enemy) {
                 if (enemy.y < 100) return; 
-                bullet.destroy(); this.damageEnemy(enemy, this.playerDamage);
+                
+                if (projectile.isGrenade) {
+                    this.triggerGrenadeExplosion(projectile.x, projectile.y);
+                    projectile.destroy();
+                    return;
+                }
+
+                let dmg = this.playerDamage + (this.vengeanceBonus || 0);
+                if (projectile.altDamage) dmg = projectile.altDamage + (this.vengeanceBonus || 0);
+
+                if (projectile.isStandardBullet && !projectile.altDamage) {
+                    const element = this.gunTiers[this.currentGunTier].element;
+                    if (element === 'fire' && enemy.status !== 'burning') {
+                        enemy.status = 'burning';
+                        enemy.statusEndTime = this.time.now + 3000;
+                        enemy.lastStatusTick = this.time.now;
+                        if (enemy.sprites) enemy.sprites.forEach(s => s.setTint(0xffaa00));
+                        else enemy.setTint(0xffaa00);
+                    } else if (element === 'ice' && enemy.status !== 'frozen') {
+                        enemy.status = 'frozen';
+                        enemy.statusEndTime = this.time.now + 4000;
+                        enemy.body.setVelocityY(enemy.baseSpeed * 0.5); 
+                        if (enemy.sprites) enemy.sprites.forEach(s => s.setTint(0x00ffff));
+                        else enemy.setTint(0x00ffff);
+                    }
+                }
+                
+                if (projectile.isExecutioner) {
+                    if (!projectile.hitEnemies.has(enemy)) {
+                        projectile.hitEnemies.add(enemy);
+                        this.damageEnemy(enemy, projectile.altDamage ? dmg : dmg * 3, true);
+                        this.triggerPiercingExplosion(projectile.x, projectile.y);
+                    }
+                    return; 
+                }
+
+                if (projectile.isExplosiveAlt) {
+                    this.triggerSmallExplosion(projectile.x, projectile.y, dmg);
+                    projectile.destroy();
+                    return;
+                }
+                
+                if (projectile.isStandardBullet && this.activeMutations.includes('executioner')) {
+                    this.consecutiveHits++;
+                    this.updateStatsUI();
+                    if (this.consecutiveHits % 10 === 0) {
+                        this.fireExecutionerMissile();
+                    }
+                }
+                
+                projectile.destroy(); 
+                this.damageEnemy(enemy, dmg);
             }
 
             hitBarricade(barricade, hazard) {
@@ -1183,7 +2050,7 @@
                 if (hazard.enemyType === 'sprinter') incomingDamage = 50;
                 if (!hazard.enemyType) incomingDamage = hazard.maxHp || 10; 
                 
-                if (hazard.enemyType) this.damageEnemy(hazard, 1000); 
+                if (hazard.enemyType) this.damageEnemy(hazard, 1000, true); 
                 else hazard.destroy(); 
 
                 barricade.hp -= incomingDamage;
@@ -1192,29 +2059,27 @@
                 if (barricade.hp <= 0) {
                     barricade.destroy();
                 }
-            }
 
-            hitAlly(ally, hazard) {
-                if (hazard.y < 100 || ally.isDying) return;
-                if (this.devInvincible) return; 
-                if (hazard.enemyType) this.damageEnemy(hazard, 1000); 
-                else hazard.destroy();
+                if (this.activeMutations.includes('pay_it_forward')) {
+                    this.vengeanceBonus += 10;
+                    this.updateStatsUI();
+                    
+                    const buffText = this.add.text(this.player.x, this.player.y - 40, 'VENGEANCE!', { fontSize: '16px', fill: '#ff3333', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+                    this.tweens.add({ targets: buffText, y: this.player.y - 80, alpha: 0, duration: 1000, onComplete: () => buffText.destroy() });
 
-                ally.hp -= 1;
-                if (ally.hp <= 0) {
-                    ally.isDying = true; if (ally.pulseTween) ally.pulseTween.stop();
-                    const idx = this.allies.indexOf(ally); if (idx > -1) this.allies.splice(idx, 1);
-                    ally.destroy();
-                } else if (ally.hp === 1 && !ally.pulseTween) {
-                    ally.pulseTween = this.tweens.add({ targets: ally, alpha: 0.3, yoyo: true, repeat: -1, duration: 200 });
+                    this.time.delayedCall(3000, () => {
+                        this.vengeanceBonus = Math.max(0, this.vengeanceBonus - 10);
+                        this.updateStatsUI();
+                    });
                 }
             }
 
             hitPlayer(player, hazard) {
                 if (this.isGameOver) return;
+                if (this.player.hp <= 0) return; 
                 if (hazard.y < 100) return; 
                 if (this.devInvincible) return; 
-                if (this.player.isInvulnerable) return;
+                if (this.player.isInvulnerable || this.player.scavengerInvuln) return;
 
                 this.player.isInvulnerable = true;
                 this.triggerPlayerHitExplosion(this.player.x, this.player.y);
@@ -1224,9 +2089,16 @@
                 if (this.player.hp <= 0) {
                     this.handlePlayerDeath();
                 } else {
+                    if (this.activeMutations.includes('kinetic_conversion')) {
+                        this.sessionGrenades++;
+                        this.updateStatsUI();
+                        const floatText = this.add.text(this.player.x, this.player.y - 40, '+1 BOMB!', { fontSize: '16px', fill: '#33ff33', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
+                        this.tweens.add({ targets: floatText, y: this.player.y - 80, alpha: 0, duration: 1000, onComplete: () => floatText.destroy() });
+                    }
+
                     this.player.setTintFill(0xffffff); 
                     this.time.delayedCall(100, () => { if (this.player && this.player.active) this.player.clearTint(); });
-                    this.time.delayedCall(500, () => { if (this.player) this.player.isInvulnerable = false; });
+                    this.time.delayedCall(500, () => { if (this.player && !this.isDashing) this.player.isInvulnerable = false; });
                 }
             }
             
@@ -1238,11 +2110,17 @@
                 
                 this.physics.resume();
                 
-                // I-Frames after respawn
-                this.tweens.add({ targets: this.player, alpha: 1, duration: 200, yoyo: true, repeat: 5 });
-                this.time.delayedCall(1500, () => { 
-                    this.player.isInvulnerable = false; 
-                    this.player.setAlpha(1); 
+                this.tweens.killTweensOf(this.player);
+                this.player.setAlpha(1);
+                this.player.setVisible(true);
+                this.player.isInvulnerable = true;
+                
+                this.tweens.add({ 
+                    targets: this.player, alpha: 0.2, duration: 150, yoyo: true, repeat: 5,
+                    onComplete: () => {
+                        this.player.setAlpha(1);
+                        this.player.isInvulnerable = false;
+                    }
                 });
             }
 
@@ -1250,22 +2128,13 @@
                 this.lives -= 1;
                 this.updateLivesUI();
 
-                // Blow up all allies when the player dies
-                this.allies.forEach(ally => {
-                    if (ally.pulseTween) ally.pulseTween.stop();
-                    this.spawnGore(ally.x, ally.y, 8);
-                    ally.destroy();
-                });
-                this.allies = [];
-                this.allyGroup.clear(true, true);
-
                 if (this.lives <= 0) {
                     this.triggerPermadeath();
                 } else {
                     this.physics.pause();
                     this.player.setAlpha(0);
+                    this.player.isInvulnerable = true; 
                     
-                    // Knock remaining enemies back slightly so player doesn't instantly die on respawn
                     this.enemies.children.each(e => {
                         if (e.y > -50) e.y -= 150; 
                     });
@@ -1276,7 +2145,6 @@
                     if (this.currentWave > 3) {
                         this.handleDeathChoice();
                     } else {
-                        // Just respawn automatically if early in the run
                         this.time.delayedCall(1000, () => {
                             this.respawnPlayer();
                         });
@@ -1294,55 +2162,41 @@
                 this.isGameOver = true; 
                 this.physics.pause(); 
                 
-                this.allies.forEach(ally => {
-                    if (ally.pulseTween) ally.pulseTween.stop();
-                    this.spawnGore(ally.x, ally.y, 10);
-                    ally.destroy();
-                });
-                this.allies = [];
-                this.allyGroup.clear(true, true);
-
                 this.cameras.main.shake(2000, 0.05);
-                this.spawnGore(this.player.x, this.player.y, 100);
+                this.spawnGore(this.player.x, this.player.y, 50); 
                 this.player.setVisible(false);
 
-                // Deep Crimson Fullscreen Overlay
-                const bloodOverlay = this.add.rectangle(300, 400, 600, 800, 0x4a0000, 0).setDepth(300);
-                this.tweens.add({ targets: bloodOverlay, alpha: 0.95, duration: 3000 });
+                const bloodOverlay = this.add.rectangle(300, 400, 600, 800, 0x550000, 0).setDepth(300);
+                this.tweens.add({ targets: bloodOverlay, alpha: 0.8, duration: 3000 });
 
-                // Dynamic Graphic Screen Drips (Juicy)
-                for (let i = 0; i < 40; i++) {
-                    const startX = Phaser.Math.Between(0, 600);
-                    const startY = Phaser.Math.Between(-100, 0);
-                    const endY = Phaser.Math.Between(400, 900);
-                    const dripWidth = Phaser.Math.Between(8, 25);
-                    
-                    const drop = this.add.graphics().setDepth(301);
-                    const tweenObj = { y: startY };
-                    
+                for (let i = 0; i < 25; i++) {
+                    const dropX = Phaser.Math.Between(0, 600);
+                    const drop = this.add.rectangle(dropX, -100, Phaser.Math.Between(10, 40), Phaser.Math.Between(50, 200), 0x770000).setDepth(301);
                     this.tweens.add({
-                        targets: tweenObj,
-                        y: endY,
-                        duration: Phaser.Math.Between(2500, 7000),
-                        delay: Phaser.Math.Between(0, 2000),
-                        ease: 'Sine.easeIn',
-                        onUpdate: () => {
-                            drop.clear();
-                            drop.fillStyle(0x7a0000, 1);
-                            // Draw the trailing streak
-                            drop.fillRect(startX - dripWidth/4, startY, dripWidth/2, tweenObj.y - startY);
-                            // Draw the bulbous tip of the drop sliding down
-                            drop.fillCircle(startX, tweenObj.y, dripWidth/2);
-                        }
+                        targets: drop,
+                        y: Phaser.Math.Between(800, 1000),
+                        duration: Phaser.Math.Between(2000, 6000),
+                        ease: 'Power1',
+                        delay: Phaser.Math.Between(0, 1500)
                     });
                 }
                 
                 this.time.delayedCall(3000, () => {
-                    document.getElementById('choice-title').innerText = 'PERMANENT DEATH';
+                    window.saveData.upgrades.grenades = this.sessionGrenades; 
+                    saveGame();
+                    
+                    const title = document.getElementById('choice-title');
+                    title.innerHTML = `PERMANENT DEATH<br><span style="font-size:18px; color:#aaa; text-shadow:none; display:block; margin-top:10px;">WAVES SURVIVED: <span style="color:#fff;">${this.currentWave}</span> &nbsp;|&nbsp; KILLS: <span style="color:#fff;">${this.enemiesDefeated}</span> &nbsp;|&nbsp; COINS EXTRACTED: <span style="color:#fde047;">${this.sessionCoins}</span></span>`;
+                    title.style.color = '#ff3333';
+                    title.style.textShadow = '0 0 15px #aa0000';
+                    
+                    document.getElementById('choice-buttons').style.display = 'flex';
+                    document.getElementById('btn-choice-shop').style.display = 'none';
+                    document.getElementById('draft-container').style.display = 'none';
+                    
                     document.getElementById('btn-choice-continue').innerText = 'DEPLOY NEXT RUN';
                     document.getElementById('choice-screen').style.display = 'flex';
 
-                    // Force restart scene (resets Run Stats entirely)
                     window.choiceContinueCallback = () => { this.scene.restart(); };
                     window.shopCloseCallback = () => { this.scene.restart(); };
                 });
@@ -1357,118 +2211,62 @@
 
         new Phaser.Game(config);
 
-        // --- DYNAMIC UPGRADE SHOP UI LOGIC ---
+        // --- UPGRADE SHOP UI LOGIC ---
+        function renderTierBar(elementId, current, max) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 0; i < max; i++) {
+                const pip = document.createElement('div');
+                pip.className = 'tier-pip';
+                if (i < current) pip.classList.add(current >= max ? 'maxed' : 'filled');
+                container.appendChild(pip);
+            }
+        }
         
-        // Tab Navigation
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                e.target.classList.add('active');
-                document.getElementById(e.target.getAttribute('data-target')).classList.add('active');
-            });
-        });
-
-        function updateShopUI() {
-            if(!window.gameScene) return;
-            const scene = window.gameScene;
+        function updateShopItem(config) {
+            const { id, current, max, cost } = config;
+            renderTierBar(`tier-${id}`, current, max);
+            const btn = document.getElementById(`btn-upg-${id}`);
+            if (!btn) return;
             
-            document.getElementById('shop-coins').innerText = `COINS: ${window.saveData.coins}`;
-            
-            // --- UPDATE STATS TAB ---
-            const dmgCost = 15 + (scene.runStats.dmgLvl * 15);
-            document.getElementById('lvl-dmg').innerText = scene.runStats.dmgLvl;
-            const dmgBtn = document.getElementById('btn-upg-dmg');
-            dmgBtn.innerText = `Buy: ${dmgCost}`; dmgBtn.disabled = window.saveData.coins < dmgCost;
-
-            const spdCost = 15 + (scene.runStats.spdLvl * 15);
-            document.getElementById('lvl-spd').innerText = scene.runStats.spdLvl;
-            const spdBtn = document.getElementById('btn-upg-spd');
-            spdBtn.innerText = `Buy: ${spdCost}`; spdBtn.disabled = window.saveData.coins < spdCost;
-
-            const moveCost = 10 + (scene.runStats.moveLvl * 10);
-            document.getElementById('lvl-move').innerText = scene.runStats.moveLvl;
-            const moveBtn = document.getElementById('btn-upg-move');
-            moveBtn.innerText = `Buy: ${moveCost}`; moveBtn.disabled = window.saveData.coins < moveCost;
-
-            const maxHpCost = 50 + (scene.runStats.maxHpLvl * 50);
-            document.getElementById('lvl-maxhp').innerText = scene.runStats.maxHpLvl;
-            const maxHpBtn = document.getElementById('btn-upg-maxhp');
-            maxHpBtn.innerText = `Buy: ${maxHpCost}`; maxHpBtn.disabled = window.saveData.coins < maxHpCost;
-
-            const barCost = 20 + (scene.runStats.barricadeLvl * 10);
-            document.getElementById('lvl-barricade').innerText = scene.runStats.barricadeLvl;
-            const barBtn = document.getElementById('btn-upg-barricade');
-            barBtn.innerText = `Buy: ${barCost}`; barBtn.disabled = window.saveData.coins < barCost;
-
-            // --- UPDATE WEAPONS TAB ---
-            const wpnContainer = document.getElementById('shop-weapons');
-            wpnContainer.innerHTML = ''; 
-            scene.gunTiers.forEach((gun, index) => {
-                if(index === 0) return; // Skip pea shooter
-                
-                const item = document.createElement('div');
-                item.className = 'shop-item';
-                const isEquipped = scene.currentGunTier === index;
-                const cost = scene.gunPrices[index];
-                const canBuy = window.saveData.coins >= cost;
-                
-                item.innerHTML = `
-                    <span>${gun.name}<br><small>Base DMG: ${gun.damage} | Ammo: ${gun.ammo === Infinity ? 'INF' : gun.ammo}</small></span>
-                    <button class="shop-btn wpn-buy-btn" data-id="${index}" ${canBuy || isEquipped ? '' : 'disabled'}>
-                        ${isEquipped ? 'EQUIPPED' : 'Buy: ' + cost}
-                    </button>
-                `;
-                wpnContainer.appendChild(item);
-            });
-
-            // Bind newly generated Weapon buttons
-            document.querySelectorAll('.wpn-buy-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = parseInt(e.target.getAttribute('data-id'));
-                    const cost = scene.gunPrices[id];
-                    if (scene.currentGunTier !== id && window.saveData.coins >= cost) {
-                        window.saveData.coins -= cost; saveGame();
-                        scene.equipWeapon(id); updateShopUI();
-                    }
-                });
-            });
-
-            // --- UPDATE POWERUPS TAB ---
-            document.getElementById('btn-buy-ally').disabled = window.saveData.coins < 40;
-            document.getElementById('btn-buy-heal').disabled = window.saveData.coins < 20 || scene.player.hp >= scene.player.maxHp;
-            document.getElementById('btn-buy-ammo').disabled = window.saveData.coins < 15 || scene.gunTiers[scene.currentGunTier].ammo === Infinity || scene.currentAmmo >= scene.gunTiers[scene.currentGunTier].ammo;
-            document.getElementById('btn-buy-repair').disabled = window.saveData.coins < 30;
+            btn.classList.remove('maxed-btn');
+            if (current >= max) {
+                btn.innerText = `MAXED`;
+                btn.disabled = true;
+                btn.classList.add('maxed-btn');
+            } else {
+                btn.innerText = `🪙 ${cost}`;
+                btn.disabled = window.saveData.coins < cost;
+            }
         }
 
-        // Base Stat Purchases
-        document.querySelectorAll('.stat-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const stat = e.target.getAttribute('data-stat');
-                const cost = parseInt(e.target.innerText.replace('Buy: ', ''));
-                if (window.saveData.coins >= cost) {
-                    window.saveData.coins -= cost; saveGame();
-                    window.gameScene.upgradeStat(stat);
-                    updateShopUI();
-                }
-            });
-        });
+        function updateShopUI() {
+            document.getElementById('shop-coins').innerText = `COINS: ${window.saveData.coins}`;
+            
+            updateShopItem({ id: 'vitality', current: window.saveData.upgrades.vitality || 0, max: 5, cost: getUpgradeCost('vitality', window.saveData.upgrades.vitality || 0) });
+            updateShopItem({ id: 'evasion', current: window.saveData.upgrades.evasion || 0, max: 3, cost: getUpgradeCost('evasion', window.saveData.upgrades.evasion || 0) });
+            updateShopItem({ id: 'armor', current: window.saveData.upgrades.armor || 0, max: 3, cost: getUpgradeCost('armor', window.saveData.upgrades.armor || 0) });
+            
+            updateShopItem({ id: 'weapon', current: window.saveData.upgrades.weapon || 0, max: 7, cost: getUpgradeCost('weapon', window.saveData.upgrades.weapon || 0) });
+            updateShopItem({ id: 'yield', current: window.saveData.upgrades.yield || 0, max: 4, cost: getUpgradeCost('yield', window.saveData.upgrades.yield || 0) });
+            updateShopItem({ id: 'overdrive', current: window.saveData.upgrades.overdrive || 0, max: 3, cost: getUpgradeCost('overdrive', window.saveData.upgrades.overdrive || 0) });
+            updateShopItem({ id: 'autofire', current: window.saveData.upgrades.autoFire || 0, max: 1, cost: getUpgradeCost('autofire', 0) });
+            
+            updateShopItem({ id: 'greed', current: window.saveData.upgrades.greed || 0, max: 5, cost: getUpgradeCost('greed', window.saveData.upgrades.greed || 0) });
+            updateShopItem({ id: 'magnet', current: window.saveData.upgrades.magnet || 0, max: 5, cost: getUpgradeCost('magnet', window.saveData.upgrades.magnet || 0) });
+            updateShopItem({ id: 'barricade', current: window.saveData.upgrades.barricade || 0, max: 10, cost: getUpgradeCost('barricade', window.saveData.upgrades.barricade || 0) });
+            updateShopItem({ id: 'speed', current: window.saveData.upgrades.speed || 0, max: 5, cost: getUpgradeCost('speed', window.saveData.upgrades.speed || 0) });
+            
+            const grenBtn = document.getElementById('btn-buy-grenades');
+            const grenCost = getUpgradeCost('grenades', 0);
+            document.getElementById('stock-grenades').innerText = window.saveData.upgrades.grenades || 0;
+            grenBtn.innerText = `🪙 ${grenCost}`;
+            grenBtn.disabled = window.saveData.coins < grenCost;
+            grenBtn.classList.remove('maxed-btn');
+        }
 
-        // Powerup Purchases
-        document.getElementById('btn-buy-ally').addEventListener('click', () => {
-            if (window.saveData.coins >= 40) { window.saveData.coins -= 40; saveGame(); window.gameScene.deployAlly(); updateShopUI(); }
-        });
-        document.getElementById('btn-buy-heal').addEventListener('click', () => {
-            if (window.saveData.coins >= 20) { window.saveData.coins -= 20; saveGame(); window.gameScene.healPlayer(1); updateShopUI(); }
-        });
-        document.getElementById('btn-buy-ammo').addEventListener('click', () => {
-            if (window.saveData.coins >= 15) { window.saveData.coins -= 15; saveGame(); window.gameScene.refillAmmo(); updateShopUI(); }
-        });
-        document.getElementById('btn-buy-repair').addEventListener('click', () => {
-            if (window.saveData.coins >= 30) { window.saveData.coins -= 30; saveGame(); window.gameScene.repairBarricades(); updateShopUI(); }
-        });
-
-        // UI Overlays Flow
+        // JS Listeners for Shop Overlay
         document.getElementById('btn-choice-shop').addEventListener('click', () => {
             document.getElementById('choice-screen').style.display = 'none';
             document.getElementById('upgrade-shop').style.display = 'flex';
@@ -1485,6 +2283,38 @@
             if (window.shopCloseCallback) window.shopCloseCallback();
         });
 
+        // Meta Purchases
+        const addPurchaseListener = (id, prop, maxLvl) => {
+            document.getElementById(`btn-upg-${id}`).addEventListener('click', () => {
+                const level = window.saveData.upgrades[prop] || 0;
+                if (level >= maxLvl) return;
+                const cost = getUpgradeCost(prop, level);
+                if (window.saveData.coins >= cost) {
+                    window.saveData.coins -= cost; window.saveData.upgrades[prop] = level + 1;
+                    saveGame(); updateShopUI(); triggerBuyPulse(`btn-upg-${id}`);
+                }
+            });
+        };
+
+        addPurchaseListener('vitality', 'vitality', 5);
+        addPurchaseListener('evasion', 'evasion', 3);
+        addPurchaseListener('armor', 'armor', 3);
+        addPurchaseListener('weapon', 'weapon', 7);
+        addPurchaseListener('yield', 'yield', 4);
+        addPurchaseListener('overdrive', 'overdrive', 3);
+        addPurchaseListener('autofire', 'autoFire', 1);
+        addPurchaseListener('greed', 'greed', 5);
+        addPurchaseListener('magnet', 'magnet', 5);
+        addPurchaseListener('barricade', 'barricade', 10);
+        addPurchaseListener('speed', 'speed', 5);
+
+        document.getElementById('btn-buy-grenades').addEventListener('click', () => {
+            const cost = getUpgradeCost('grenades', 0);
+            if (window.saveData.coins >= cost) {
+                window.saveData.coins -= cost; window.saveData.upgrades.grenades += 3;
+                saveGame(); updateShopUI(); triggerBuyPulse('btn-buy-grenades');
+            }
+        });
 
         // --- Dev/Pause UI Listeners ---
         document.getElementById('dev-toggle').addEventListener('click', () => {
@@ -1495,14 +2325,32 @@
             e.target.innerText = window.gameScene.devInvincible ? 'God Mode: ON' : 'God Mode: OFF';
             if (window.gameScene.devInvincible) e.target.classList.add('active'); else e.target.classList.remove('active');
         });
-        document.getElementById('btn-nuke').addEventListener('click', () => { if (window.gameScene) window.gameScene.devNukeEnemies(); });
         document.getElementById('btn-max').addEventListener('click', (e) => {
             if (!window.gameScene) return; window.gameScene.toggleMaxStats();
             e.target.innerText = window.gameScene.devMaxStatsActive ? 'Max Stats: ON' : 'Max Stats: OFF';
             if (window.gameScene.devMaxStatsActive) e.target.classList.add('active'); else e.target.classList.remove('active');
         });
+        document.getElementById('btn-next-wave').addEventListener('click', () => { 
+            if (window.gameScene) window.gameScene.devForceNextWave(); 
+        });
         document.getElementById('btn-powerup').addEventListener('click', () => { if (window.gameScene) window.gameScene.spawnGate(); });
         document.getElementById('btn-boss').addEventListener('click', () => { if (window.gameScene) window.gameScene.spawnBoss(); });
+        document.getElementById('btn-coins').addEventListener('click', () => { 
+            window.saveData.coins += 1000; 
+            saveGame(); 
+            if (window.gameScene) {
+                window.gameScene.coinBankUI.setText(`BANK: ${window.saveData.coins}`);
+            }
+            if (document.getElementById('upgrade-shop').style.display === 'flex') {
+                updateShopUI();
+            }
+        });
+        document.getElementById('btn-reset-save').addEventListener('click', () => { 
+            if(confirm("Are you sure you want to completely wipe your meta-progression save data?")) {
+                localStorage.removeItem('zd_save');
+                location.reload();
+            }
+        });
 
         const btnPause = document.getElementById('btn-pause'); const pauseScreen = document.getElementById('pause-screen');
         btnPause.addEventListener('click', () => {
