@@ -300,11 +300,13 @@
         };
         window.saveData = JSON.parse(localStorage.getItem('zd_save')) || defaultSave;
         
+        // Failsafe for missing objects from old saves
+        if (!window.saveData.upgrades) window.saveData.upgrades = { ...defaultSave.upgrades };
+        if (!window.saveData.settings) window.saveData.settings = { ...defaultSave.settings };
+
         ['weapon', 'autoFire', 'grenades', 'magnet', 'armor', 'greed', 'evasion', 'vitality', 'yield', 'overdrive'].forEach(prop => {
             if(window.saveData.upgrades[prop] === undefined) window.saveData.upgrades[prop] = prop === 'grenades' ? 3 : 0;
         });
-        if (!window.saveData.settings) window.saveData.settings = { volume: 50, mute: false, shake: true, crt: true };
-        if (window.saveData.settings.mute === undefined) window.saveData.settings.mute = false;
 
         function saveGame() { localStorage.setItem('zd_save', JSON.stringify(window.saveData)); }
 
@@ -445,6 +447,134 @@
             if (itemCard) { itemCard.classList.remove('purchased-pulse'); void itemCard.offsetWidth; itemCard.classList.add('purchased-pulse'); }
         }
 
+        // --- SHOP & UI EVENT BINDINGS (RESTORED) ---
+        function updateShopUI() {
+            document.getElementById('shop-coins').innerText = `FUNDS: ${window.saveData.coins}`;
+            const upgrades = window.saveData.upgrades;
+            
+            const bindUpg = (id, prop, maxLvl) => {
+                const btn = document.getElementById(`btn-upg-${id}`);
+                const pipBar = document.getElementById(`tier-${id}`);
+                if (!btn) return;
+                
+                let current = upgrades[prop] || 0;
+                let cost = getUpgradeCost(prop, current);
+                
+                if (pipBar) {
+                    pipBar.innerHTML = '';
+                    for (let i = 0; i < maxLvl; i++) {
+                        const pip = document.createElement('div');
+                        pip.className = 'tier-pip' + (i < current ? (current >= maxLvl ? ' maxed' : ' filled') : '');
+                        pipBar.appendChild(pip);
+                    }
+                }
+                
+                if (current >= maxLvl) {
+                    btn.innerText = 'MAXED'; btn.disabled = true; btn.classList.add('maxed-btn');
+                } else {
+                    btn.innerText = `Buy: ${cost}`; btn.disabled = window.saveData.coins < cost; btn.classList.remove('maxed-btn');
+                }
+                
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                newBtn.addEventListener('click', () => {
+                    if (window.saveData.coins >= cost && current < maxLvl) {
+                        window.saveData.coins -= cost; window.saveData.upgrades[prop] = current + 1;
+                        saveGame(); playSound('powerup', 0.2); updateShopUI(); triggerBuyPulse(`btn-upg-${id}`);
+                    }
+                });
+            };
+
+            bindUpg('vitality', 'vitality', 5);
+            bindUpg('evasion', 'evasion', 4);
+            bindUpg('armor', 'armor', 3);
+            bindUpg('weapon', 'weapon', 7);
+            bindUpg('yield', 'yield', 5);
+            bindUpg('overdrive', 'overdrive', 3);
+            bindUpg('autofire', 'autoFire', 1);
+            bindUpg('greed', 'greed', 3);
+            bindUpg('magnet', 'magnet', 5);
+            bindUpg('barricade', 'barricade', 5);
+            bindUpg('speed', 'speed', 5);
+            
+            const grenStock = document.getElementById('stock-grenades');
+            const grenBtn = document.getElementById('btn-buy-grenades');
+            if (grenStock && grenBtn) {
+                grenStock.innerText = window.saveData.upgrades.grenades;
+                const cost = getUpgradeCost('grenades', 0);
+                grenBtn.innerText = `Buy: ${cost}`;
+                grenBtn.disabled = window.saveData.coins < cost;
+                
+                const newBtn = grenBtn.cloneNode(true);
+                grenBtn.parentNode.replaceChild(newBtn, grenBtn);
+                newBtn.addEventListener('click', () => {
+                    if (window.saveData.coins >= cost) {
+                        window.saveData.coins -= cost; window.saveData.upgrades.grenades += 3;
+                        saveGame(); playSound('powerup', 0.2); updateShopUI(); triggerBuyPulse('btn-buy-grenades');
+                        if(window.gameScene) { window.gameScene.sessionGrenades += 3; window.gameScene.updateStatsUI(); }
+                    }
+                });
+            }
+        }
+
+        document.getElementById('btn-choice-shop').addEventListener('click', () => {
+            document.getElementById('choice-screen').style.display = 'none';
+            document.getElementById('upgrade-shop').style.display = 'flex';
+            updateShopUI();
+            playSound('ui_click', 0.2);
+        });
+
+        document.getElementById('btn-choice-continue').addEventListener('click', () => {
+            document.getElementById('choice-screen').style.display = 'none';
+            if (window.choiceContinueCallback) window.choiceContinueCallback();
+            playSound('ui_click', 0.2);
+        });
+
+        document.getElementById('btn-close-shop').addEventListener('click', () => {
+            document.getElementById('upgrade-shop').style.display = 'none';
+            if (window.shopCloseCallback) window.shopCloseCallback();
+            playSound('ui_click', 0.2);
+        });
+
+        const btnPause = document.getElementById('btn-pause');
+        const pauseScreen = document.getElementById('pause-screen');
+        btnPause.addEventListener('click', () => {
+            if (!window.gameScene || window.gameScene.isGameOver) return;
+            const scene = window.gameScene; scene.isPaused = !scene.isPaused;
+            playSound('ui_click', 0.2);
+            if (scene.isPaused) { scene.scene.pause(); pauseScreen.style.display = 'flex'; btnPause.innerText = '▶️ RESUME'; btnPause.classList.add('active'); } 
+            else { scene.scene.resume(); pauseScreen.style.display = 'none'; btnPause.innerText = '⏸️ PAUSE'; btnPause.classList.remove('active'); }
+        });
+        document.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'p' || e.key === 'Escape') btnPause.click(); });
+
+        document.getElementById('dev-toggle').addEventListener('click', () => {
+            const panel = document.getElementById('dev-panel'); panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+        });
+        document.getElementById('btn-god').addEventListener('click', (e) => {
+            if (!window.gameScene) return; window.gameScene.devInvincible = !window.gameScene.devInvincible;
+            e.target.innerText = window.gameScene.devInvincible ? 'God Mode: ON' : 'God Mode: OFF';
+            if (window.gameScene.devInvincible) e.target.classList.add('active'); else e.target.classList.remove('active');
+        });
+        document.getElementById('btn-max').addEventListener('click', (e) => {
+            if (!window.gameScene) return; window.gameScene.toggleMaxStats();
+            e.target.innerText = window.gameScene.devMaxStatsActive ? 'Max Stats: ON' : 'Max Stats: OFF';
+            if (window.gameScene.devMaxStatsActive) e.target.classList.add('active'); else e.target.classList.remove('active');
+        });
+        document.getElementById('btn-next-wave').addEventListener('click', () => { 
+            if (window.gameScene) window.gameScene.devForceNextWave(); 
+        });
+        document.getElementById('btn-powerup').addEventListener('click', () => { if (window.gameScene) window.gameScene.spawnGate(); });
+        document.getElementById('btn-boss').addEventListener('click', () => { if (window.gameScene) window.gameScene.spawnBoss(); });
+        document.getElementById('btn-coins').addEventListener('click', () => { 
+            window.saveData.coins += 1000; saveGame(); 
+            if (window.gameScene) window.gameScene.coinBankUI.setText(`BANK: ${window.saveData.coins}`);
+            if (document.getElementById('upgrade-shop').style.display === 'flex') updateShopUI();
+        });
+        document.getElementById('btn-reset-save').addEventListener('click', () => {
+            localStorage.removeItem('zd_save'); location.reload();
+        });
+
+        // --- Core Touch Bindings ---
         window.inputState = { fire: false, grenade: false, alt: false, swap: false, dash: false };
         const bindBtn = (id, key) => {
             const el = document.getElementById(id); if(!el) return;
@@ -1166,7 +1296,12 @@
                         if (enemy.status === 'burning') {
                             if (now > enemy.statusEndTime) { enemy.status = 'none'; this.flashEnemy(enemy); } 
                             else {
-                                enemy.setTint(0xffaa00);
+                                // Patched the crash right here. Safely handled Containers (sprites) vs raw Sprites.
+                                if (enemy.sprites) {
+                                    enemy.sprites.forEach(s => s.setTint(0xffaa00));
+                                } else {
+                                    enemy.setTint(0xffaa00);
+                                }
                                 if (Math.random() < 0.2) this.spawnGore(enemy.x, enemy.y - 10, 1, 0xff5500); 
                                 if (now > enemy.lastStatusTick + 500) { this.damageEnemy(enemy, this.baseDamage); enemy.lastStatusTick = now; }
                             }
@@ -1177,7 +1312,12 @@
                                 else enemy.body.setVelocityY(enemy.baseSpeed); 
                                 this.flashEnemy(enemy);
                             } else {
-                                enemy.setTint(0x00ffff);
+                                // Patched Container crash here too.
+                                if (enemy.sprites) {
+                                    enemy.sprites.forEach(s => s.setTint(0x00ffff));
+                                } else {
+                                    enemy.setTint(0x00ffff);
+                                }
                                 if (Math.random() < 0.1) this.spawnGore(enemy.x, enemy.y, 1, 0x00ffff); 
                             }
                         }
@@ -1542,7 +1682,6 @@
                 
                 this.enemies.add(boss); boss.body.setVelocityY(boss.baseSpeed); 
                 
-                // --- PHASE 6: TRIGGER BOSS UI ---
                 this.activeBoss = boss;
                 this.bossHpBar.setFillStyle(0xff0000); this.bossName.setText('BIOLOGICAL TERROR').setFill('#ff4444');
                 this.tweens.add({ targets: [this.bossHpBg, this.bossHpBar, this.bossName], alpha: 1, duration: 1000 });
@@ -1642,7 +1781,6 @@
                 let actualGain = gate.gateValue; let gateColorHex = 0x0044ff; let feedbackText = '';
                 playSound('powerup', 0.2);
 
-                // --- PHASE 6: JUICE FLASH ---
                 this.cameras.main.flash(150, 255, 255, 255, true);
 
                 if (gate.typeDef.abbr === 'DMG') {
