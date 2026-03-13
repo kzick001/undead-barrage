@@ -93,9 +93,9 @@
         #choice-buttons { display: flex; flex-direction: column; align-items: center; width: 100%; z-index: 1000; }
         
         /* Mutation Draft UI */
-        #draft-container { display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 550px; margin-top: 20px; z-index: 1000; }
+        #draft-container { display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 550px; margin-top: 20px; z-index: 1000; flex-wrap: wrap;}
         .mutation-card {
-            background: rgba(10, 15, 20, 0.95); border: 1px solid #a855f7; border-radius: 4px; padding: 20px; width: 33%; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(10, 15, 20, 0.95); border: 1px solid #a855f7; border-radius: 4px; padding: 15px; width: 30%; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; flex-direction: column; align-items: center; text-align: center;
             box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.1); opacity: 0; transform: translateY(30px); animation: cardEnter 0.5s forwards; position: relative; overflow: hidden;
         }
@@ -107,8 +107,8 @@
         .mutation-card:nth-child(1) { animation-delay: 0.1s; } .mutation-card:nth-child(2) { animation-delay: 0.2s; } .mutation-card:nth-child(3) { animation-delay: 0.3s; }
         @keyframes cardEnter { to { opacity: 1; transform: translateY(0); } }
         .mutation-card:hover { transform: translateY(-10px) scale(1.05); box-shadow: 0 0 20px rgba(168, 85, 247, 0.6), inset 0 0 20px rgba(168, 85, 247, 0.3); background: rgba(20, 15, 30, 0.95); border-color: #d8b4fe; }
-        .mutation-card h3 { color: #d8b4fe; font-size: 16px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px #a855f7; line-height: 1.2; }
-        .mutation-card p { color: #cbd5e1; font-size: 12px; line-height: 1.4; margin: 0; }
+        .mutation-card h3 { color: #d8b4fe; font-size: 15px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px #a855f7; line-height: 1.2; }
+        .mutation-card p { color: #cbd5e1; font-size: 11px; line-height: 1.4; margin: 0; }
 
         /* --- Tactical Shop UI --- */
         #upgrade-shop { z-index: 960; overflow-y: auto; padding: 20px 0; justify-content: flex-start; align-items: center; }
@@ -223,55 +223,55 @@
             
             <div class="shop-category">:: TIER 1: FOUNDATION ::</div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Vitality Serum</span><small>Increases Maximum HP per life.</small><div class="tier-bar" id="tier-vitality"></div></div>
+                <div class="item-info"><span>[+] Roid Rage Juice</span><small>Increases Maximum HP so you die slightly slower.</small><div class="tier-bar" id="tier-vitality"></div></div>
                 <button id="btn-upg-vitality" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Evasion Tactics</span><small>Unlocks lateral DASH. Upgrades reduce cooldown.</small><div class="tier-bar" id="tier-evasion"></div></div>
+                <div class="item-info"><span>[+] Tuck and Roll, Asshole</span><small>Unlocks lateral DASH. Upgrades reduce cooldown.</small><div class="tier-bar" id="tier-evasion"></div></div>
                 <button id="btn-upg-evasion" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Kevlar Weave</span><small>Deploy with additional backup lives.</small><div class="tier-bar" id="tier-armor"></div></div>
+                <div class="item-info"><span>[+] Plot Armor</span><small>Deploy with additional backup lives. You'll need 'em.</small><div class="tier-bar" id="tier-armor"></div></div>
                 <button id="btn-upg-armor" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Frag Grenades (x3)</span><small>Consumable panic buttons. Current Stock: <strong id="stock-grenades" style="color:#00ffcc;">0</strong></small></div>
+                <div class="item-info"><span>[+] Panic Buttons (x3)</span><small>Consumable explosives. Current Stock: <strong id="stock-grenades" style="color:#00ffcc;">0</strong></small></div>
                 <button id="btn-buy-grenades" class="shop-btn btn-interactive">Buy</button>
             </div>
 
             <div class="shop-category">:: TIER 2: TACTICAL ::</div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Weapon License</span><small>Unlocks new guns & alt-fires. Swap mid-run!</small><div class="tier-bar" id="tier-weapon"></div></div>
+                <div class="item-info"><span>[+] NRA Platinum Membership</span><small>Unlocks new guns & alt-fires. Swap mid-run!</small><div class="tier-bar" id="tier-weapon"></div></div>
                 <button id="btn-upg-weapon" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Explosive Yield</span><small>Increases grenade blast radius and damage.</small><div class="tier-bar" id="tier-yield"></div></div>
+                <div class="item-info"><span>[+] Michael Bay Simulator</span><small>Increases grenade blast radius and damage.</small><div class="tier-bar" id="tier-yield"></div></div>
                 <button id="btn-upg-yield" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Overdrive Capacitor</span><small>Extends duration of temporary Frenzy buffs.</small><div class="tier-bar" id="tier-overdrive"></div></div>
+                <div class="item-info"><span>[+] Methamphetamine Drip</span><small>Extends duration of temporary Frenzy buffs.</small><div class="tier-bar" id="tier-overdrive"></div></div>
                 <button id="btn-upg-overdrive" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Auto-Fire Protocol</span><small>Automates primary weapon discharge.</small><div class="tier-bar" id="tier-autofire"></div></div>
+                <div class="item-info"><span>[+] Aimbot For Idiots</span><small>Automates primary weapon discharge for your lazy fingers.</small><div class="tier-bar" id="tier-autofire"></div></div>
                 <button id="btn-upg-autofire" class="shop-btn btn-interactive">Buy</button>
             </div>
 
             <div class="shop-category">:: TIER 3: DOMINATION ::</div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Greed Protocol</span><small>Chance for collected coins to be worth double.</small><div class="tier-bar" id="tier-greed"></div></div>
+                <div class="item-info"><span>[+] Capitalist Pig</span><small>Chance for collected coins to be worth double.</small><div class="tier-bar" id="tier-greed"></div></div>
                 <button id="btn-upg-greed" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Magnetic Field</span><small>Increases proximity collection radius for coins.</small><div class="tier-bar" id="tier-magnet"></div></div>
+                <div class="item-info"><span>[+] Lazy Looter</span><small>Increases proximity collection radius for coins.</small><div class="tier-bar" id="tier-magnet"></div></div>
                 <button id="btn-upg-magnet" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Reinforced Steel</span><small>Increases maximum barricade health by 10%.</small><div class="tier-bar" id="tier-barricade"></div></div>
+                <div class="item-info"><span>[+] Flex Tape</span><small>Increases maximum barricade health by 10%.</small><div class="tier-bar" id="tier-barricade"></div></div>
                 <button id="btn-upg-barricade" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Thruster Upgrade</span><small>Increases base movement speed by 10%.</small><div class="tier-bar" id="tier-speed"></div></div>
+                <div class="item-info"><span>[+] Rocket Boots</span><small>Increases base movement speed by 10%.</small><div class="tier-bar" id="tier-speed"></div></div>
                 <button id="btn-upg-speed" class="shop-btn btn-interactive">Buy</button>
             </div>
             <button id="btn-close-shop" class="shop-btn action-btn btn-interactive">[ DISCONNECT ]</button>
@@ -300,7 +300,6 @@
         };
         window.saveData = JSON.parse(localStorage.getItem('zd_save')) || defaultSave;
         
-        // Failsafe for missing objects from old saves
         if (!window.saveData.upgrades) window.saveData.upgrades = { ...defaultSave.upgrades };
         if (!window.saveData.settings) window.saveData.settings = { ...defaultSave.settings };
 
@@ -378,6 +377,10 @@
                 const osc2 = audioCtx.createOscillator(); osc2.type = 'square'; osc2.frequency.setValueAtTime(102, now); osc2.frequency.linearRampToValueAtTime(82, now + 1.0);
                 osc2.connect(gainNode); osc2.start(now); osc2.stop(now + 1.0);
                 osc.start(now); osc.stop(now + 1.0);
+            } else if (type === 'crit') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(1000, now); osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+                gainNode.gain.setValueAtTime(volume * 1.5, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
             }
         }
 
@@ -447,7 +450,6 @@
             if (itemCard) { itemCard.classList.remove('purchased-pulse'); void itemCard.offsetWidth; itemCard.classList.add('purchased-pulse'); }
         }
 
-        // --- SHOP & UI EVENT BINDINGS (RESTORED) ---
         function updateShopUI() {
             document.getElementById('shop-coins').innerText = `FUNDS: ${window.saveData.coins}`;
             const upgrades = window.saveData.upgrades;
@@ -701,6 +703,10 @@
                 if (this.cameras.main.postFX) this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 1.0, 1.2);
 
                 window.gameScene = this;
+                
+                this.baseCritChance = 0.05; 
+                this.critMultiplier = 2.0;
+                
                 this.devInvincible = false; this.devMaxStatsActive = false; this.savedStats = null;
                 this.isGameOver = false; this.isPaused = false; this.enemiesDefeated = 0;
                 
@@ -715,13 +721,20 @@
                 this.bossName = this.add.text(300, 30, 'BIOLOGICAL TERROR', { fontSize: '16px', fill: '#ff4444', fontStyle: 'bold', letterSpacing: 5 }).setOrigin(0.5).setDepth(202).setAlpha(0);
                 this.activeBoss = null;
 
+                // --- PHASE 3 & 5 COMPLETE MUTATION OVERHAUL ---
                 this.mutationPool = [
-                    { id: 'scavenger', name: "Scavenger's Momentum", desc: "Collecting a coin grants +Speed and Invulnerability (1s)." },
-                    { id: 'trench_foot', name: "Trench Foot", desc: "Stand still to increase Fire Rate up to +50%. Moving resets it." },
+                    { id: 'scavenger', name: "Loot Goblin", desc: "Collecting a coin grants a massive Speed boost and 1s of Invulnerability." },
+                    { id: 'trench_foot', name: "Camper's Delight", desc: "Stand still to steadily increase Fire Rate. Moving resets it." },
                     { id: 'executioner', name: "Executioner's Payload", desc: "Every 10th consecutive hit fires a 3x damage piercing missile." },
-                    { id: 'blood_money', name: "Blood Money", desc: "Uncollected coins act as proximity mines." },
-                    { id: 'pay_it_forward', name: "Pay It Forward", desc: "Whenever the Barricade takes damage, gain a massive 3s damage buff." },
-                    { id: 'kinetic_conversion', name: "Kinetic Conversion", desc: "Taking damage instantly reloads your current grenade." }
+                    { id: 'pay_it_forward', name: "Spiteful Bastard", desc: "Whenever the Barricade takes damage, gain a massive 3s flat Damage buff." },
+                    { id: 'kinetic_conversion', name: "Masochist's Reload", desc: "Taking damage instantly reloads your current grenade." },
+                    { id: 'meat_confetti', name: "Meat Confetti", desc: "Critical hits have a 20% chance to trigger a gory localized explosion." },
+                    { id: 'bitch_splinters', name: "Bitch Splinters", desc: "Critical hits have a 25% chance to violently erupt into piercing bone shrapnel." },
+                    { id: 'vampiric_thirst', name: "Vampiric Thirst", desc: "Critical hits have a rare 5% chance to siphon 1 HP back to your frail body." },
+                    { id: 'capitalism_baby', name: "Capitalism, Baby!", desc: "Collecting a coin fires a massive, piercing Gold Slug upwards." },
+                    { id: 'blood_money', name: "Blood Money", desc: "Enemies killed by Explosions or Splinters have a 25% chance to drop coins." },
+                    { id: 'fuck_everything', name: "Fuck Everything In Particular", desc: "Explosions have a 15% base chance to automatically Crit everything caught in the blast." },
+                    { id: 'aimbot_suppositories', name: "Aimbot Suppositories", desc: "Bone-shards actively curve mid-air to home in on the nearest enemy." }
                 ];
                 
                 this.input.mouse.disableContextMenu(); 
@@ -753,14 +766,14 @@
                 this.baseMoveSpeed = 450 * (1 + (window.saveData.upgrades.speed * 0.1));
 
                 this.gunTiers = [
-                    { name: 'Pea Shooter', speed: 600, delay: 150, damage: 1, pattern: 'single', element: 'none' }, 
-                    { name: 'Heavy Pistol', speed: 700, delay: 130, damage: 2, pattern: 'single', element: 'none' },
-                    { name: 'Uzi', speed: 800, delay: 100, damage: 3, pattern: 'burst', element: 'none' }, 
-                    { name: 'AK-47', speed: 900, delay: 80, damage: 5, pattern: 'single', element: 'fire' }, 
-                    { name: 'Assault Rifle', speed: 1000, delay: 60, damage: 8, pattern: 'twin', element: 'fire' }, 
-                    { name: 'LMG', speed: 1100, delay: 40, damage: 12, pattern: 'spread', element: 'ice' }, 
-                    { name: 'Heavy MG', speed: 1200, delay: 25, damage: 18, pattern: 'twin_spread', element: 'ice' }, 
-                    { name: 'Gatling Gun', speed: 1400, delay: 15, damage: 25, pattern: 'gatling', element: 'ice' } 
+                    { name: 'Crappy BB Gun', speed: 600, delay: 150, damage: 1, pattern: 'single', element: 'none' }, 
+                    { name: 'The Overcompensator', speed: 700, delay: 130, damage: 2, pattern: 'single', element: 'none' },
+                    { name: 'Ghetto Blaster', speed: 800, delay: 100, damage: 3, pattern: 'burst', element: 'none' }, 
+                    { name: 'The Geneva Suggestion', speed: 900, delay: 80, damage: 5, pattern: 'single', element: 'fire' }, 
+                    { name: 'Boomstick', speed: 1000, delay: 60, damage: 8, pattern: 'twin', element: 'fire' }, 
+                    { name: 'The Frozen Margarita', speed: 1100, delay: 40, damage: 12, pattern: 'spread', element: 'ice' }, 
+                    { name: 'Sub-Zero Bitch Slap', speed: 1200, delay: 25, damage: 18, pattern: 'twin_spread', element: 'ice' }, 
+                    { name: 'Meat Grinder 9000', speed: 1400, delay: 15, damage: 25, pattern: 'gatling', element: 'ice' } 
                 ];
                 
                 const maxUnlocked = Math.min(this.gunTiers.length - 1, window.saveData.upgrades.weapon || 0);
@@ -940,7 +953,9 @@
                 const element = this.gunTiers[this.currentGunTier].element; let elemStr = '';
                 if (element === 'fire') elemStr = ' [INCENDIARY]'; if (element === 'ice') elemStr = ' [CRYO]';
 
-                this.statsText.setText(`WPN: ${this.gunTiers[this.currentGunTier].name.toUpperCase()}${elemStr}\nDMG: ${totalDmg}\nSPD: ${this.bulletSpeed}\nBPS: ${bps}${extraStr}`);
+                const crtPct = Math.round(this.baseCritChance * 100);
+                
+                this.statsText.setText(`WPN: ${this.gunTiers[this.currentGunTier].name.toUpperCase()}${elemStr}\nDMG: ${totalDmg}\nSPD: ${this.bulletSpeed}\nBPS: ${bps}\nCRT: ${crtPct}% (x${this.critMultiplier.toFixed(1)})${extraStr}`);
             }
 
             addSingleBarricade(bx) {
@@ -991,6 +1006,12 @@
 
                 this.waveText.setText(`WAVE ${this.currentWave}`); this.waveText.y = -100; this.waveText.scale = 1; this.waveText.setAlpha(1);
                 this.waveDisplayUI.setText(`WAVE ${this.currentWave}`);
+
+                if (this.currentWave > 10) {
+                    this.waveText.setTint(0xff3333);
+                } else {
+                    this.waveText.clearTint();
+                }
 
                 if (this.currentWave >= 6 && this.fogOverlay.alpha === 0) {
                     playSound('error', 0.2);
@@ -1070,7 +1091,7 @@
             popDamageText(x, y, amount, isSpecial = false, colorOverride = null) {
                 const color = colorOverride || (isSpecial ? '#ffaa00' : '#ffffff');
                 const size = isSpecial ? '20px' : '12px';
-                const strAmt = amount > 1000 ? (amount/1000).toFixed(1) + 'k' : amount.toString();
+                const strAmt = amount > 1000 ? (amount/1000).toFixed(1) + 'k' : (typeof amount === 'number' ? Math.floor(amount).toString() : amount);
                 const text = this.add.text(x, y - 10, strAmt, { fontSize: size, fill: color, fontStyle: 'bold' }).setOrigin(0.5).setDepth(150);
                 this.tweens.add({ targets: text, y: y - 50, alpha: 0, duration: 400, ease: 'Cubic.easeOut', onComplete: () => text.destroy() });
             }
@@ -1249,26 +1270,35 @@
                 }
 
                 const magnetRadius = 50 + ((window.saveData.upgrades.magnet || 0) * 60); 
-                const hasBloodMoney = this.activeMutations.includes('blood_money');
 
                 this.coinGroup.children.each(coin => {
                     if (coin.active) {
                         if (coin.y > 850) { coin.destroy(); return; }
-                        if (hasBloodMoney) {
-                            let detonated = false;
-                            this.enemies.children.each(enemy => {
-                                if (detonated || !enemy.active || enemy.isDying) return;
-                                const dist = Phaser.Math.Distance.Between(coin.x, coin.y, enemy.x, enemy.y);
-                                if (dist < 60) { detonated = true; this.triggerCoinMineExplosion(coin.x, coin.y); coin.destroy(); }
-                            });
-                            if (detonated) return; 
-                        }
                         const distToPlayer = Phaser.Math.Distance.Between(this.player.x, this.player.y, coin.x, coin.y);
                         if (distToPlayer < 40) this.collectCoin(coin); else if ((window.saveData.upgrades.magnet || 0) > 0 && distToPlayer < magnetRadius) this.physics.moveToObject(coin, this.player, 500);
                     }
                 });
 
                 this.debrisGroup.children.each(d => { if (d.active && d.y > 850) d.destroy(); });
+
+                // --- PHASE 3b: AIMBOT SUPPOSITORIES (HOMING SHARDS) ---
+                if (this.activeMutations.includes('aimbot_suppositories')) {
+                    this.bullets.children.each(b => {
+                        if (b.active && b.isSplinter) {
+                            let closest = null; let minDist = 250; 
+                            this.enemies.children.each(e => {
+                                if (e.active && !e.isDying && e.y > 100) { 
+                                    let d = Phaser.Math.Distance.Between(b.x, b.y, e.x, e.y);
+                                    if (d < minDist) { minDist = d; closest = e; }
+                                }
+                            });
+                            if (closest) {
+                                this.physics.moveToObject(b, closest, 500);
+                                b.rotation = Math.atan2(b.body.velocity.y, b.body.velocity.x) + Math.PI/2;
+                            }
+                        }
+                    });
+                }
 
                 this.bullets.children.each(b => { 
                     if (b.active && !b.isGrenade) {
@@ -1278,7 +1308,9 @@
                         } else if (b.y < -100 && b.isExecutioner) b.destroy(); 
                     }
                     if (b.isExecutioner && b.active && Math.random() > 0.4) {
-                        const trail = this.add.circle(b.x, b.y, 6, 0xd8b4fe, 0.6).setDepth(7);
+                        let trailColor = b.procDepth !== undefined ? 0xffffff : 0xd8b4fe; 
+                        if (b.isGoldSlug) trailColor = 0xfde047; 
+                        const trail = this.add.circle(b.x, b.y, 6, trailColor, 0.6).setDepth(7);
                         this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 300, onComplete: () => trail.destroy() });
                     }
                 });
@@ -1296,14 +1328,13 @@
                         if (enemy.status === 'burning') {
                             if (now > enemy.statusEndTime) { enemy.status = 'none'; this.flashEnemy(enemy); } 
                             else {
-                                // Patched the crash right here. Safely handled Containers (sprites) vs raw Sprites.
                                 if (enemy.sprites) {
                                     enemy.sprites.forEach(s => s.setTint(0xffaa00));
                                 } else {
                                     enemy.setTint(0xffaa00);
                                 }
                                 if (Math.random() < 0.2) this.spawnGore(enemy.x, enemy.y - 10, 1, 0xff5500); 
-                                if (now > enemy.lastStatusTick + 500) { this.damageEnemy(enemy, this.baseDamage); enemy.lastStatusTick = now; }
+                                if (now > enemy.lastStatusTick + 500) { this.damageEnemy(enemy, this.baseDamage, true, 0, 'burn'); enemy.lastStatusTick = now; }
                             }
                         } else if (enemy.status === 'frozen') {
                             if (now > enemy.statusEndTime) {
@@ -1312,7 +1343,6 @@
                                 else enemy.body.setVelocityY(enemy.baseSpeed); 
                                 this.flashEnemy(enemy);
                             } else {
-                                // Patched Container crash here too.
                                 if (enemy.sprites) {
                                     enemy.sprites.forEach(s => s.setTint(0x00ffff));
                                 } else {
@@ -1449,6 +1479,26 @@
                     if (isPlayer) this.shake(30, 0.005);
                 }
             }
+
+            fireSplinters(x, y, damage, procDepth) {
+                playSound('shoot', 0.1);
+                for(let i=0; i<3; i++) {
+                    const vx = Phaser.Math.Between(-250, 250);
+                    const vy = Phaser.Math.Between(-350, -150);
+                    const shard = this.physics.add.sprite(x, y, 'bullet').setDepth(8);
+                    shard.setTintFill(0xffffff);
+                    shard.setScale(0.8, 1.5);
+                    this.bullets.add(shard);
+                    shard.body.setVelocity(vx, vy);
+                    shard.rotation = Math.atan2(vy, vx) + Math.PI/2;
+                    shard.isExecutioner = true; 
+                    shard.hitEnemies = new Set();
+                    shard.altDamage = damage;
+                    // FIX: CRITICAL MATH. We must increment depth when spawning fragments.
+                    shard.procDepth = procDepth + 1; 
+                    shard.isSplinter = true; 
+                }
+            }
             
             fireAltWeapon() {
                 if (this.isGameOver || !this.player.active || this.player.alpha === 0 || this.isDashing) return; 
@@ -1501,7 +1551,8 @@
                 });
             }
 
-            triggerSmallExplosion(x, y, damage) {
+            // --- PHASE 3a UPDATE: FORCE CRITS ---
+            triggerSmallExplosion(x, y, damage, procDepth = 0) {
                 playSound('explosion', 0.2);
                 this.shake(150, 0.02);
                 const explosion = this.add.circle(x, y, 30, 0xff3333, 0.9).setDepth(20);
@@ -1509,12 +1560,20 @@
                 const core = this.add.circle(x, y, 15, 0xffffff, 1).setDepth(21);
                 this.tweens.add({ targets: core, scaleX: 2, scaleY: 2, alpha: 0, duration: 150, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
                 
+                if (procDepth > 0) this.spawnGore(x, y, 15, 0xff0000); 
+
                 const radius = 80;
                 const enemiesInRange = this.enemies.getChildren().filter(enemy => {
                     if (!enemy.active || enemy.isDying) return false;
                     return Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y) <= radius;
                 });
-                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, damage, true));
+                
+                let forceCrit = false;
+                if (this.activeMutations.includes('fuck_everything') && Math.random() < 0.15) {
+                    forceCrit = true;
+                }
+
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, damage, true, procDepth + 1, 'explosion', forceCrit));
             }
 
             triggerGrenadeExplosion(x, y) {
@@ -1529,30 +1588,16 @@
                 const yieldLvl = window.saveData.upgrades.yield || 0;
                 const radius = 90 + (yieldLvl * 20); const explosionDamage = 50 + (yieldLvl * 25); 
                 
-                const enemiesInRange = this.enemies.getChildren().filter(enemy => {
-                    if (!enemy.active || enemy.isDying) return false;
-                    return Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y) <= radius;
-                });
-                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage, true));
-            }
-            
-            triggerCoinMineExplosion(x, y) {
-                playSound('explosion', 0.3);
-                this.shake(200, 0.03); 
-                const explosion = this.add.circle(x, y, 15, 0xff3333, 0.9).setDepth(20);
-                this.tweens.add({ targets: explosion, scaleX: 8, scaleY: 8, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => explosion.destroy() });
-                const core = this.add.circle(x, y, 8, 0xfde047, 1).setDepth(21);
-                this.tweens.add({ targets: core, scaleX: 5, scaleY: 5, alpha: 0, duration: 200, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
-                
-                const floatText = this.add.text(x, y - 20, 'MINE!', { fontSize: '14px', fill: '#ff3333', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
-                this.tweens.add({ targets: floatText, y: y - 50, alpha: 0, duration: 600, onComplete: () => floatText.destroy() });
+                let forceCrit = false;
+                if (this.activeMutations.includes('fuck_everything') && Math.random() < 0.15) {
+                    forceCrit = true;
+                }
 
-                const radius = 100; const explosionDamage = 150; 
                 const enemiesInRange = this.enemies.getChildren().filter(enemy => {
                     if (!enemy.active || enemy.isDying) return false;
                     return Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y) <= radius;
                 });
-                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage, true));
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage, true, 0, 'explosion', forceCrit));
             }
 
             triggerPiercingExplosion(x, y) {
@@ -1603,9 +1648,15 @@
                     else if (this.currentWave >= 2 && rand < 0.40) { size = 48; baseHp = 20; speed = 20; type = 'tank'; }
                 }
 
-                const baseMult = 1 + ((this.currentWave - 1) * 0.4);
-                const spikeMult = Math.floor((this.currentWave - 1) / 3) * 2.5; 
-                const hpMult = baseMult + spikeMult; const hp = Math.floor(baseHp * hpMult);
+                let baseMult = 1 + ((this.currentWave - 1) * 0.4);
+                let spikeMult = Math.floor((this.currentWave - 1) / 3) * 2.5; 
+                let hpMult = baseMult + spikeMult; 
+                
+                if (this.currentWave > 10) {
+                    hpMult *= Math.pow(1.15, this.currentWave - 10);
+                }
+
+                const hp = Math.floor(baseHp * hpMult);
 
                 const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + (size / 2); const rightLimit = this.boundaryCenter + (this.boundaryWidth / 2) - (size / 2);
                 let safeX = Phaser.Math.Between(leftLimit, rightLimit);
@@ -1651,7 +1702,7 @@
                         enemy.setScale(Phaser.Math.FloatBetween(0.9, 1.2));
                         this.tweens.add({ targets: enemy, scaleX: 1.15, scaleY: 0.85, duration: Phaser.Math.Between(800, 1200), yoyo: true, repeat: -1 });
                     }
-                    if (type === 'burrower') enemy.burrowState = 0; // 0=spawn, 1=dive, 2=emerged
+                    if (type === 'burrower') enemy.burrowState = 0;
 
                     enemy.hp = hp; enemy.maxHp = hp; enemy.enemyType = type; enemy.isDying = false; 
                     enemy.baseSpeed = speed; enemy.status = 'none'; enemy.dmgAccum = 0; enemy.lastDmgTime = 0; enemy.lastFired = this.time.now;
@@ -1670,8 +1721,17 @@
                 if (this.isGameOver) return;
                 const size = 80;
                 playSound('boss_spawn', 0.4);
-                const baseMult = 1 + ((this.currentWave - 1) * 0.4); const spikeMult = Math.floor((this.currentWave - 1) / 3) * 2.5;
-                const bossHp = Math.floor(300 * (baseMult + spikeMult)); const paletteColor = this.getTierColor();
+                
+                let baseMult = 1 + ((this.currentWave - 1) * 0.4); 
+                let spikeMult = Math.floor((this.currentWave - 1) / 3) * 2.5;
+                let hpMult = baseMult + spikeMult;
+
+                if (this.currentWave > 10) {
+                    hpMult *= Math.pow(1.15, this.currentWave - 10);
+                }
+
+                const bossHp = Math.floor(300 * hpMult); 
+                const paletteColor = this.getTierColor();
 
                 const boss = this.physics.add.sprite(this.boundaryCenter, -size, 'boss');
                 boss.setTint(paletteColor); boss.setScale(Phaser.Math.FloatBetween(0.9, 1.3));
@@ -1699,19 +1759,39 @@
                 if (isDouble) coinValue = 2;
                 
                 playSound('coin', 0.05);
+                const coinX = coin.x; const coinY = coin.y;
                 coin.destroy(); this.sessionCoins += coinValue; window.saveData.coins += coinValue; saveGame(); 
+                
                 if (this.activeMutations.includes('scavenger')) {
                     this.scavengerActive = true; this.player.scavengerInvuln = true;
-                    if (this.scavengerTimer) this.scavengerTimer.remove();
+                    if (this.scavengerTimer) this.scavengerTimer.destroy();
                     this.scavengerTimer = this.time.delayedCall(1000, () => { this.scavengerActive = false; this.player.scavengerInvuln = false; });
                 }
                 
+                if (this.activeMutations.includes('capitalism_baby')) {
+                    playSound('shoot', 0.2);
+                    this.shake(100, 0.02);
+                    const slug = this.physics.add.sprite(coinX, coinY, 'bullet').setDepth(8);
+                    slug.setTintFill(0xfde047); 
+                    slug.setScale(3, 8); 
+                    this.bullets.add(slug); 
+                    slug.body.setVelocityY(-1500);
+                    slug.isExecutioner = true; 
+                    slug.hitEnemies = new Set(); 
+                    slug.altDamage = this.playerDamage * 5; 
+                    slug.procDepth = 0; 
+                    slug.isGoldSlug = true;
+                    
+                    const beam = this.add.rectangle(coinX, coinY - 400, 8, 800, 0xfde047, 0.3).setDepth(7);
+                    this.tweens.add({ targets: beam, scaleX: 2, alpha: 0, duration: 200, onComplete: () => beam.destroy() });
+                }
+
                 this.coinTextUI.setText(`${this.sessionCoins}`); this.coinBankUI.setText(`BANK: ${window.saveData.coins}`);
                 const floatColor = isDouble ? '#00ffcc' : '#fde047'; const fontSizeStr = isDouble ? '20px' : '14px';
-                const flash = this.add.circle(coin.x, coin.y, isDouble ? 25 : 15, isDouble ? 0x00ffcc : 0xfde047, 0.8).setDepth(20);
+                const flash = this.add.circle(coinX, coinY, isDouble ? 25 : 15, isDouble ? 0x00ffcc : 0xfde047, 0.8).setDepth(20);
                 this.tweens.add({ targets: flash, scale: 2, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
-                const floatText = this.add.text(coin.x, coin.y - 10, `+${coinValue}`, { fontSize: fontSizeStr, fill: floatColor, fontStyle: 'bold' }).setOrigin(0.5);
-                this.tweens.add({ targets: floatText, y: coin.y - 40, alpha: 0, duration: 600, onComplete: () => floatText.destroy() });
+                const floatText = this.add.text(coinX, coinY - 10, `+${coinValue}`, { fontSize: fontSizeStr, fill: floatColor, fontStyle: 'bold' }).setOrigin(0.5);
+                this.tweens.add({ targets: floatText, y: coinY - 40, alpha: 0, duration: 600, onComplete: () => floatText.destroy() });
             }
 
             spawnGate() {
@@ -1761,7 +1841,7 @@
                 
                 if (bullet.isGrenade) { this.triggerGrenadeExplosion(bullet.x, bullet.y); bullet.destroy(); this.collectGate(null, gate); return; }
                 if (bullet.isExecutioner) { this.triggerPiercingExplosion(bullet.x, bullet.y); this.collectGate(null, gate); return; }
-                if (bullet.isExplosiveAlt) { this.triggerSmallExplosion(bullet.x, bullet.y, bullet.altDamage); bullet.destroy(); this.collectGate(null, gate); return; }
+                if (bullet.isExplosiveAlt) { this.triggerSmallExplosion(bullet.x, bullet.y, bullet.altDamage, bullet.procDepth || 0); bullet.destroy(); this.collectGate(null, gate); return; }
                 
                 bullet.destroy();
                 if (gate.gateValue >= gate.gateMax) { this.collectGate(null, gate); return; }
@@ -1854,7 +1934,7 @@
                     if (!enemy.active || enemy.isDying) return false;
                     return Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y) <= radius;
                 });
-                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage));
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage, false, 0, 'explosion'));
             }
 
             triggerPlayerHitExplosion(x, y) {
@@ -1866,23 +1946,64 @@
                     if (!enemy.active || enemy.isDying) return false;
                     return Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y) <= radius;
                 });
-                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, 50, true));
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, 50, true, 0, 'explosion'));
             }
 
-            damageEnemy(enemy, amount, isSpecial = false) {
+            // --- THE CORE DAMAGE LOGIC (NOW WITH FORCE CRIT) ---
+            damageEnemy(enemy, amount, isSpecial = false, procDepth = 0, sourceType = 'normal', forceCrit = false) {
                 if (enemy.isDying) return;
-                enemy.hp -= amount;
                 
-                if (isSpecial) this.popDamageText(enemy.x, enemy.y, amount, true);
-                else { enemy.dmgAccum += amount; enemy.lastDmgTime = this.time.now; }
+                let finalAmount = amount;
+                let isCrit = false;
                 
+                if (procDepth < 4 && (forceCrit || Math.random() < this.baseCritChance)) {
+                    isCrit = true;
+                    finalAmount *= this.critMultiplier;
+                }
+                
+                enemy.hp -= finalAmount;
+                
+                if (isCrit) {
+                    playSound('crit', 0.15);
+                    this.shake(150, 0.03);
+                    const critText = this.add.text(enemy.x, enemy.y - 20, `${Math.floor(finalAmount)} CRIT!`, {
+                        fontSize: '24px', fill: '#ffaa00', stroke: '#ff0000', strokeThickness: 3, fontStyle: 'bold', fontFamily: 'monospace'
+                    }).setOrigin(0.5).setDepth(200);
+                    this.tweens.add({ targets: critText, y: enemy.y - 80, scaleX: 1.5, scaleY: 1.5, alpha: 0, duration: 600, ease: 'Back.easeOut', onComplete: () => critText.destroy() });
+
+                    if (this.activeMutations.includes('meat_confetti') && Math.random() < 0.20) {
+                        this.time.delayedCall(50, () => {
+                            if (enemy && enemy.scene) this.triggerSmallExplosion(enemy.x, enemy.y, finalAmount * 0.5, procDepth);
+                        });
+                    }
+
+                    if (this.activeMutations.includes('bitch_splinters') && Math.random() < 0.25) {
+                        this.fireSplinters(enemy.x, enemy.y, finalAmount * 0.3, procDepth);
+                    }
+
+                    if (this.activeMutations.includes('vampiric_thirst') && Math.random() < 0.05) {
+                        if (this.player.hp < this.player.maxHp) {
+                            this.player.hp++;
+                            this.updateHealthUI();
+                            playSound('powerup', 0.1);
+                            this.popDamageText(this.player.x, this.player.y - 30, "+1 HP", true, '#00ff00');
+                        }
+                    }
+
+                } else if (isSpecial) {
+                    this.popDamageText(enemy.x, enemy.y, finalAmount, true);
+                } else { 
+                    enemy.dmgAccum += finalAmount; 
+                    enemy.lastDmgTime = this.time.now; 
+                }
+
                 if (enemy.enemyType === 'grunt' && enemy.sprites) {
                     const expectedSprites = Math.ceil((enemy.hp / enemy.maxHp) * enemy.initialSprites);
                     while (enemy.sprites.length > expectedSprites && enemy.sprites.length > 0) { const s = enemy.sprites.pop(); s.destroy(); }
                 }
 
                 if (enemy.hp <= 0) {
-                    if (enemy.dmgAccum > 0) this.popDamageText(enemy.x, enemy.y, enemy.dmgAccum, false);
+                    if (enemy.dmgAccum > 0 && !isCrit) this.popDamageText(enemy.x, enemy.y, enemy.dmgAccum, false);
                     
                     enemy.isDying = true; this.enemiesDefeated++; 
                     if (enemy.enemyType === 'boss') this.clearBossUI();
@@ -1890,6 +2011,13 @@
                     let dropChance = 0.3; 
                     if (enemy.enemyType === 'sprinter') dropChance = 0.5;
                     if (enemy.enemyType === 'tank' || enemy.enemyType === 'boss') dropChance = 1.0;
+
+                    if (this.activeMutations.includes('blood_money') && (sourceType === 'explosion' || sourceType === 'splinter')) {
+                        if (Math.random() < 0.25) {
+                            dropChance = 1.0; 
+                            this.popDamageText(enemy.x, enemy.y - 20, "PAYOUT", true, '#fde047');
+                        }
+                    }
 
                     if (Math.random() < dropChance) {
                         let coinsToDrop = enemy.enemyType === 'boss' ? 15 : (enemy.enemyType === 'tank' ? 5 : 1);
@@ -1929,6 +2057,9 @@
 
                 let dmg = this.playerDamage + (this.vengeanceBonus || 0);
                 if (projectile.altDamage) dmg = projectile.altDamage + (this.vengeanceBonus || 0);
+                
+                let pDepth = projectile.procDepth || 0;
+                let sType = projectile.isSplinter ? 'splinter' : 'bullet';
 
                 if (projectile.isStandardBullet && !projectile.altDamage) {
                     const element = this.gunTiers[this.currentGunTier].element;
@@ -1943,12 +2074,14 @@
                 
                 if (projectile.isExecutioner) {
                     if (!projectile.hitEnemies.has(enemy)) {
-                        projectile.hitEnemies.add(enemy); this.damageEnemy(enemy, projectile.altDamage ? dmg : dmg * 3, true); this.triggerPiercingExplosion(projectile.x, projectile.y);
+                        projectile.hitEnemies.add(enemy); 
+                        this.damageEnemy(enemy, projectile.altDamage ? dmg : dmg * 3, true, pDepth, sType); 
+                        this.triggerPiercingExplosion(projectile.x, projectile.y);
                     }
                     return; 
                 }
 
-                if (projectile.isExplosiveAlt) { this.triggerSmallExplosion(projectile.x, projectile.y, dmg); projectile.destroy(); return; }
+                if (projectile.isExplosiveAlt) { this.triggerSmallExplosion(projectile.x, projectile.y, dmg, pDepth); projectile.destroy(); return; }
                 
                 if (projectile.isStandardBullet && this.activeMutations.includes('executioner')) {
                     this.consecutiveHits++; this.updateStatsUI();
@@ -1956,7 +2089,7 @@
                 }
                 
                 playSound('hit', 0.02);
-                projectile.destroy(); this.damageEnemy(enemy, dmg);
+                projectile.destroy(); this.damageEnemy(enemy, dmg, false, pDepth, sType);
             }
 
             hitDebris(bullet, debris) {
@@ -1976,8 +2109,8 @@
                 if (!hazard.enemyType && !isDebris) incomingDamage = hazard.maxHp || 10; 
                 
                 if (hazard.texture && (hazard.texture.key === 'enemyBullet' || hazard.texture.key === 'toxic_spit')) { hazard.destroy(); incomingDamage = 10; } 
-                else if (hazard.enemyType) { this.damageEnemy(hazard, 1000, true); } 
-                else if (isDebris) { hazard.destroy(); this.triggerSmallExplosion(hazard.x, hazard.y, 0); } 
+                else if (hazard.enemyType) { this.damageEnemy(hazard, 1000, true, 0, 'barricade'); } 
+                else if (isDebris) { hazard.destroy(); this.triggerSmallExplosion(hazard.x, hazard.y, 0, 0); } 
                 else { hazard.destroy(); }
 
                 barricade.hp -= incomingDamage; barricade.setAlpha(Math.max(0.2, barricade.hp / barricade.maxHp));
