@@ -26,7 +26,6 @@
             overflow: hidden;
         }
         
-        /* --- Global CRT Overlay (Phase 6c) --- */
         #crt-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
@@ -34,7 +33,6 @@
             box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
         }
 
-        /* --- Dev Tools UI Styles --- */
         #dev-ui {
             position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
             z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; font-family: monospace;
@@ -48,7 +46,6 @@
         .dev-btn.active { background: #00ffcc; color: #000; }
         #dev-panel { display: none; flex-direction: column; gap: 5px; margin-top: 5px; }
 
-        /* --- Touch Controls --- */
         #touch-controls {
             position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: space-between;
             padding: 0 15px; box-sizing: border-box; pointer-events: none; z-index: 800;
@@ -75,7 +72,6 @@
         #btn-grenade { background: rgba(50, 255, 50, 0.3); color: #fff; border: 2px solid #33ff33; }
         #btn-grenade:active, #btn-grenade.active { background: rgba(50, 255, 50, 0.8); box-shadow: 0 0 20px #33ff33; transform: scale(0.95); }
 
-        /* --- Diegetic UI Overlays --- */
         .overlay-screen {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(5, 12, 12, 0.95); z-index: 950; flex-direction: column; 
@@ -92,7 +88,6 @@
         #choice-title { color: #ff3333; text-shadow: 0 0 15px #aa0000; z-index: 1000; position: relative;}
         #choice-buttons { display: flex; flex-direction: column; align-items: center; width: 100%; z-index: 1000; }
         
-        /* Mutation Draft UI */
         #draft-container { display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 550px; margin-top: 20px; z-index: 1000; flex-wrap: wrap;}
         .mutation-card {
             background: rgba(10, 15, 20, 0.95); border: 1px solid #a855f7; border-radius: 4px; padding: 15px; width: 30%; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -110,7 +105,6 @@
         .mutation-card h3 { color: #d8b4fe; font-size: 15px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px #a855f7; line-height: 1.2; }
         .mutation-card p { color: #cbd5e1; font-size: 11px; line-height: 1.4; margin: 0; }
 
-        /* --- Tactical Shop UI --- */
         #upgrade-shop { z-index: 960; overflow-y: auto; padding: 20px 0; justify-content: flex-start; align-items: center; }
         #upgrade-shop h2 { color: #00ffcc; text-shadow: 0 0 15px #00ffcc; margin-top: 20px; }
         #shop-coins { color: #fde047; font-size: 20px; font-weight: bold; margin-bottom: 10px; z-index: 1000; letter-spacing: 1px; }
@@ -152,7 +146,6 @@
         }
         .purchased-pulse { animation: buyPulse 0.4s ease-out; }
 
-        /* --- Settings Panel (Phase 6c) --- */
         #settings-screen { z-index: 970; }
         .settings-panel {
             background: rgba(5, 15, 15, 0.9); border: 1px solid #005544; padding: 30px; border-radius: 2px;
@@ -292,7 +285,6 @@
     </div>
 
     <script>
-        // --- Meta & Settings Setup ---
         const defaultSave = { 
             coins: 0, 
             upgrades: { barricade: 0, speed: 0, weapon: 0, autoFire: 0, grenades: 3, magnet: 0, armor: 0, greed: 0, evasion: 0, vitality: 0, yield: 0, overdrive: 0 },
@@ -309,7 +301,6 @@
 
         function saveGame() { localStorage.setItem('zd_save', JSON.stringify(window.saveData)); }
 
-        // --- AUDIO SYNTHESIS SYSTEM ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
         const masterGain = audioCtx.createGain();
@@ -384,7 +375,6 @@
             }
         }
 
-        // --- Settings Implementation ---
         const crtOverlay = document.getElementById('crt-overlay');
         const volSlider = document.getElementById('setting-vol');
         const volVal = document.getElementById('vol-val');
@@ -721,7 +711,6 @@
                 this.bossName = this.add.text(300, 30, 'BIOLOGICAL TERROR', { fontSize: '16px', fill: '#ff4444', fontStyle: 'bold', letterSpacing: 5 }).setOrigin(0.5).setDepth(202).setAlpha(0);
                 this.activeBoss = null;
 
-                // --- PHASE 3 & 5 COMPLETE MUTATION OVERHAUL ---
                 this.mutationPool = [
                     { id: 'scavenger', name: "Loot Goblin", desc: "Collecting a coin grants a massive Speed boost and 1s of Invulnerability." },
                     { id: 'trench_foot', name: "Camper's Delight", desc: "Stand still to steadily increase Fire Rate. Moving resets it." },
@@ -1281,7 +1270,6 @@
 
                 this.debrisGroup.children.each(d => { if (d.active && d.y > 850) d.destroy(); });
 
-                // --- PHASE 3b: AIMBOT SUPPOSITORIES (HOMING SHARDS) ---
                 if (this.activeMutations.includes('aimbot_suppositories')) {
                     this.bullets.children.each(b => {
                         if (b.active && b.isSplinter) {
@@ -1494,7 +1482,6 @@
                     shard.isExecutioner = true; 
                     shard.hitEnemies = new Set();
                     shard.altDamage = damage;
-                    // FIX: CRITICAL MATH. We must increment depth when spawning fragments.
                     shard.procDepth = procDepth + 1; 
                     shard.isSplinter = true; 
                 }
@@ -1551,7 +1538,6 @@
                 });
             }
 
-            // --- PHASE 3a UPDATE: FORCE CRITS ---
             triggerSmallExplosion(x, y, damage, procDepth = 0) {
                 playSound('explosion', 0.2);
                 this.shake(150, 0.02);
@@ -1949,7 +1935,6 @@
                 enemiesInRange.forEach(enemy => this.damageEnemy(enemy, 50, true, 0, 'explosion'));
             }
 
-            // --- THE CORE DAMAGE LOGIC (NOW WITH FORCE CRIT) ---
             damageEnemy(enemy, amount, isSpecial = false, procDepth = 0, sourceType = 'normal', forceCrit = false) {
                 if (enemy.isDying) return;
                 
