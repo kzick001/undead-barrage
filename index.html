@@ -20,8 +20,10 @@
         #game-container { 
             box-shadow: 0 0 40px rgba(0,255,204,0.15); 
             position: relative;
-            width: 600px;
-            height: 800px;
+            width: 100%;
+            max-width: 600px;
+            height: 100%;
+            max-height: 800px;
             background: #050505;
             overflow: hidden;
         }
@@ -34,7 +36,7 @@
         }
 
         #dev-ui {
-            position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
+            position: absolute; top: 15px; right: 15px; transform: none;
             z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; font-family: monospace;
         }
         .dev-btn {
@@ -45,32 +47,36 @@
         .dev-btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 10px #00ffcc; }
         .dev-btn.active { background: #00ffcc; color: #000; }
         #dev-panel { display: none; flex-direction: column; gap: 5px; margin-top: 5px; }
+        .top-row-ui { display: flex; gap: 8px; }
 
+        /* --- Controller Style Touch Controls --- */
         #touch-controls {
-            position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: space-between;
-            padding: 0 15px; box-sizing: border-box; pointer-events: none; z-index: 800;
+            position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-between;
+            padding: 0 30px; box-sizing: border-box; pointer-events: none; z-index: 800;
         }
-        .touch-group { display: flex; gap: 8px; }
-        .game-btn {
-            pointer-events: auto; width: 55px; height: 55px; border-radius: 50%; font-weight: bold; font-size: 11px;
-            font-family: monospace; text-shadow: 1px 1px 2px #000; box-shadow: 0 0 10px rgba(0,0,0,0.5); cursor: pointer;
-            user-select: none; -webkit-user-select: none; touch-action: manipulation; transition: transform 0.1s;
+        .d-pad, .action-pad { width: 120px; height: 120px; position: relative; pointer-events: none; }
+        
+        .pad-btn { 
+            position: absolute; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(20, 30, 40, 0.7); border: 2px solid #475569; color: #fff; text-shadow: 0 0 5px #000;
+            pointer-events: auto; cursor: pointer; user-select: none; touch-action: manipulation;
+            font-family: sans-serif; transition: all 0.1s;
         }
-        
-        #btn-swap { background: rgba(50, 150, 255, 0.3); color: #fff; border: 2px solid #3399ff; }
-        #btn-swap:active, #btn-swap.active { background: rgba(50, 150, 255, 0.8); box-shadow: 0 0 20px #3399ff; transform: scale(0.95); }
-        
-        #btn-dash { background: rgba(255, 150, 50, 0.3); color: #fff; border: 2px solid #ff9933; }
-        #btn-dash:active, #btn-dash.active { background: rgba(255, 150, 50, 0.8); box-shadow: 0 0 20px #ff9933; transform: scale(0.95); }
+        .pad-btn:active, .pad-btn.active { transform: scale(0.92); filter: brightness(1.5); box-shadow: 0 0 15px rgba(255,255,255,0.5); z-index: 10; }
+        .pad-btn span { font-size: 9px; color: #cbd5e1; margin-top: 2px; font-family: monospace; letter-spacing: 0.5px;}
 
-        #btn-fire { background: rgba(255, 50, 50, 0.3); color: #fff; border: 2px solid #ff3333; width: 65px; height: 65px; font-size: 13px; }
-        #btn-fire:active, #btn-fire.active { background: rgba(255, 50, 50, 0.8); box-shadow: 0 0 20px #ff3333; transform: scale(0.95); }
-        
-        #btn-alt { background: rgba(168, 85, 247, 0.3); color: #fff; border: 2px solid #a855f7; }
-        #btn-alt:active, #btn-alt.active { background: rgba(168, 85, 247, 0.8); box-shadow: 0 0 20px #a855f7; transform: scale(0.95); }
-        
-        #btn-grenade { background: rgba(50, 255, 50, 0.3); color: #fff; border: 2px solid #33ff33; }
-        #btn-grenade:active, #btn-grenade.active { background: rgba(50, 255, 50, 0.8); box-shadow: 0 0 20px #33ff33; transform: scale(0.95); }
+        /* Action Diamond */
+        .btn-y { top: 0; left: 40px; width: 40px; height: 40px; border-radius: 50%; border-color: #eab308; color: #fde047; font-weight: bold; }
+        .btn-x { top: 40px; left: 0; width: 40px; height: 40px; border-radius: 50%; border-color: #3b82f6; color: #93c5fd; font-weight: bold; }
+        .btn-b { top: 40px; left: 80px; width: 40px; height: 40px; border-radius: 50%; border-color: #ef4444; color: #fca5a5; font-weight: bold; }
+        .btn-a { top: 80px; left: 40px; width: 40px; height: 40px; border-radius: 50%; border-color: #22c55e; color: #86efac; font-weight: bold; }
+
+        /* D-Pad Cross */
+        .d-up { top: 0; left: 40px; width: 40px; height: 40px; border-radius: 8px 8px 4px 4px; font-size: 16px;}
+        .d-left { top: 40px; left: 0; width: 40px; height: 40px; border-radius: 8px 4px 4px 8px; font-size: 16px;}
+        .d-right { top: 40px; left: 80px; width: 40px; height: 40px; border-radius: 4px 8px 8px 4px; font-size: 16px;}
+        .d-down { top: 80px; left: 40px; width: 40px; height: 40px; border-radius: 4px 4px 8px 8px; font-size: 16px;}
+        .d-center { top: 40px; left: 40px; width: 40px; height: 40px; border-radius: 50%; background: #0f172a; border-color: #64748b; font-size: 10px; font-weight: bold; color: #e2e8f0; }
 
         .overlay-screen {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -80,9 +86,8 @@
         }
         .overlay-screen h2 { font-size: 36px; margin-bottom: 5px; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; letter-spacing: 2px; z-index: 1000; }
         
-        #pause-screen { z-index: 900; background: rgba(0, 5, 5, 0.85); }
-        #pause-screen h1 { color: #fff; font-size: 60px; letter-spacing: 5px; text-shadow: 0 0 20px #00ffff; margin: 0; font-style: italic; z-index: 1000; }
-        .pause-btn { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); z-index: 1001; font-size: 14px; padding: 12px 10px; writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 2px;}
+        #pause-screen { z-index: 900; background: rgba(30, 30, 30, 0.6); backdrop-filter: grayscale(100%); }
+        #pause-screen h2 { color: #fff; font-size: 40px; letter-spacing: 5px; text-shadow: 0 0 20px #00ffff; margin: 0; font-style: italic; z-index: 1000; }
 
         #choice-screen { z-index: 960; }
         #choice-title { color: #ff3333; text-shadow: 0 0 15px #aa0000; z-index: 1000; position: relative;}
@@ -105,6 +110,7 @@
         .mutation-card h3 { color: #d8b4fe; font-size: 15px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px #a855f7; line-height: 1.2; }
         .mutation-card p { color: #cbd5e1; font-size: 11px; line-height: 1.4; margin: 0; }
 
+        /* --- THE SHOP UI --- */
         #upgrade-shop { z-index: 960; overflow-y: auto; padding: 20px 0; justify-content: flex-start; align-items: center; }
         #upgrade-shop h2 { color: #00ffcc; text-shadow: 0 0 15px #00ffcc; margin-top: 20px; }
         #shop-coins { color: #fde047; font-size: 20px; font-weight: bold; margin-bottom: 10px; z-index: 1000; letter-spacing: 1px; }
@@ -163,29 +169,31 @@
         <div id="crt-overlay"></div>
 
         <div id="touch-controls">
-            <div class="touch-left">
-                <button id="btn-swap" class="game-btn btn-interactive">SWAP</button>
-                <button id="btn-dash" class="game-btn btn-interactive">DASH</button>
+            <div class="d-pad">
+                <button id="btn-up" class="pad-btn d-up">▲</button>
+                <button id="btn-left" class="pad-btn d-left">◀</button>
+                <button id="btn-right" class="pad-btn d-right">▶</button>
+                <button id="btn-down" class="pad-btn d-down">▼</button>
+                <button id="btn-dash" class="pad-btn d-center">DASH</button>
             </div>
-            <div class="touch-right">
-                <button id="btn-grenade" class="game-btn btn-interactive">BOMB</button>
-                <button id="btn-alt" class="game-btn btn-interactive">ALT</button>
-                <button id="btn-fire" class="game-btn btn-interactive">FIRE</button>
+            <div class="action-pad">
+                <button id="btn-swap" class="pad-btn btn-y">Y<span>SWAP</span></button>
+                <button id="btn-grenade" class="pad-btn btn-x">X<span>BOMB</span></button>
+                <button id="btn-alt" class="pad-btn btn-b">B<span>ALT</span></button>
+                <button id="btn-fire" class="pad-btn btn-a">A<span>FIRE</span></button>
             </div>
         </div>
 
         <div id="pause-screen" class="overlay-screen">
-            <h1>SYSTEM HALTED</h1>
-            <button id="btn-pause-settings" class="shop-btn action-btn btn-interactive" style="font-size: 14px; padding: 10px; margin-top: 30px; letter-spacing: 1px;">[ SYSTEM CONFIG ]</button>
+            <div id="big-play-btn" style="font-size: 80px; cursor: pointer; user-select: none; margin-bottom: 10px; filter: drop-shadow(0 0 10px #00ffff);">▶️</div>
+            <h2>PAUSE</h2>
         </div>
-        <button id="btn-pause" class="dev-btn pause-btn btn-interactive">⏸️ PAUSE</button>
 
         <div id="choice-screen" class="overlay-screen">
             <h2 id="choice-title">> UPLINK ESTABLISHED...</h2>
             <div id="choice-buttons">
-                <button id="btn-choice-shop" class="shop-btn action-btn btn-interactive">[ ACCESS GARAGE ]</button>
-                <button id="btn-choice-continue" class="shop-btn action-btn btn-interactive">[ DEPLOY TO TRENCH ]</button>
-                <button id="btn-choice-settings" class="shop-btn action-btn btn-interactive" style="font-size: 12px; padding: 8px; margin-top: 10px; letter-spacing: 1px;">[ SYSTEM CONFIG ]</button>
+                <button id="btn-choice-shop" class="shop-btn action-btn btn-interactive">[ SHOP ]</button>
+                <button id="btn-choice-continue" class="shop-btn action-btn btn-interactive">[ CONTINUE ]</button>
             </div>
             <div id="draft-container" style="display:none;"></div>
         </div>
@@ -212,34 +220,49 @@
 
         <div id="upgrade-shop" class="overlay-screen">
             <h2>> COMMAND CONSOLE</h2>
-            <div id="shop-coins">FUNDS: 0</div>
+            <div id="shop-coins" style="color: #fde047; font-size: 20px; font-weight: bold; margin-bottom: 10px; letter-spacing: 1px;">BANK: $0</div>
             
-            <div class="shop-category">:: TIER 1: FOUNDATION ::</div>
+            <div class="shop-category">:: STAT INCREASES ::</div>
             <div class="shop-item">
                 <div class="item-info"><span>[+] Roid Rage Juice</span><small>Increases Maximum HP so you die slightly slower.</small><div class="tier-bar" id="tier-vitality"></div></div>
                 <button id="btn-upg-vitality" class="shop-btn btn-interactive">Buy</button>
-            </div>
-            <div class="shop-item">
-                <div class="item-info"><span>[+] Tuck and Roll, Asshole</span><small>Unlocks lateral DASH. Upgrades reduce cooldown.</small><div class="tier-bar" id="tier-evasion"></div></div>
-                <button id="btn-upg-evasion" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
                 <div class="item-info"><span>[+] Plot Armor</span><small>Deploy with additional backup lives. You'll need 'em.</small><div class="tier-bar" id="tier-armor"></div></div>
                 <button id="btn-upg-armor" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Panic Buttons (x3)</span><small>Consumable explosives. Current Stock: <strong id="stock-grenades" style="color:#00ffcc;">0</strong></small></div>
-                <button id="btn-buy-grenades" class="shop-btn btn-interactive">Buy</button>
+                <div class="item-info"><span>[+] Flex Tape</span><small>Increases maximum barricade health by 10%.</small><div class="tier-bar" id="tier-barricade"></div></div>
+                <button id="btn-upg-barricade" class="shop-btn btn-interactive">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><span>[+] Rocket Boots</span><small>Increases base movement speed by 10%.</small><div class="tier-bar" id="tier-speed"></div></div>
+                <button id="btn-upg-speed" class="shop-btn btn-interactive">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><span>[+] Capitalist Pig</span><small>Chance for collected coins to be worth double.</small><div class="tier-bar" id="tier-greed"></div></div>
+                <button id="btn-upg-greed" class="shop-btn btn-interactive">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-info"><span>[+] Lazy Looter</span><small>Increases proximity collection radius for coins.</small><div class="tier-bar" id="tier-magnet"></div></div>
+                <button id="btn-upg-magnet" class="shop-btn btn-interactive">Buy</button>
             </div>
 
-            <div class="shop-category">:: TIER 2: TACTICAL ::</div>
-            <div class="shop-item">
-                <div class="item-info"><span>[+] NRA Platinum Membership</span><small>Unlocks new guns & alt-fires. Swap mid-run!</small><div class="tier-bar" id="tier-weapon"></div></div>
-                <button id="btn-upg-weapon" class="shop-btn btn-interactive">Buy</button>
+            <div class="shop-category">:: WEAPONS & ABILITIES ::</div>
+            <div class="shop-item" style="flex-direction: column; align-items: flex-start;">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <div class="item-info"><span>[+] NRA Platinum Membership</span><small>Unlocks new guns & alt-fires. Swap mid-run!</small><div class="tier-bar" id="tier-weapon"></div></div>
+                    <button id="btn-upg-weapon" class="shop-btn btn-interactive">Buy</button>
+                </div>
+                <div style="display: flex; gap: 15px; margin-top: 12px; font-size: 10px; font-family: monospace; font-weight: bold; width: 100%;">
+                    <span id="preview-gun-1" style="color: #64748b;">🔒 The Overcompensator</span>
+                    <span id="preview-gun-2" style="color: #64748b;">🔒 Ghetto Blaster</span>
+                    <span id="preview-gun-3" style="color: #64748b;">🔒 The Geneva Suggestion</span>
+                </div>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Michael Bay Simulator</span><small>Increases grenade blast radius and damage.</small><div class="tier-bar" id="tier-yield"></div></div>
-                <button id="btn-upg-yield" class="shop-btn btn-interactive">Buy</button>
+                <div class="item-info"><span>[+] Tuck and Roll, Asshole</span><small>Unlocks lateral DASH. Upgrades reduce cooldown.</small><div class="tier-bar" id="tier-evasion"></div></div>
+                <button id="btn-upg-evasion" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
                 <div class="item-info"><span>[+] Methamphetamine Drip</span><small>Extends duration of temporary Frenzy buffs.</small><div class="tier-bar" id="tier-overdrive"></div></div>
@@ -250,29 +273,27 @@
                 <button id="btn-upg-autofire" class="shop-btn btn-interactive">Buy</button>
             </div>
 
-            <div class="shop-category">:: TIER 3: DOMINATION ::</div>
+            <div class="shop-category">:: CONSUMABLES ::</div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Capitalist Pig</span><small>Chance for collected coins to be worth double.</small><div class="tier-bar" id="tier-greed"></div></div>
-                <button id="btn-upg-greed" class="shop-btn btn-interactive">Buy</button>
+                <div class="item-info"><span>[+] Panic Buttons (x3)</span><small>Consumable explosives. Current Stock: <strong id="stock-grenades" style="color:#00ffcc;">0</strong></small></div>
+                <button id="btn-buy-grenades" class="shop-btn btn-interactive">Buy</button>
             </div>
             <div class="shop-item">
-                <div class="item-info"><span>[+] Lazy Looter</span><small>Increases proximity collection radius for coins.</small><div class="tier-bar" id="tier-magnet"></div></div>
-                <button id="btn-upg-magnet" class="shop-btn btn-interactive">Buy</button>
+                <div class="item-info"><span>[+] Michael Bay Simulator</span><small>Increases grenade blast radius and damage.</small><div class="tier-bar" id="tier-yield"></div></div>
+                <button id="btn-upg-yield" class="shop-btn btn-interactive">Buy</button>
             </div>
-            <div class="shop-item">
-                <div class="item-info"><span>[+] Flex Tape</span><small>Increases maximum barricade health by 10%.</small><div class="tier-bar" id="tier-barricade"></div></div>
-                <button id="btn-upg-barricade" class="shop-btn btn-interactive">Buy</button>
-            </div>
-            <div class="shop-item">
-                <div class="item-info"><span>[+] Rocket Boots</span><small>Increases base movement speed by 10%.</small><div class="tier-bar" id="tier-speed"></div></div>
-                <button id="btn-upg-speed" class="shop-btn btn-interactive">Buy</button>
-            </div>
-            <button id="btn-close-shop" class="shop-btn action-btn btn-interactive">[ DISCONNECT ]</button>
+
+            <button id="btn-close-shop" class="shop-btn action-btn btn-interactive">[ DEPLOY ]</button>
         </div>
 
         <div id="dev-ui">
-            <button id="dev-toggle" class="dev-btn btn-interactive">⚙️ DEV</button>
+            <div class="top-row-ui">
+                <button id="dev-toggle" class="dev-btn btn-interactive">⚙️ DEV</button>
+                <button id="btn-pause" class="dev-btn btn-interactive" style="font-size: 14px; padding: 6px 12px;">⏸️</button>
+            </div>
             <div id="dev-panel">
+                <button id="btn-autopilot" class="dev-btn btn-interactive" style="border-color:#a855f7; color:#a855f7;">Auto-Pilot: OFF</button>
+                <button id="btn-timescale" class="dev-btn btn-interactive" style="border-color:#3b82f6; color:#3b82f6;">Speed: 1x</button>
                 <button id="btn-god" class="dev-btn btn-interactive">God Mode: OFF</button>
                 <button id="btn-next-wave" class="dev-btn btn-interactive">Force Next Wave</button>
                 <button id="btn-max" class="dev-btn btn-interactive">Max Stats: OFF</button>
@@ -280,6 +301,7 @@
                 <button id="btn-boss" class="dev-btn btn-interactive">Spawn Boss</button>
                 <button id="btn-coins" class="dev-btn btn-interactive">+1000 Coins</button>
                 <button id="btn-reset-save" class="dev-btn btn-interactive" style="border-color:#ff3333; color:#ff3333;">Wipe Save Data</button>
+                <button id="btn-pause-settings" class="dev-btn btn-interactive" style="border-color:#fff; color:#fff;">System Config</button>
             </div>
         </div>
     </div>
@@ -287,7 +309,7 @@
     <script>
         const defaultSave = { 
             coins: 0, 
-            upgrades: { barricade: 0, speed: 0, weapon: 0, autoFire: 0, grenades: 3, magnet: 0, armor: 0, greed: 0, evasion: 0, vitality: 0, yield: 0, overdrive: 0 },
+            upgrades: { barricade: 0, speed: 0, weapon: 0, autoFire: 0, grenades: 0, bombsUnlocked: false, magnet: 0, armor: 0, greed: 0, evasion: 0, vitality: 0, yield: 0, overdrive: 0 },
             settings: { volume: 50, mute: false, shake: true, crt: true }
         };
         window.saveData = JSON.parse(localStorage.getItem('zd_save')) || defaultSave;
@@ -296,8 +318,9 @@
         if (!window.saveData.settings) window.saveData.settings = { ...defaultSave.settings };
 
         ['weapon', 'autoFire', 'grenades', 'magnet', 'armor', 'greed', 'evasion', 'vitality', 'yield', 'overdrive'].forEach(prop => {
-            if(window.saveData.upgrades[prop] === undefined) window.saveData.upgrades[prop] = prop === 'grenades' ? 3 : 0;
+            if(window.saveData.upgrades[prop] === undefined) window.saveData.upgrades[prop] = 0;
         });
+        if(window.saveData.upgrades.bombsUnlocked === undefined) window.saveData.upgrades.bombsUnlocked = (window.saveData.upgrades.grenades > 0);
 
         function saveGame() { localStorage.setItem('zd_save', JSON.stringify(window.saveData)); }
 
@@ -312,7 +335,7 @@
         document.body.addEventListener('keydown', resumeAudio, {once: true});
 
         function playSound(type, volume = 0.1) {
-            if (audioCtx.state === 'suspended') return;
+            if (audioCtx.state === 'suspended' || (window.gameScene && window.gameScene.time.timeScale > 1)) return;
             const now = audioCtx.currentTime;
             const osc = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
@@ -416,18 +439,27 @@
             crtBtn.innerText = `CRT FILTER: ${window.saveData.settings.crt ? 'ON' : 'OFF'}`; applySettings();
         });
 
-        document.getElementById('btn-choice-settings').addEventListener('click', () => {
-            document.getElementById('choice-screen').style.display = 'none'; document.getElementById('settings-screen').style.display = 'flex'; window.settingsReturnTo = 'choice-screen';
-        });
         document.getElementById('btn-pause-settings').addEventListener('click', () => {
-            document.getElementById('pause-screen').style.display = 'none'; document.getElementById('settings-screen').style.display = 'flex'; window.settingsReturnTo = 'pause-screen';
+            document.getElementById('pause-screen').style.display = 'none'; 
+            document.getElementById('dev-panel').style.display = 'none';
+            document.getElementById('settings-screen').style.display = 'flex'; 
+            window.settingsReturnTo = 'pause-screen';
         });
+        
         document.getElementById('btn-close-settings').addEventListener('click', () => {
-            document.getElementById('settings-screen').style.display = 'none'; document.getElementById(window.settingsReturnTo).style.display = 'flex'; saveGame();
+            document.getElementById('settings-screen').style.display = 'none'; 
+            if (window.settingsReturnTo === 'pause-screen') {
+                document.getElementById('pause-screen').style.display = 'flex';
+            }
+            saveGame();
         });
 
         function getUpgradeCost(type, level) {
-            if (type === 'weapon') return 50 + (level * 75); if (type === 'autofire') return 200; if (type === 'grenades') return 15;
+            if (type === 'weapon') {
+                const costs = [25, 75, 150, 300, 500, 800, 1200, 2000];
+                return costs[Math.min(level, costs.length - 1)];
+            }
+            if (type === 'autofire') return 200; if (type === 'grenades') return 15;
             if (type === 'magnet') return 25 + (level * 25); if (type === 'armor') return 100 + (level * 100); if (type === 'greed') return 50 + (level * 50);
             if (type === 'evasion') return 100 + (level * 100); if (type === 'vitality') return 50 + (level * 50);
             if (type === 'yield') return 75 + (level * 75); if (type === 'overdrive') return 150 + (level * 100);
@@ -441,7 +473,7 @@
         }
 
         function updateShopUI() {
-            document.getElementById('shop-coins').innerText = `FUNDS: ${window.saveData.coins}`;
+            document.getElementById('shop-coins').innerText = `BANK: $${window.saveData.coins}`;
             const upgrades = window.saveData.upgrades;
             
             const bindUpg = (id, prop, maxLvl) => {
@@ -464,7 +496,7 @@
                 if (current >= maxLvl) {
                     btn.innerText = 'MAXED'; btn.disabled = true; btn.classList.add('maxed-btn');
                 } else {
-                    btn.innerText = `Buy: ${cost}`; btn.disabled = window.saveData.coins < cost; btn.classList.remove('maxed-btn');
+                    btn.innerText = `Buy: $${cost}`; btn.disabled = window.saveData.coins < cost; btn.classList.remove('maxed-btn');
                 }
                 
                 const newBtn = btn.cloneNode(true);
@@ -473,6 +505,7 @@
                     if (window.saveData.coins >= cost && current < maxLvl) {
                         window.saveData.coins -= cost; window.saveData.upgrades[prop] = current + 1;
                         saveGame(); playSound('powerup', 0.2); updateShopUI(); triggerBuyPulse(`btn-upg-${id}`);
+                        if(window.gameScene) window.gameScene.updateStatsUI();
                     }
                 });
             };
@@ -489,19 +522,29 @@
             bindUpg('barricade', 'barricade', 5);
             bindUpg('speed', 'speed', 5);
             
+            const wLvl = upgrades['weapon'] || 0;
+            const w1 = document.getElementById('preview-gun-1');
+            const w2 = document.getElementById('preview-gun-2');
+            const w3 = document.getElementById('preview-gun-3');
+            if(w1) { w1.innerText = wLvl >= 1 ? "✔️ The Overcompensator" : "🔒 The Overcompensator"; w1.style.color = wLvl >= 1 ? '#00ffcc' : '#64748b'; }
+            if(w2) { w2.innerText = wLvl >= 2 ? "✔️ Ghetto Blaster" : "🔒 Ghetto Blaster"; w2.style.color = wLvl >= 2 ? '#00ffcc' : '#64748b'; }
+            if(w3) { w3.innerText = wLvl >= 3 ? "✔️ The Geneva Suggestion" : "🔒 The Geneva Suggestion"; w3.style.color = wLvl >= 3 ? '#00ffcc' : '#64748b'; }
+
             const grenStock = document.getElementById('stock-grenades');
             const grenBtn = document.getElementById('btn-buy-grenades');
             if (grenStock && grenBtn) {
                 grenStock.innerText = window.saveData.upgrades.grenades;
                 const cost = getUpgradeCost('grenades', 0);
-                grenBtn.innerText = `Buy: ${cost}`;
+                grenBtn.innerText = `Buy: $${cost}`;
                 grenBtn.disabled = window.saveData.coins < cost;
                 
                 const newBtn = grenBtn.cloneNode(true);
                 grenBtn.parentNode.replaceChild(newBtn, grenBtn);
                 newBtn.addEventListener('click', () => {
                     if (window.saveData.coins >= cost) {
-                        window.saveData.coins -= cost; window.saveData.upgrades.grenades += 3;
+                        window.saveData.coins -= cost; 
+                        window.saveData.upgrades.grenades += 3;
+                        window.saveData.upgrades.bombsUnlocked = true;
                         saveGame(); playSound('powerup', 0.2); updateShopUI(); triggerBuyPulse('btn-buy-grenades');
                         if(window.gameScene) { window.gameScene.sessionGrenades += 3; window.gameScene.updateStatsUI(); }
                     }
@@ -530,14 +573,28 @@
 
         const btnPause = document.getElementById('btn-pause');
         const pauseScreen = document.getElementById('pause-screen');
-        btnPause.addEventListener('click', () => {
+        const bigPlayBtn = document.getElementById('big-play-btn');
+
+        const togglePause = () => {
             if (!window.gameScene || window.gameScene.isGameOver) return;
             const scene = window.gameScene; scene.isPaused = !scene.isPaused;
             playSound('ui_click', 0.2);
-            if (scene.isPaused) { scene.scene.pause(); pauseScreen.style.display = 'flex'; btnPause.innerText = '▶️ RESUME'; btnPause.classList.add('active'); } 
-            else { scene.scene.resume(); pauseScreen.style.display = 'none'; btnPause.innerText = '⏸️ PAUSE'; btnPause.classList.remove('active'); }
-        });
-        document.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'p' || e.key === 'Escape') btnPause.click(); });
+            if (scene.isPaused) { 
+                scene.scene.pause(); 
+                pauseScreen.style.display = 'flex'; 
+                btnPause.innerText = '▶️'; 
+                btnPause.classList.add('active'); 
+            } else { 
+                scene.scene.resume(); 
+                pauseScreen.style.display = 'none'; 
+                btnPause.innerText = '⏸️'; 
+                btnPause.classList.remove('active'); 
+            }
+        };
+
+        btnPause.addEventListener('click', togglePause);
+        bigPlayBtn.addEventListener('click', togglePause);
+        document.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'p' || e.key === 'Escape') togglePause(); });
 
         document.getElementById('dev-toggle').addEventListener('click', () => {
             const panel = document.getElementById('dev-panel'); panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
@@ -559,15 +616,34 @@
         document.getElementById('btn-boss').addEventListener('click', () => { if (window.gameScene) window.gameScene.spawnBoss(); });
         document.getElementById('btn-coins').addEventListener('click', () => { 
             window.saveData.coins += 1000; saveGame(); 
-            if (window.gameScene) window.gameScene.coinBankUI.setText(`BANK: ${window.saveData.coins}`);
+            if (window.gameScene) window.gameScene.updateStatsUI();
             if (document.getElementById('upgrade-shop').style.display === 'flex') updateShopUI();
         });
         document.getElementById('btn-reset-save').addEventListener('click', () => {
             localStorage.removeItem('zd_save'); location.reload();
         });
 
-        // --- Core Touch Bindings ---
-        window.inputState = { fire: false, grenade: false, alt: false, swap: false, dash: false };
+        document.getElementById('btn-autopilot').addEventListener('click', (e) => {
+            if (!window.gameScene) return;
+            window.gameScene.autoPilotActive = !window.gameScene.autoPilotActive;
+            e.target.innerText = window.gameScene.autoPilotActive ? 'Auto-Pilot: ON' : 'Auto-Pilot: OFF';
+            if (window.gameScene.autoPilotActive) e.target.classList.add('active'); else e.target.classList.remove('active');
+        });
+
+        let speedMultipliers = [1, 2, 5];
+        let currentSpeedIdx = 0;
+        document.getElementById('btn-timescale').addEventListener('click', (e) => {
+            if (!window.gameScene) return;
+            currentSpeedIdx = (currentSpeedIdx + 1) % speedMultipliers.length;
+            const mult = speedMultipliers[currentSpeedIdx];
+            window.gameScene.time.timeScale = mult;
+            window.gameScene.tweens.timeScale = mult;
+            window.gameScene.physics.world.timeScale = 1 / mult; 
+            e.target.innerText = `Speed: ${mult}x`;
+            if (mult > 1) e.target.classList.add('active'); else e.target.classList.remove('active');
+        });
+
+        window.inputState = { fire: false, grenade: false, alt: false, swap: false, dash: false, up: false, down: false, left: false, right: false };
         const bindBtn = (id, key) => {
             const el = document.getElementById(id); if(!el) return;
             const activate = (e) => { e.preventDefault(); window.inputState[key] = true; el.classList.add('active'); };
@@ -576,6 +652,7 @@
             el.addEventListener('mousedown', activate); el.addEventListener('mouseup', deactivate); el.addEventListener('mouseleave', deactivate);
         };
         bindBtn('btn-fire', 'fire'); bindBtn('btn-grenade', 'grenade'); bindBtn('btn-alt', 'alt'); bindBtn('btn-swap', 'swap'); bindBtn('btn-dash', 'dash');
+        bindBtn('btn-up', 'up'); bindBtn('btn-down', 'down'); bindBtn('btn-left', 'left'); bindBtn('btn-right', 'right');
 
         class GameScene extends Phaser.Scene {
             constructor() { super('GameScene'); }
@@ -684,15 +761,30 @@
             }
 
             shake(duration, intensity) {
+                const now = this.time.now;
+                if (this.lastShakeTime && (now - this.lastShakeTime < 50) && intensity <= (this.lastShakeIntensity || 0)) return;
+                
                 if (window.saveData.settings.shake !== false) {
                     this.cameras.main.shake(duration, intensity);
+                    this.lastShakeTime = now;
+                    this.lastShakeIntensity = intensity;
                 }
+            }
+
+            explodeWaveText(x, y) {
+                this.cameras.main.flash(200, 255, 255, 255); playSound('explosion', 0.2);
+                const ring = this.add.circle(x, y, 50, 0x00ffff, 0.5).setDepth(20); ring.setStrokeStyle(4, 0x00ffff); ring.setFillStyle(0, 0); 
+                this.tweens.add({ targets: ring, scaleX: 6, scaleY: 6, alpha: 0, duration: 500, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+                const beam = this.add.rectangle(x, y, 600, 10, 0x00ffff, 0.8).setDepth(20);
+                this.tweens.add({ targets: beam, scaleY: 0, alpha: 0, duration: 300, ease: 'Power2', onComplete: () => beam.destroy() });
             }
 
             create() {
                 if (this.cameras.main.postFX) this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 1.0, 1.2);
 
                 window.gameScene = this;
+                
+                this.autoPilotActive = false;
                 
                 this.baseCritChance = 0.05; 
                 this.critMultiplier = 2.0;
@@ -706,11 +798,7 @@
                 this.lowHealthOverlay = this.add.rectangle(300, 400, 600, 800, 0xff0000, 0).setDepth(190);
                 this.lowHealthTween = this.tweens.add({ targets: this.lowHealthOverlay, alpha: 0.35, yoyo: true, repeat: -1, duration: 400, paused: true });
 
-                this.bossHpBg = this.add.rectangle(300, 50, 400, 15, 0x330000).setDepth(200).setAlpha(0);
-                this.bossHpBar = this.add.rectangle(100, 50, 400, 15, 0xff0000).setDepth(201).setAlpha(0).setOrigin(0, 0.5);
-                this.bossName = this.add.text(300, 30, 'BIOLOGICAL TERROR', { fontSize: '16px', fill: '#ff4444', fontStyle: 'bold', letterSpacing: 5 }).setOrigin(0.5).setDepth(202).setAlpha(0);
-                this.activeBoss = null;
-
+                // UI elements setup...
                 this.mutationPool = [
                     { id: 'scavenger', name: "Loot Goblin", desc: "Collecting a coin grants a massive Speed boost and 1s of Invulnerability." },
                     { id: 'trench_foot', name: "Camper's Delight", desc: "Stand still to steadily increase Fire Rate. Moving resets it." },
@@ -742,20 +830,23 @@
                 window.shopCloseCallback = null; window.choiceContinueCallback = null;
 
                 const btnPause = document.getElementById('btn-pause');
-                if (btnPause) { btnPause.innerText = '⏸️ PAUSE'; btnPause.classList.remove('active'); }
+                if (btnPause) { btnPause.innerText = '⏸️'; btnPause.classList.remove('active'); }
 
                 this.currentWave = 1; this.startTime = this.time.now;
-                this.isIntermission = false; this.choicePending = false; this.spawningActive = true; this.bossSpawned = false;
+                this.isIntermission = false; this.choicePending = false; this.spawningActive = true; 
                 this.waveActiveTime = 20000; this.intermissionTime = 5000; this.nextPhaseTime = this.time.now + this.waveActiveTime;
                 this.lastSpawnTime = 0;
                 
+                this.waveBudget = 35; 
+                this.isSwarmWave = false;
+
                 this.lives = 3 + (window.saveData.upgrades.armor || 0);
                 this.maxHpScaling = 5 + (window.saveData.upgrades.vitality || 0);
                 this.sessionCoins = 0; this.sessionGrenades = window.saveData.upgrades.grenades || 0;
                 this.baseMoveSpeed = 450 * (1 + (window.saveData.upgrades.speed * 0.1));
 
                 this.gunTiers = [
-                    { name: 'Crappy BB Gun', speed: 600, delay: 150, damage: 1, pattern: 'single', element: 'none' }, 
+                    { name: 'Crappy BB Gun', speed: 600, delay: 350, damage: 1, pattern: 'single', element: 'none' }, 
                     { name: 'The Overcompensator', speed: 700, delay: 130, damage: 2, pattern: 'single', element: 'none' },
                     { name: 'Ghetto Blaster', speed: 800, delay: 100, damage: 3, pattern: 'burst', element: 'none' }, 
                     { name: 'The Geneva Suggestion', speed: 900, delay: 80, damage: 5, pattern: 'single', element: 'fire' }, 
@@ -773,6 +864,10 @@
 
                 this.boundaryCenter = 300; this.boundaryWidth = 160; this.maxBoundaryWidth = 600;
                 
+                this.trailBg = this.add.rectangle(this.boundaryCenter, 400, this.boundaryWidth, 800, 0x111215).setDepth(-15);
+                this.trailLeftBorder = this.add.rectangle(this.boundaryCenter - (this.boundaryWidth / 2), 400, 4, 800, 0x1f2937).setDepth(-14);
+                this.trailRightBorder = this.add.rectangle(this.boundaryCenter + (this.boundaryWidth / 2), 400, 4, 800, 0x1f2937).setDepth(-14);
+
                 this.bgGrid = this.add.grid(300, 400, 800, 1000, 40, 40, 0x050505, 1, 0x111111, 0.5).setDepth(-10);
                 this.bloodLayer = this.add.group();
 
@@ -780,7 +875,7 @@
                 this.rightWall = this.add.rectangle(this.boundaryCenter + (this.boundaryWidth / 2), 400, 2, 800, 0x00ffff, 0.3);
                 this.engagementLine = this.add.rectangle(300, this.engagementY, 600, 2, 0x00ffff, 0.5);
 
-                this.waveDisplayUI = this.add.text(20, 130, 'WAVE 1', { fontSize: '18px', fill: '#ffffff', fontStyle: 'bold' }).setDepth(100);
+                this.waveDisplayUI = this.add.text(20, 20, 'WAVE 1', { fontSize: '18px', fill: '#ffffff', fontStyle: 'bold' }).setDepth(100);
                 this.waveText = this.add.text(300, -100, 'WAVE 1', { fontSize: '50px', fill: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(100);
 
                 this.tweens.add({
@@ -788,7 +883,7 @@
                     onComplete: () => {
                         this.time.delayedCall(1000, () => {
                             this.tweens.add({ targets: this.waveText, scaleX: 3, scaleY: 3, alpha: 0, duration: 300 });
-                            this.explodeWaveText(this.waveText.x, this.waveText.y);
+                            this.explodeWaveText(this.waveText.x, this.waveText.y); 
                         });
                     }
                 });
@@ -808,18 +903,16 @@
                 this.updateHealthUI();
                 this.updateLivesUI();
 
-                this.statsText = this.add.text(20, 75, '', { fontSize: '12px', fill: '#00ffcc', lineHeight: 1.5, fontFamily: 'monospace' }).setDepth(100);
-                this.updateGunStats();
+                this.leftPanel = this.add.rectangle(10, 100, 190, 160, 0x051010, 0.8).setOrigin(0, 0).setDepth(99).setStrokeStyle(1, 0x00ffcc, 0.4);
+                this.statsText = this.add.text(18, 108, '', { fontSize: '11px', fill: '#00ffcc', lineHeight: 1.5, fontFamily: 'monospace' }).setDepth(100);
                 
-                this.coinGroup = this.physics.add.group();
-                this.add.image(440, 20, 'coin').setDepth(100).setScale(1.2);
-                this.coinTextUI = this.add.text(455, 12, `0`, { fontSize: '18px', fill: '#fde047', fontStyle: 'bold' }).setDepth(100);
-                this.coinBankUI = this.add.text(440, 35, `BANK: ${window.saveData.coins}`, { fontSize: '12px', fill: '#ca8a04', fontFamily: 'monospace' }).setDepth(100);
-                
-                this.altTextUI = this.add.text(440, 60, 'OVERCHARGE: READY', { fontSize: '12px', fill: '#a855f7', fontStyle: 'bold', fontFamily: 'monospace' }).setDepth(100);
-                this.dashTextUI = this.add.text(440, 75, '', { fontSize: '12px', fill: '#ff9933', fontStyle: 'bold', fontFamily: 'monospace' }).setDepth(100);
-                if((window.saveData.upgrades.evasion || 0) > 0) this.dashTextUI.setText('DASH: READY');
+                this.rightPanel = this.add.rectangle(585, 100, 140, 50, 0x100505, 0.7).setOrigin(1, 0).setDepth(99).setStrokeStyle(1, 0xfde047, 0.3);
+                this.altTextUI = this.add.text(575, 110, 'OVERCHARGE: READY', { fontSize: '10px', fill: '#a855f7', fontStyle: 'bold', fontFamily: 'monospace' }).setDepth(100).setOrigin(1, 0);
+                this.dashTextUI = this.add.text(575, 130, '', { fontSize: '10px', fill: '#ff9933', fontStyle: 'bold', fontFamily: 'monospace' }).setDepth(100).setOrigin(1, 0);
 
+                this.updateGunStats();
+
+                this.coinGroup = this.physics.add.group();
                 this.input.addPointer(1); 
                 this.barricades = this.physics.add.group(); this.buildBarricades();
 
@@ -871,9 +964,9 @@
 
             devForceNextWave() {
                 if (this.isGameOver || this.choicePending || this.isIntermission) return;
+                this.waveBudget = 0;
                 this.spawningActive = false; this.nextPhaseTime = this.time.now;
                 this.enemies.clear(true, true); this.enemyBullets.clear(true, true);
-                if (this.activeBoss) this.clearBossUI();
             }
 
             getTierColor() {
@@ -886,10 +979,10 @@
                 if(!this.healthGroup) return;
                 this.healthGroup.clear(true, true);
                 if (this.player.hp <= 12) {
-                    for(let i=0; i<this.player.hp; i++) this.healthGroup.add(this.add.image(30 + i*22, 20, 'hud_heart').setDepth(100));
+                    for(let i=0; i<this.player.hp; i++) this.healthGroup.add(this.add.image(30 + i*20, 50, 'hud_heart').setDepth(100));
                 } else {
-                    this.healthGroup.add(this.add.image(30, 20, 'hud_heart').setDepth(100));
-                    this.healthGroup.add(this.add.text(45, 12, `x${this.player.hp}`, { fontSize: '16px', fill: '#ef4444', fontStyle: 'bold' }).setDepth(100));
+                    this.healthGroup.add(this.add.image(30, 50, 'hud_heart').setDepth(100));
+                    this.healthGroup.add(this.add.text(45, 42, `x${this.player.hp}`, { fontSize: '16px', fill: '#ef4444', fontStyle: 'bold' }).setDepth(100));
                 }
                 
                 if (this.player.hp === 1 && !this.lowHealthTween.isPlaying()) {
@@ -903,21 +996,24 @@
                 if(!this.livesGroup) return;
                 this.livesGroup.clear(true, true);
                 if (this.lives <= 12) {
-                    for(let i=0; i<this.lives; i++) this.livesGroup.add(this.add.image(30 + i*22, 40, 'hud_armor').setDepth(100));
+                    for(let i=0; i<this.lives; i++) this.livesGroup.add(this.add.image(30 + i*20, 75, 'hud_armor').setDepth(100));
                 } else {
-                    this.livesGroup.add(this.add.image(30, 40, 'hud_armor').setDepth(100));
-                    this.livesGroup.add(this.add.text(45, 32, `x${this.lives}`, { fontSize: '14px', fill: '#3b82f6', fontStyle: 'bold' }).setDepth(100));
+                    this.livesGroup.add(this.add.image(30, 75, 'hud_armor').setDepth(100));
+                    this.livesGroup.add(this.add.text(45, 67, `x${this.lives}`, { fontSize: '14px', fill: '#3b82f6', fontStyle: 'bold' }).setDepth(100));
                 }
             }
 
             updateBombsUI() {
                 if(!this.bombGroup) return;
                 this.bombGroup.clear(true, true);
+                
+                if (!window.saveData.upgrades.bombsUnlocked) return;
+
                 if (this.sessionGrenades <= 6) {
-                    for(let i=0; i<this.sessionGrenades; i++) this.bombGroup.add(this.add.image(30 + i*22, 60, 'hud_grenade').setDepth(100));
+                    for(let i=0; i<this.sessionGrenades; i++) this.bombGroup.add(this.add.image(30 + i*20, 100, 'hud_grenade').setDepth(100));
                 } else {
-                    this.bombGroup.add(this.add.image(30, 60, 'hud_grenade').setDepth(100));
-                    this.bombGroup.add(this.add.text(45, 52, `x${this.sessionGrenades}`, { fontSize: '14px', fill: '#22c55e', fontStyle: 'bold' }).setDepth(100));
+                    this.bombGroup.add(this.add.image(30, 100, 'hud_grenade').setDepth(100));
+                    this.bombGroup.add(this.add.text(45, 92, `x${this.sessionGrenades}`, { fontSize: '14px', fill: '#22c55e', fontStyle: 'bold' }).setDepth(100));
                 }
             }
 
@@ -944,7 +1040,17 @@
 
                 const crtPct = Math.round(this.baseCritChance * 100);
                 
-                this.statsText.setText(`WPN: ${this.gunTiers[this.currentGunTier].name.toUpperCase()}${elemStr}\nDMG: ${totalDmg}\nSPD: ${this.bulletSpeed}\nBPS: ${bps}\nCRT: ${crtPct}% (x${this.critMultiplier.toFixed(1)})${extraStr}`);
+                let txt = '';
+                if (window.saveData.upgrades.bombsUnlocked) txt += `BOMBS: ${this.sessionGrenades}\n`;
+                txt += `BANK : $${window.saveData.coins}\n`;
+                txt += `-------------------\n`;
+                txt += `WPN: ${this.gunTiers[this.currentGunTier].name.toUpperCase()}${elemStr}\n`;
+                txt += `DMG: ${totalDmg}\n`;
+                txt += `SPD: ${this.bulletSpeed}\n`;
+                txt += `BPS: ${bps}\n`;
+                txt += `CRT: ${crtPct}% (x${this.critMultiplier.toFixed(1)})${extraStr}`;
+                
+                this.statsText.setText(txt);
             }
 
             addSingleBarricade(bx) {
@@ -981,6 +1087,10 @@
                         }
                     });
                 }
+                if (this.trailBg) this.tweens.add({ targets: this.trailBg, width: newWidth, duration: 1500, ease: 'Power2' });
+                if (this.trailLeftBorder) this.tweens.add({ targets: this.trailLeftBorder, x: targetLeftX, duration: 1500, ease: 'Power2' });
+                if (this.trailRightBorder) this.tweens.add({ targets: this.trailRightBorder, x: targetRightX, duration: 1500, ease: 'Power2' });
+
                 this.time.addEvent({
                     delay: 100, repeat: 14, callback: () => {
                         if(this.leftWall && this.leftWall.active) this.spawnGore(this.leftWall.x, Phaser.Math.Between(200, 800), 2, 0x888888);
@@ -990,8 +1100,15 @@
             }
 
             startIntermission() {
-                const clearedWave = this.currentWave; this.isIntermission = true; this.bossSpawned = false; 
-                this.currentWave++; this.gateMaxLimit++; this.nextPhaseTime = this.time.now + this.intermissionTime;
+                const clearedWave = this.currentWave; 
+                this.isIntermission = true; 
+                this.currentWave++; 
+                this.gateMaxLimit++; 
+                this.nextPhaseTime = this.time.now + this.intermissionTime;
+                
+                // PHASE 6a: The Director Budget Init
+                this.waveBudget = 20 + (this.currentWave * 15);
+                this.spawningActive = true;
 
                 this.waveText.setText(`WAVE ${this.currentWave}`); this.waveText.y = -100; this.waveText.scale = 1; this.waveText.setAlpha(1);
                 this.waveDisplayUI.setText(`WAVE ${this.currentWave}`);
@@ -1026,84 +1143,171 @@
 
             handleWaveChoice(clearedWave) {
                 playSound('powerup', 0.3);
+                
+                const bonus = 15 * clearedWave;
+                this.sessionCoins += bonus;
+                window.saveData.coins += bonus;
+                saveGame();
+                this.updateStatsUI();
+
                 const title = document.getElementById('choice-title');
-                title.innerHTML = `> UPLINK ESTABLISHED...<br>WAVE ${clearedWave} CLEARED`; title.style.color = '#00ffcc'; title.style.textShadow = '0 0 15px #00ffcc';
-                document.getElementById('choice-buttons').style.display = 'flex'; document.getElementById('btn-choice-shop').style.display = 'inline-block';
-                document.getElementById('btn-choice-continue').innerText = '[ DEPLOY TO TRENCH ]'; document.getElementById('draft-container').style.display = 'none';
+                title.innerHTML = `> WAVE ${clearedWave} CLEARED<br><span style="font-size:14px; color:#fde047; display:block; margin-top:10px;">WAVE BONUS: +$${bonus}</span>`; 
+                title.style.color = '#00ffcc'; title.style.textShadow = '0 0 15px #00ffcc';
+                document.getElementById('choice-buttons').style.display = 'flex'; 
+                
+                const btnShop = document.getElementById('btn-choice-shop');
+                btnShop.style.display = 'inline-block';
+                btnShop.innerText = '[ SHOP ]';
+                
+                document.getElementById('btn-choice-continue').innerText = '[ CONTINUE ]'; 
+                document.getElementById('draft-container').style.display = 'none';
                 document.getElementById('choice-screen').style.display = 'flex';
                 window.choiceContinueCallback = () => { this.resumeAfterChoice(); }; window.shopCloseCallback = () => { this.resumeAfterChoice(); };
-            }
-
-            handleBossDraft(clearedWave) {
-                playSound('powerup', 0.3);
-                const title = document.getElementById('choice-title');
-                title.innerHTML = `> BOSS DEFEATED<br>DRAFT MUTATION`; title.style.color = '#d8b4fe'; title.style.textShadow = '0 0 20px #a855f7';
-                document.getElementById('choice-buttons').style.display = 'none';
                 
-                const draftContainer = document.getElementById('draft-container'); draftContainer.style.display = 'flex'; draftContainer.innerHTML = '';
-                let available = this.mutationPool.filter(m => !this.activeMutations.includes(m.id));
-                if (available.length < 3) available = [...this.mutationPool]; 
-                
-                Phaser.Utils.Array.Shuffle(available); const choices = available.slice(0, 3);
-
-                choices.forEach((mut) => {
-                    const card = document.createElement('div'); card.className = 'mutation-card btn-interactive'; card.innerHTML = `<h3>${mut.name}</h3><p>${mut.desc}</p>`;
-                    card.addEventListener('mouseenter', () => playSound('ui_hover', 0.05));
-                    card.onclick = () => {
-                        playSound('ui_click', 0.2);
-                        this.activeMutations.push(mut.id); this.updateStatsUI(); 
-                        card.style.background = '#fff'; card.style.transform = 'scale(1.1)';
-                        const flash = this.add.rectangle(300, 400, 600, 800, 0xd8b4fe, 0.4).setDepth(1000);
-                        this.tweens.add({ targets: flash, alpha: 0, duration: 500, onComplete: () => flash.destroy() });
-                        const floatText = this.add.text(300, 300, `MUTATION ACQUIRED:\n${mut.name}`, { fontSize: '24px', fill: '#d8b4fe', fontStyle: 'bold', align: 'center' }).setOrigin(0.5).setDepth(1001);
-                        this.tweens.add({ targets: floatText, y: 200, alpha: 0, duration: 2500, onComplete: () => floatText.destroy() });
-                        setTimeout(() => { document.getElementById('choice-screen').style.display = 'none'; this.resumeAfterChoice(); }, 250);
-                    };
-                    draftContainer.appendChild(card);
-                });
-                document.getElementById('choice-screen').style.display = 'flex';
+                if (this.autoPilotActive) {
+                    this.time.delayedCall(500, () => document.getElementById('btn-choice-continue').click());
+                }
             }
 
             handleDeathChoice() {
                 playSound('explosion', 0.5);
                 const title = document.getElementById('choice-title');
-                title.innerHTML = `> SYSTEM BREACH!<br><span style="font-size:18px; color:#aaa; text-shadow:none; display:block; margin-top:10px;">WAVES SURVIVED: <span style="color:#fff;">${this.currentWave}</span> &nbsp;|&nbsp; KILLS: <span style="color:#fff;">${this.enemiesDefeated}</span> &nbsp;|&nbsp; COINS EXTRACTED: <span style="color:#fde047;">${this.sessionCoins}</span></span>`;
+                title.innerHTML = `> YOU DEAD<br>
+                <span style="font-size:18px; color:#aaa; text-shadow:none; display:block; margin-top:20px; line-height:1.6; text-align:left;">
+                WAVES SURVIVED: <span style="color:#fff;">${this.currentWave}</span><br>
+                KILLS: <span style="color:#fff;">${this.enemiesDefeated}</span><br>
+                COINS EXTRACTED: <span style="color:#fde047;">${this.sessionCoins}</span>
+                </span>`;
                 title.style.color = '#ff3333'; title.style.textShadow = '0 0 15px #aa0000';
                 document.getElementById('choice-buttons').style.display = 'flex'; document.getElementById('btn-choice-shop').style.display = 'none';
-                document.getElementById('draft-container').style.display = 'none'; document.getElementById('btn-choice-continue').innerText = '[ RESPAWN ]';
+                document.getElementById('draft-container').style.display = 'none'; document.getElementById('btn-choice-continue').innerText = '[ RESTART ]';
                 document.getElementById('choice-screen').style.display = 'flex';
                 window.choiceContinueCallback = () => { this.respawnPlayer(); }; window.shopCloseCallback = () => { this.respawnPlayer(); };
+                
+                if (this.autoPilotActive) {
+                    this.time.delayedCall(500, () => document.getElementById('btn-choice-continue').click());
+                }
             }
 
             resumeAfterChoice() { this.choicePending = false; this.startIntermission(); this.physics.resume(); }
 
             popDamageText(x, y, amount, isSpecial = false, colorOverride = null) {
+                const now = this.time.now;
                 const color = colorOverride || (isSpecial ? '#ffaa00' : '#ffffff');
-                const size = isSpecial ? '20px' : '12px';
+                const size = isSpecial ? '18px' : '12px';
+                const fontStyle = isSpecial ? 'italic bold' : 'bold';
+
                 const strAmt = amount > 1000 ? (amount/1000).toFixed(1) + 'k' : (typeof amount === 'number' ? Math.floor(amount).toString() : amount);
-                const text = this.add.text(x, y - 10, strAmt, { fontSize: size, fill: color, fontStyle: 'bold' }).setOrigin(0.5).setDepth(150);
-                this.tweens.add({ targets: text, y: y - 50, alpha: 0, duration: 400, ease: 'Cubic.easeOut', onComplete: () => text.destroy() });
+                const text = this.add.text(x, y - 10, strAmt, { fontSize: size, fill: color, fontStyle: fontStyle }).setOrigin(0.5).setDepth(150);
+                
+                this.tweens.add({ targets: text, y: text.y - 60, alpha: 0, duration: 800, ease: 'Cubic.easeOut', onComplete: () => text.destroy() });
+            }
+
+            triggerPlayerHitExplosion(x, y) {
+                playSound('explosion', 0.3);
+                const shockwave = this.add.circle(x, y, 10, 0xffffff, 0.8).setDepth(20);
+                this.tweens.add({ targets: shockwave, scaleX: 8, scaleY: 8, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => shockwave.destroy() });
+                const radius = 80;
+                const enemiesInRange = this.enemies.getChildren().filter(enemy => {
+                    if (!enemy.active || enemy.isDying) return false;
+                    return Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y) <= radius;
+                });
+                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, 50, true, 0, 'explosion'));
             }
 
             update() {
                 if (this.isGameOver || this.choicePending) return;
                 const now = this.time.now;
 
+                const hasWeaponUpgrades = (window.saveData.upgrades.weapon || 0) > 0;
+                const evasionLvl = window.saveData.upgrades.evasion || 0;
+                const hasBombsUnlocked = window.saveData.upgrades.bombsUnlocked;
+
+                const btnAlt = document.getElementById('btn-alt');
+                const btnSwap = document.getElementById('btn-swap');
+                const btnDash = document.getElementById('btn-dash');
+                const btnBomb = document.getElementById('btn-grenade');
+
+                if (!hasWeaponUpgrades) {
+                    this.altTextUI.setVisible(false);
+                    if(btnAlt) btnAlt.style.display = 'none';
+                    if(btnSwap) btnSwap.style.display = 'none';
+                } else {
+                    this.altTextUI.setVisible(true);
+                    if(btnAlt && btnAlt.style.display === 'none') btnAlt.style.display = 'flex';
+                    if(btnSwap && btnSwap.style.display === 'none') btnSwap.style.display = 'flex';
+                }
+
+                if (!hasBombsUnlocked) {
+                    if(btnBomb) btnBomb.style.display = 'none';
+                } else {
+                    if(btnBomb && btnBomb.style.display === 'none') btnBomb.style.display = 'flex';
+                }
+
+                if (evasionLvl === 0) {
+                    this.dashTextUI.setVisible(false);
+                    if(btnDash) btnDash.style.display = 'none';
+                } else {
+                    this.dashTextUI.setVisible(true);
+                    if(btnDash && btnDash.style.display === 'none') btnDash.style.display = 'flex';
+                }
+
+                if (!hasWeaponUpgrades && evasionLvl === 0) {
+                    this.rightPanel.setVisible(false);
+                } else {
+                    this.rightPanel.setVisible(true);
+                }
+
                 this.bgGrid.y += 1; if (this.bgGrid.y > 440) this.bgGrid.y = 400;
                 if (this.engagementLine) this.engagementLine.y = this.engagementY;
 
-                if (this.activeBoss && this.activeBoss.active) {
-                    const hpPct = Math.max(0, this.activeBoss.hp / this.activeBoss.maxHp);
-                    this.bossHpBar.width = 400 * hpPct;
+                let wantsToFire = this.fireKey.isDown || window.inputState.fire || window.inputState.a;
+                let wantsToGrenade = hasBombsUnlocked && (Phaser.Input.Keyboard.JustDown(this.grenadeKey) || window.inputState.grenade || window.inputState.x);
+                let wantsToAlt = hasWeaponUpgrades && (Phaser.Input.Keyboard.JustDown(this.altKey) || window.inputState.alt || window.inputState.b);
+                let wantsToSwap = hasWeaponUpgrades && (Phaser.Input.Keyboard.JustDown(this.swapKey) || window.inputState.swap || window.inputState.y);
+                let wantsToDash = evasionLvl > 0 && (Phaser.Input.Keyboard.JustDown(this.dashKey) || window.inputState.dash || window.inputState.c);
+
+                let aiLeft = false; let aiRight = false; let aiUp = false; let aiDown = false;
+
+                if (this.autoPilotActive && !this.isDashing && !this.choicePending) {
+                    wantsToFire = true;
+                    
+                    let targetX = this.boundaryCenter;
+                    let lowestEnemy = null; let lowestEnemyY = -999;
+                    let lowestGate = null;  let lowestGateY = -999;
+                    let lowestCoin = null;  let lowestCoinY = -999;
+
+                    this.enemies.children.each(e => {
+                        if (e.active && !e.isDying && e.y > lowestEnemyY) { lowestEnemyY = e.y; lowestEnemy = e; }
+                    });
+                    this.gates.children.each(g => {
+                        if (g.active && g.y > lowestGateY) { lowestGateY = g.y; lowestGate = g; }
+                    });
+                    this.coinGroup.children.each(c => {
+                        if (c.active && c.y > lowestCoinY) { lowestCoinY = c.y; lowestCoin = c; }
+                    });
+
+                    if (lowestEnemy && lowestEnemyY > 500) {
+                        targetX = lowestEnemy.x;
+                    } else if (lowestGate) {
+                        targetX = lowestGate.x;
+                    } else if (lowestCoin) {
+                        targetX = lowestCoin.x;
+                    } else if (lowestEnemy) {
+                        targetX = lowestEnemy.x;
+                    }
+                    
+                    if (this.player.x < targetX - 5) aiRight = true;
+                    else if (this.player.x > targetX + 5) aiLeft = true;
+
+                    if (this.player.y > 600) aiUp = true;
+                    else if (this.player.y < 600) aiDown = true;
+
+                    if (hasWeaponUpgrades && now > this.lastAltFireTime + this.altFireCooldown && Math.random() < 0.02) wantsToAlt = true;
+                    if (hasBombsUnlocked && now > this.lastGrenadeTime + 1000 && this.sessionGrenades > 0 && this.enemies.countActive() > 10 && Math.random() < 0.01) wantsToGrenade = true;
                 }
 
-                const pointer = this.input.activePointer;
-                const pointerFire = pointer.isDown && pointer.leftButtonDown(); const pointerGrenade = pointer.isDown && pointer.rightButtonDown();
-                const wantsToFire = this.fireKey.isDown || pointerFire || window.inputState.fire;
-                const wantsToGrenade = Phaser.Input.Keyboard.JustDown(this.grenadeKey) || pointerGrenade || window.inputState.grenade;
-                const wantsToAlt = Phaser.Input.Keyboard.JustDown(this.altKey) || window.inputState.alt;
-                const wantsToSwap = Phaser.Input.Keyboard.JustDown(this.swapKey) || window.inputState.swap;
-                const wantsToDash = Phaser.Input.Keyboard.JustDown(this.dashKey) || window.inputState.dash;
+                let isMoving = this.cursors.left.isDown || this.cursors.right.isDown || this.cursors.up.isDown || this.cursors.down.isDown || window.inputState.up || window.inputState.down || window.inputState.left || window.inputState.right || aiLeft || aiRight || aiUp || aiDown;
 
                 if (wantsToSwap && this.unlockedGuns.length > 1 && !this.swapFired) {
                     this.activeWeaponIndex = (this.activeWeaponIndex + 1) % this.unlockedGuns.length;
@@ -1114,12 +1318,13 @@
                 }
                 if (!wantsToSwap) this.swapFired = false;
 
-                if (now < this.lastAltFireTime + this.altFireCooldown) {
-                    const left = ((this.lastAltFireTime + this.altFireCooldown - now) / 1000).toFixed(1);
-                    this.altTextUI.setText(`OVERCHARGE: ${left}s`); this.altTextUI.setFill('#888888');
-                } else { this.altTextUI.setText('OVERCHARGE: READY'); this.altTextUI.setFill('#a855f7'); }
+                if (hasWeaponUpgrades) {
+                    if (now < this.lastAltFireTime + this.altFireCooldown) {
+                        const left = ((this.lastAltFireTime + this.altFireCooldown - now) / 1000).toFixed(1);
+                        this.altTextUI.setText(`OVERCHARGE: ${left}s`); this.altTextUI.setFill('#888888');
+                    } else { this.altTextUI.setText('OVERCHARGE: READY'); this.altTextUI.setFill('#a855f7'); }
+                }
 
-                const evasionLvl = window.saveData.upgrades.evasion || 0;
                 const dashCooldown = Math.max(1000, 5000 - (evasionLvl * 1000));
                 if (evasionLvl > 0) {
                     if (now < this.lastDashTime + dashCooldown) {
@@ -1131,7 +1336,7 @@
                 if (wantsToDash && evasionLvl > 0 && now > this.lastDashTime + dashCooldown && !this.dashFired) {
                     this.isDashing = true; this.player.isInvulnerable = true; this.lastDashTime = now; this.dashFired = true;
                     playSound('ui_hover', 0.2);
-                    let dir = 0; if (this.cursors.left.isDown) dir = -1; else if (this.cursors.right.isDown) dir = 1; else dir = this.fireLeft ? -1 : 1;
+                    let dir = 0; if (this.cursors.left.isDown || window.inputState.left || aiLeft) dir = -1; else if (this.cursors.right.isDown || window.inputState.right || aiRight) dir = 1; else dir = this.fireLeft ? -1 : 1;
                     this.player.body.setVelocityX(dir * 1200); this.shake(100, 0.01);
                     
                     this.time.addEvent({
@@ -1146,14 +1351,10 @@
                 }
                 if (!wantsToDash) this.dashFired = false;
 
-                const touchLeft = pointer.isDown && pointer.x < this.player.x - 15 && pointer.y < 700;
-                const touchRight = pointer.isDown && pointer.x > this.player.x + 15 && pointer.y < 700;
-                const touchUp = pointer.isDown && pointer.y < this.player.y - 15 && pointer.y < 700;
-                const touchDown = pointer.isDown && pointer.y > this.player.y + 15 && pointer.y < 700;
-                const isMoving = this.cursors.left.isDown || this.cursors.right.isDown || this.cursors.up.isDown || this.cursors.down.isDown || touchLeft || touchRight || touchUp || touchDown;
-                
                 if (this.activeMutations.includes('trench_foot')) {
-                    if (isMoving) { if (this.trenchFootStacks > 0) { this.trenchFootStacks = 0; this.updateStatsUI(); } } 
+                    if (isMoving && !this.autoPilotActive) { 
+                        if (this.trenchFootStacks > 0) { this.trenchFootStacks = 0; this.updateStatsUI(); } 
+                    } 
                     else {
                         if (now > this.lastTrenchFootTime + 1000) {
                             if (this.trenchFootStacks < 5) {
@@ -1176,7 +1377,7 @@
                 if (this.trenchFootStacks > 0) activeFireDelay = Math.max(15, activeFireDelay * (1 - (this.trenchFootStacks * 0.1)));
                 if (this.frenzyActive) activeFireDelay = Math.max(10, activeFireDelay * 0.4);
 
-                if (window.saveData.upgrades.autoFire > 0) {
+                if (window.saveData.upgrades.autoFire > 0 || this.autoPilotActive) {
                     if (now > this.lastFiredTime + activeFireDelay) { this.fireBullet(); this.lastFiredTime = now; }
                 } else {
                     if (wantsToFire && now > this.lastFiredTime + activeFireDelay) { this.fireBullet(); this.lastFiredTime = now; }
@@ -1185,45 +1386,38 @@
                 if (wantsToGrenade && now > this.lastGrenadeTime + 500 && this.sessionGrenades > 0 && !this.grenadeFired) {
                     this.fireGrenade(); this.lastGrenadeTime = now; this.grenadeFired = true;
                 }
-                if (!wantsToGrenade && (!pointer.isDown || !pointer.rightButtonDown())) this.grenadeFired = false;
+                if (!wantsToGrenade) this.grenadeFired = false;
 
                 if (wantsToAlt && now > this.lastAltFireTime + this.altFireCooldown && !this.altFired) {
                     this.fireAltWeapon(); this.lastAltFireTime = now; this.altFired = true;
                 }
                 if (!wantsToAlt) this.altFired = false;
 
+                // --- PHASE 6: THE DIRECTOR WAVE LOGIC ---
                 if (this.isIntermission) {
                     if (now > this.nextPhaseTime) {
-                        this.isIntermission = false; this.spawningActive = true; this.nextPhaseTime = now + this.waveActiveTime;
+                        this.isIntermission = false; 
+                        this.nextPhaseTime = now + this.waveActiveTime; // Set safety limit
                         this.tweens.add({ targets: this.waveText, scaleX: 3, scaleY: 3, alpha: 0, duration: 300 });
                         this.explodeWaveText(this.waveText.x, this.waveText.y);
                     }
                 } else {
                     if (this.spawningActive) {
-                        if (this.currentWave % 4 === 0 && !this.bossSpawned && now > this.nextPhaseTime - 2000) {
-                            this.spawnBoss(); this.bossSpawned = true;
-                        }
-                        
-                        if (this.currentWave >= 13 && Math.random() < 0.006) {
-                             const bx = Phaser.Math.Between(this.boundaryCenter - this.boundaryWidth/2 + 30, this.boundaryCenter + this.boundaryWidth/2 - 30);
-                             const d = this.physics.add.sprite(bx, -50, 'debris').setDepth(12);
-                             this.debrisGroup.add(d); d.body.setVelocityY(80); d.body.setAngularVelocity(Phaser.Math.Between(-30, 30));
-                        }
-
-                        if (now > this.nextPhaseTime) {
-                            this.spawningActive = false; 
+                        // Director purchases units as long as budget exists
+                        if (this.waveBudget > 0) {
+                            let spawnDelay = Math.max(300, 1500 - (this.currentWave * 100)); // Pace the purchases
+                            if (now > this.lastSpawnTime + spawnDelay) {
+                                this.directorSpawn(); 
+                                this.lastSpawnTime = now; 
+                            }
                         } else {
-                            const spawnDelay = Math.max(300, 1200 - (this.currentWave * 100));
-                            if (now > this.lastSpawnTime + spawnDelay) { this.spawnEnemy(); this.lastSpawnTime = now; }
+                            this.spawningActive = false; // Budget depleted, wait for player to clear screen
                         }
                     } else {
+                        // Wave is complete when the screen is clear
                         if (this.enemies.countActive(true) === 0 && !this.choicePending) {
                             const clearedWave = this.currentWave; 
-                            if (clearedWave % 4 === 0) {
-                                this.choicePending = true;
-                                this.time.delayedCall(800, () => { this.physics.pause(); this.handleBossDraft(clearedWave); });
-                                return;
-                            } else if (clearedWave % 3 === 0) {
+                            if (clearedWave % 3 === 0) {
                                 this.choicePending = true;
                                 this.time.delayedCall(800, () => { this.physics.pause(); this.handleWaveChoice(clearedWave); });
                                 return;
@@ -1236,10 +1430,13 @@
                 if (!this.isDashing) {
                     this.player.body.setVelocityX(0); this.player.body.setVelocityY(0); 
                     let currentSpeed = this.baseMoveSpeed; if (this.scavengerActive) currentSpeed *= 1.5;
-                    if (this.cursors.left.isDown || touchLeft) this.player.body.setVelocityX(-currentSpeed);
-                    else if (this.cursors.right.isDown || touchRight) this.player.body.setVelocityX(currentSpeed);
-                    if (this.cursors.down.isDown || touchDown) this.player.body.setVelocityY(currentSpeed);
-                    else if (this.cursors.up.isDown || touchUp) this.player.body.setVelocityY(-currentSpeed);
+                    
+                    if (this.cursors.left.isDown || window.inputState.left || aiLeft) this.player.body.setVelocityX(-currentSpeed);
+                    else if (this.cursors.right.isDown || window.inputState.right || aiRight) this.player.body.setVelocityX(currentSpeed);
+                    
+                    if (this.cursors.down.isDown || window.inputState.down || aiDown) this.player.body.setVelocityY(currentSpeed);
+                    else if (this.cursors.up.isDown || window.inputState.up || aiUp) this.player.body.setVelocityY(-currentSpeed);
+                    
                     this.player.setAngle(this.player.body.velocity.x * 0.015);
                 }
 
@@ -1308,19 +1505,16 @@
                 this.enemies.children.each(enemy => {
                     if (enemy.active && !enemy.isDying) {
                         
+                        // DAMAGE ACCUMULATION & TICKING
                         if (enemy.dmgAccum > 0 && now > enemy.lastDmgTime + 250) {
-                            if (enemy.dmgAccum >= this.baseDamage * 2) this.popDamageText(enemy.x, enemy.y, enemy.dmgAccum, false);
+                            if (enemy.dmgAccum >= this.baseDamage) this.popDamageText(enemy.x, enemy.y, enemy.dmgAccum, false);
                             enemy.dmgAccum = 0;
                         }
 
                         if (enemy.status === 'burning') {
                             if (now > enemy.statusEndTime) { enemy.status = 'none'; this.flashEnemy(enemy); } 
                             else {
-                                if (enemy.sprites) {
-                                    enemy.sprites.forEach(s => s.setTint(0xffaa00));
-                                } else {
-                                    enemy.setTint(0xffaa00);
-                                }
+                                if (enemy.sprites) enemy.sprites.forEach(s => s.setTint(0xffaa00)); else enemy.setTint(0xffaa00);
                                 if (Math.random() < 0.2) this.spawnGore(enemy.x, enemy.y - 10, 1, 0xff5500); 
                                 if (now > enemy.lastStatusTick + 500) { this.damageEnemy(enemy, this.baseDamage, true, 0, 'burn'); enemy.lastStatusTick = now; }
                             }
@@ -1331,11 +1525,7 @@
                                 else enemy.body.setVelocityY(enemy.baseSpeed); 
                                 this.flashEnemy(enemy);
                             } else {
-                                if (enemy.sprites) {
-                                    enemy.sprites.forEach(s => s.setTint(0x00ffff));
-                                } else {
-                                    enemy.setTint(0x00ffff);
-                                }
+                                if (enemy.sprites) enemy.sprites.forEach(s => s.setTint(0x00ffff)); else enemy.setTint(0x00ffff);
                                 if (Math.random() < 0.1) this.spawnGore(enemy.x, enemy.y, 1, 0x00ffff); 
                             }
                         }
@@ -1359,56 +1549,13 @@
                         if (enemy.y > 750) {
                             this.triggerGameOver('DEFENSES BREACHED');
                             enemy.destroy();
-                        } else if (enemy.enemyType === 'boss' && enemy.y > this.engagementY) {
-                            
-                            if (enemy.hp <= enemy.maxHp * 0.5) {
-                                if(!enemy.isPhase2) {
-                                    enemy.isPhase2 = true;
-                                    playSound('explosion', 0.4);
-                                    this.bossHpBar.setFillStyle(0xffaa00);
-                                    this.bossName.setText('ENRAGED TERROR').setFill('#ffaa00');
-                                }
-                                enemy.setTintFill(0xff0000);
-                                this.time.delayedCall(50, () => { if (enemy && enemy.active) enemy.clearTint().setTint(0xff3333); });
-                                
-                                if (now > enemy.lastFired + 200) { 
-                                    enemy.spiralAngle = (enemy.spiralAngle || 0) + 15;
-                                    for(let i=0; i<4; i++) {
-                                        const ang = Phaser.Math.DegToRad(enemy.spiralAngle + (i*90));
-                                        const bx = enemy.x + Math.cos(ang)*40; const by = enemy.y + Math.sin(ang)*40;
-                                        const bullet = this.physics.add.sprite(bx, by, 'enemyBullet');
-                                        bullet.setTint(0xff3333); this.enemyBullets.add(bullet);
-                                        bullet.body.setVelocity(Math.cos(ang)*200, Math.sin(ang)*200);
-                                    }
-                                    enemy.lastFired = now;
-                                }
-
-                                if (now > (enemy.lastSiphon || 0) + 4000) {
-                                    const barrs = this.barricades.getChildren();
-                                    if (barrs.length > 0) {
-                                        playSound('shoot', 0.1);
-                                        const target = Phaser.Utils.Array.GetRandom(barrs);
-                                        target.hp -= 30; target.setAlpha(Math.max(0.2, target.hp / target.maxHp));
-                                        if(target.hp <= 0) target.destroy();
-                                        enemy.hp = Math.min(enemy.maxHp, enemy.hp + 50);
-                                        
-                                        const beam = this.add.graphics().setDepth(20);
-                                        beam.lineStyle(4, 0xff0000, 0.8); beam.lineBetween(enemy.x, enemy.y, target.x, target.y);
-                                        this.tweens.add({ targets: beam, alpha: 0, duration: 400, onComplete: () => beam.destroy() });
-                                        
-                                        this.popDamageText(target.x, target.y, 30, true);
-                                        this.popDamageText(enemy.x, enemy.y - 40, "+50", true, '#00ff00'); 
-                                    }
-                                    enemy.lastSiphon = now;
-                                }
-
-                            } else {
-                                if (now > enemy.lastFired + 1000) { this.fireEnemyBullet(enemy.x, enemy.y + 40); enemy.lastFired = now; playSound('shoot', 0.05); }
-                            }
-                        }
+                        } 
                     }
                 });
-                this.gates.children.each(g => { if (g.active && g.y > 900) g.destroy(); });
+                
+                if (!this.choicePending && !this.isPaused) {
+                    this.gates.children.each(g => { if (g.active && g.y > 900) g.destroy(); });
+                }
                 if(this.frenzyActive && now % 10 === 0) this.updateStatsUI(); 
             }
 
@@ -1615,34 +1762,39 @@
                 this.time.delayedCall(6000, () => { this.tweens.add({ targets: pool, alpha: 0, duration: 500, onComplete: () => pool.destroy() }); });
             }
 
-            spawnEnemy() {
-                if (this.isGameOver) return; 
-                const rand = Math.random();
-                let size = 24, speed = 45, type = 'grunt'; let baseHp = 3;
-
-                if (this.currentWave >= 13) {
-                    if (rand < 0.15) { size = 30; baseHp = 15; speed = 100; type = 'burrower'; }
-                    else if (rand < 0.35) { size = 32; baseHp = 10; speed = 30; type = 'spitter'; }
-                    else if (rand < 0.50) { size = 24; baseHp = 8; speed = 180; type = 'sprinter'; }
-                    else if (rand < 0.70) { size = 48; baseHp = 20; speed = 20; type = 'tank'; }
-                } else if (this.currentWave >= 6) {
-                    if (rand < 0.20) { size = 32; baseHp = 10; speed = 30; type = 'spitter'; }
-                    else if (rand < 0.40) { size = 24; baseHp = 8; speed = 180; type = 'sprinter'; }
-                    else if (rand < 0.60) { size = 48; baseHp = 20; speed = 20; type = 'tank'; }
-                } else {
-                    if (this.currentWave >= 3 && rand < 0.20) { size = 24; baseHp = 8; speed = 180; type = 'sprinter'; }
-                    else if (this.currentWave >= 2 && rand < 0.40) { size = 48; baseHp = 20; speed = 20; type = 'tank'; }
-                }
-
-                let baseMult = 1 + ((this.currentWave - 1) * 0.4);
-                let spikeMult = Math.floor((this.currentWave - 1) / 3) * 2.5; 
-                let hpMult = baseMult + spikeMult; 
+            // PHASE 6a: The Director Spawn System
+            directorSpawn() {
+                const available = [{type: 'grunt', cost: 1}];
                 
-                if (this.currentWave > 10) {
-                    hpMult *= Math.pow(1.15, this.currentWave - 10);
+                // PHASE 6b: Mob Locks
+                if (this.currentWave >= 5) available.push({type: 'tank', cost: 12});
+                if (this.currentWave >= 7) available.push({type: 'sprinter', cost: 4});
+                if (this.currentWave >= 11) available.push({type: 'spitter', cost: 5});
+
+                const affordable = available.filter(u => u.cost <= this.waveBudget);
+                if (affordable.length === 0) {
+                    this.waveBudget = 0; return; 
                 }
 
-                const hp = Math.floor(baseHp * hpMult);
+                const pick = Phaser.Math.RND.pick(affordable);
+                this.waveBudget -= pick.cost;
+                this.spawnSpecificEnemy(pick.type);
+            }
+
+            spawnSpecificEnemy(type) {
+                if (this.isGameOver) return; 
+                let size = 24, speed = 45, baseHp = 3;
+
+                if (type === 'burrower') { size = 30; baseHp = 15; speed = 100; }
+                else if (type === 'spitter') { size = 32; baseHp = 10; speed = 30; }
+                else if (type === 'sprinter') { size = 24; baseHp = 8; speed = 180; }
+                else if (type === 'tank') { size = 48; baseHp = 20; speed = 20; }
+
+                // Smoother, organic HP Curve
+                let hpMult = 1 + ((this.currentWave - 1) * 0.15);
+                if (this.currentWave > 10) hpMult *= Math.pow(1.15, this.currentWave - 10);
+
+                const hp = Math.max(1, Math.floor(baseHp * hpMult));
 
                 const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + (size / 2); const rightLimit = this.boundaryCenter + (this.boundaryWidth / 2) - (size / 2);
                 let safeX = Phaser.Math.Between(leftLimit, rightLimit);
@@ -1659,7 +1811,11 @@
                 const paletteColor = this.getTierColor();
 
                 if (type === 'grunt') {
-                    const numClusters = this.currentWave < 3 ? Phaser.Math.Between(1, 2) : Phaser.Math.Between(2, 4);
+                    let numClusters = 1;
+                    if (this.currentWave === 2) numClusters = Phaser.Math.Between(1, 2);
+                    else if (this.currentWave === 3) numClusters = 2;
+                    else if (this.currentWave > 3) numClusters = Phaser.Math.Between(2, 4);
+
                     for (let c = 0; c < numClusters; c++) {
                         const offsetX = Phaser.Math.Between(-30, 30); const offsetY = Phaser.Math.Between(-30, 30);
                         const clusterX = Phaser.Math.Clamp(safeX + offsetX, leftLimit, rightLimit); const clusterY = -size + offsetY;
@@ -1694,43 +1850,6 @@
                     enemy.baseSpeed = speed; enemy.status = 'none'; enemy.dmgAccum = 0; enemy.lastDmgTime = 0; enemy.lastFired = this.time.now;
                     this.enemies.add(enemy); enemy.body.setVelocityY(enemy.baseSpeed);
                 }
-            }
-
-            clearBossUI() {
-                if(this.activeBoss) {
-                    this.tweens.add({ targets: [this.bossHpBg, this.bossHpBar, this.bossName], alpha: 0, duration: 1000 });
-                    this.activeBoss = null;
-                }
-            }
-
-            spawnBoss() {
-                if (this.isGameOver) return;
-                const size = 80;
-                playSound('boss_spawn', 0.4);
-                
-                let baseMult = 1 + ((this.currentWave - 1) * 0.4); 
-                let spikeMult = Math.floor((this.currentWave - 1) / 3) * 2.5;
-                let hpMult = baseMult + spikeMult;
-
-                if (this.currentWave > 10) {
-                    hpMult *= Math.pow(1.15, this.currentWave - 10);
-                }
-
-                const bossHp = Math.floor(300 * hpMult); 
-                const paletteColor = this.getTierColor();
-
-                const boss = this.physics.add.sprite(this.boundaryCenter, -size, 'boss');
-                boss.setTint(paletteColor); boss.setScale(Phaser.Math.FloatBetween(0.9, 1.3));
-                this.tweens.add({ targets: boss, scaleX: 1.05, scaleY: 0.95, duration: 1500, yoyo: true, repeat: -1 });
-
-                boss.hp = bossHp; boss.maxHp = bossHp; boss.enemyType = 'boss'; boss.isDying = false; boss.lastFired = this.time.now;
-                boss.baseSpeed = 15; boss.status = 'none'; boss.dmgAccum = 0; boss.lastDmgTime = 0; boss.isPhase2 = false;
-                
-                this.enemies.add(boss); boss.body.setVelocityY(boss.baseSpeed); 
-                
-                this.activeBoss = boss;
-                this.bossHpBar.setFillStyle(0xff0000); this.bossName.setText('BIOLOGICAL TERROR').setFill('#ff4444');
-                this.tweens.add({ targets: [this.bossHpBg, this.bossHpBar, this.bossName], alpha: 1, duration: 1000 });
             }
 
             spawnCoin(x, y) {
@@ -1772,102 +1891,12 @@
                     this.tweens.add({ targets: beam, scaleX: 2, alpha: 0, duration: 200, onComplete: () => beam.destroy() });
                 }
 
-                this.coinTextUI.setText(`${this.sessionCoins}`); this.coinBankUI.setText(`BANK: ${window.saveData.coins}`);
+                this.updateStatsUI();
                 const floatColor = isDouble ? '#00ffcc' : '#fde047'; const fontSizeStr = isDouble ? '20px' : '14px';
                 const flash = this.add.circle(coinX, coinY, isDouble ? 25 : 15, isDouble ? 0x00ffcc : 0xfde047, 0.8).setDepth(20);
                 this.tweens.add({ targets: flash, scale: 2, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
                 const floatText = this.add.text(coinX, coinY - 10, `+${coinValue}`, { fontSize: fontSizeStr, fill: floatColor, fontStyle: 'bold' }).setOrigin(0.5);
                 this.tweens.add({ targets: floatText, y: coinY - 40, alpha: 0, duration: 600, onComplete: () => floatText.destroy() });
-            }
-
-            spawnGate() {
-                if (this.isGameOver || this.isIntermission) return;
-                const gateTypes = [
-                    { type: 'Damage', abbr: 'DMG', baseReq: 3, reqGrowth: 2, gateCap: 10 }, { type: 'Fire Rate', abbr: 'SPD', baseReq: 6, reqGrowth: 3, gateCap: 5 },
-                    { type: 'Health', abbr: 'HLT', baseReq: 3, reqGrowth: 2, gateCap: 3 }, { type: 'Frenzy', abbr: 'FNZ', baseReq: 5, reqGrowth: 3, gateCap: 1, isTemp: true }
-                ];
-                
-                const rand = Math.random(); let typeDef;
-                if (rand < 0.40) typeDef = gateTypes[0]; else if (rand < 0.70) typeDef = gateTypes[1]; 
-                else if (rand < 0.90) typeDef = gateTypes[2]; else typeDef = gateTypes[3];                  
-
-                const value = 1; const maxLimit = Math.min(typeDef.gateCap, this.gateMaxLimit); const gateColor = 0x0044ff; 
-                const gateRadius = 14; const leftLimit = this.boundaryCenter - (this.boundaryWidth / 2) + gateRadius;
-                const rightLimit = this.boundaryCenter + (this.boundaryWidth / 2) - gateRadius;
-                const safeX = (leftLimit < rightLimit) ? Phaser.Math.Between(leftLimit, rightLimit) : this.boundaryCenter;
-                const elements = [];
-
-                if (typeDef.isTemp) {
-                    let pulseRing = this.add.circle(0, 0, gateRadius, 0x000000, 0); pulseRing.setStrokeStyle(2, 0xffff00);
-                    this.tweens.add({ targets: pulseRing, scaleX: 1.8, scaleY: 1.8, alpha: 0, duration: 800, repeat: -1 }); elements.push(pulseRing);
-                }
-
-                const circle = this.add.circle(0, 0, gateRadius, gateColor, 0.8); circle.setStrokeStyle(2, typeDef.isTemp ? 0xffff00 : 0xffffff); elements.push(circle);
-                const topText = typeDef.abbr === 'HLT' ? '❤️' : (typeDef.abbr === 'FNZ' ? '🔥' : typeDef.abbr);
-                const topFontSize = (typeDef.abbr === 'HLT' || typeDef.abbr === 'FNZ') ? '12px' : '9px';
-                const textAbbr = this.add.text(0, -4, topText, { fontSize: topFontSize, fill: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-                const textVal = this.add.text(0, 5, typeDef.isTemp ? `TEMP` : `+${value}`, { fontSize: '9px', fill: typeDef.isTemp ? '#xffff00' : '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-                elements.push(textAbbr, textVal);
-                
-                const gate = this.add.container(safeX, -50, elements);
-                this.physics.add.existing(gate); this.gates.add(gate);
-                gate.body.setSize(28, 28); gate.body.setOffset(-14, -14); gate.body.setVelocityY(80);
-                gate.typeDef = typeDef; gate.gateValue = value; gate.gateMax = maxLimit; gate.currentHits = 0; gate.circleObj = circle; gate.textVal = textVal;
-                this.updateGateVisuals(gate);
-            }
-
-            updateGateVisuals(gate) {
-                const gateColor = 0x0044ff; if(!gate.typeDef.isTemp) gate.textVal.setText(`+${gate.gateValue}`);
-                if (gate.gateValue >= gate.gateMax) { gate.circleObj.setStrokeStyle(2, 0xffff00); gate.circleObj.setFillStyle(gateColor, 0.8); } 
-                else { gate.circleObj.setStrokeStyle(2, gate.typeDef.isTemp ? 0xffff00 : 0xffffff); gate.circleObj.setFillStyle(gateColor, 0.8); }
-            }
-
-            shootGate(bullet, gate) {
-                if (gate.y < this.engagementY) return; 
-                
-                if (bullet.isGrenade) { this.triggerGrenadeExplosion(bullet.x, bullet.y); bullet.destroy(); this.collectGate(null, gate); return; }
-                if (bullet.isExecutioner) { this.triggerPiercingExplosion(bullet.x, bullet.y); this.collectGate(null, gate); return; }
-                if (bullet.isExplosiveAlt) { this.triggerSmallExplosion(bullet.x, bullet.y, bullet.altDamage, bullet.procDepth || 0); bullet.destroy(); this.collectGate(null, gate); return; }
-                
-                bullet.destroy();
-                if (gate.gateValue >= gate.gateMax) { this.collectGate(null, gate); return; }
-
-                gate.currentHits += 1; const req = gate.typeDef.baseReq + (gate.gateValue * gate.typeDef.reqGrowth);
-                if (gate.currentHits >= req) {
-                    gate.gateValue += 1; gate.currentHits = 0; 
-                    if (gate.gateValue >= gate.gateMax) { this.collectGate(null, gate); return; }
-                    this.tweens.add({ targets: gate, scaleX: 1.2, scaleY: 1.2, yoyo: true, duration: 100 });
-                }
-
-                this.updateGateVisuals(gate); gate.circleObj.setFillStyle(0xffffff, 1);
-                this.time.delayedCall(50, () => { if (gate && gate.active) this.updateGateVisuals(gate); });
-            }
-
-            collectGate(player, gate) {
-                let actualGain = gate.gateValue; let gateColorHex = 0x0044ff; let feedbackText = '';
-                playSound('powerup', 0.2);
-
-                this.cameras.main.flash(150, 255, 255, 255, true);
-
-                if (gate.typeDef.abbr === 'DMG') {
-                    this.bonusDamage += actualGain; this.playerDamage = this.baseDamage + this.bonusDamage; this.updateStatsUI(); feedbackText = `+${actualGain} DMG!`;
-                } else if (gate.typeDef.abbr === 'SPD') {
-                    const oldDelay = this.fireDelay; this.bonusFireDelay += (actualGain * 5); this.fireDelay = Math.max(15, this.baseFireDelay - this.bonusFireDelay);
-                    actualGain = (oldDelay - this.fireDelay) / 5; this.updateStatsUI(); feedbackText = `+${actualGain} SPD!`;
-                } else if (gate.typeDef.abbr === 'HLT') {
-                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + actualGain); this.updateHealthUI(); feedbackText = `+${actualGain} HLT!`; gateColorHex = 0x00aa00;
-                } else if (gate.typeDef.abbr === 'FNZ') {
-                    const overdriveBonus = (window.saveData.upgrades.overdrive || 0) * 5000;
-                    this.frenzyActive = true; this.frenzyEndTime = this.time.now + 10000 + overdriveBonus; this.updateStatsUI(); feedbackText = `FRENZY!`; gateColorHex = 0xffaa00;
-                }
-
-                if (actualGain <= 0 && !gate.typeDef.isTemp) feedbackText = 'MAXED!';
-
-                const feedback = this.add.text(gate.x, gate.y, feedbackText, { fontSize: '20px', fill: gateColorHex === 0x00aa00 ? '#00ff00' : (gateColorHex === 0xffaa00 ? '#ffaa00' : '#00ffff'), fontStyle: 'bold' }).setOrigin(0.5);
-                this.tweens.add({ targets: feedback, y: gate.y - 50, alpha: 0, duration: 1000, onComplete: () => feedback.destroy() });
-                const ring = this.add.circle(gate.x, gate.y, 25, gateColorHex, 0.8);
-                this.tweens.add({ targets: ring, scaleX: 3, scaleY: 3, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
-                gate.destroy();
             }
 
             flashEnemy(enemy) {
@@ -1898,14 +1927,6 @@
                 }
             }
 
-            explodeWaveText(x, y) {
-                this.cameras.main.flash(200, 255, 255, 255); playSound('explosion', 0.2);
-                const ring = this.add.circle(x, y, 50, 0x00ffff, 0.5).setDepth(20); ring.setStrokeStyle(4, 0x00ffff); ring.setFillStyle(0, 0); 
-                this.tweens.add({ targets: ring, scaleX: 6, scaleY: 6, alpha: 0, duration: 500, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
-                const beam = this.add.rectangle(x, y, 600, 10, 0x00ffff, 0.8).setDepth(20);
-                this.tweens.add({ targets: beam, scaleY: 0, alpha: 0, duration: 300, ease: 'Power2', onComplete: () => beam.destroy() });
-            }
-
             triggerTankExplosion(x, y) {
                 playSound('explosion', 0.4);
                 this.shake(400, 0.04); 
@@ -1923,18 +1944,6 @@
                 enemiesInRange.forEach(enemy => this.damageEnemy(enemy, explosionDamage, false, 0, 'explosion'));
             }
 
-            triggerPlayerHitExplosion(x, y) {
-                playSound('explosion', 0.3);
-                const shockwave = this.add.circle(x, y, 10, 0xffffff, 0.8).setDepth(20);
-                this.tweens.add({ targets: shockwave, scaleX: 8, scaleY: 8, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => shockwave.destroy() });
-                const radius = 80;
-                const enemiesInRange = this.enemies.getChildren().filter(enemy => {
-                    if (!enemy.active || enemy.isDying) return false;
-                    return Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y) <= radius;
-                });
-                enemiesInRange.forEach(enemy => this.damageEnemy(enemy, 50, true, 0, 'explosion'));
-            }
-
             damageEnemy(enemy, amount, isSpecial = false, procDepth = 0, sourceType = 'normal', forceCrit = false) {
                 if (enemy.isDying) return;
                 
@@ -1947,14 +1956,14 @@
                 }
                 
                 enemy.hp -= finalAmount;
-                
+
                 if (isCrit) {
                     playSound('crit', 0.15);
-                    this.shake(150, 0.03);
+                    this.shake(150, 0.01);
                     const critText = this.add.text(enemy.x, enemy.y - 20, `${Math.floor(finalAmount)} CRIT!`, {
-                        fontSize: '24px', fill: '#ffaa00', stroke: '#ff0000', strokeThickness: 3, fontStyle: 'bold', fontFamily: 'monospace'
+                        fontSize: '18px', fill: '#ffff00', fontStyle: 'italic bold', fontFamily: 'monospace'
                     }).setOrigin(0.5).setDepth(200);
-                    this.tweens.add({ targets: critText, y: enemy.y - 80, scaleX: 1.5, scaleY: 1.5, alpha: 0, duration: 600, ease: 'Back.easeOut', onComplete: () => critText.destroy() });
+                    this.tweens.add({ targets: critText, y: enemy.y - 90, scaleX: 1.2, scaleY: 1.2, alpha: 0, duration: 700, ease: 'Cubic.easeOut', onComplete: () => critText.destroy() });
 
                     if (this.activeMutations.includes('meat_confetti') && Math.random() < 0.20) {
                         this.time.delayedCall(50, () => {
@@ -2187,19 +2196,33 @@
                     window.saveData.upgrades.grenades = this.sessionGrenades; saveGame();
                     playSound('error', 0.5);
                     const title = document.getElementById('choice-title');
-                    title.innerHTML = `> PERMANENT DEATH<br><span style="font-size:18px; color:#aaa; text-shadow:none; display:block; margin-top:10px;">WAVES SURVIVED: <span style="color:#fff;">${this.currentWave}</span> &nbsp;|&nbsp; KILLS: <span style="color:#fff;">${this.enemiesDefeated}</span> &nbsp;|&nbsp; COINS EXTRACTED: <span style="color:#fde047;">${this.sessionCoins}</span></span>`;
+                    
+                    title.innerHTML = `> YOU DEAD<br>
+                    <span style="font-size:18px; color:#aaa; text-shadow:none; display:block; margin-top:20px; line-height:1.6; text-align:left;">
+                    WAVES SURVIVED: <span style="color:#fff;">${this.currentWave}</span><br>
+                    KILLS: <span style="color:#fff;">${this.enemiesDefeated}</span><br>
+                    COINS EXTRACTED: <span style="color:#fde047;">${this.sessionCoins}</span>
+                    </span>`;
+                    
                     title.style.color = '#ff3333'; title.style.textShadow = '0 0 15px #aa0000';
                     
                     document.getElementById('choice-buttons').style.display = 'flex';
                     document.getElementById('btn-choice-shop').style.display = 'none'; document.getElementById('draft-container').style.display = 'none';
-                    document.getElementById('btn-choice-continue').innerText = '[ DEPLOY NEXT RUN ]'; document.getElementById('choice-screen').style.display = 'flex';
+                    document.getElementById('btn-choice-continue').innerText = '[ RESTART ]'; document.getElementById('choice-screen').style.display = 'flex';
                     window.choiceContinueCallback = () => { this.scene.restart(); }; window.shopCloseCallback = () => { this.scene.restart(); };
                 });
             }
         }
 
         const config = {
-            type: Phaser.AUTO, width: 600, height: 800, parent: 'game-container',
+            type: Phaser.AUTO,
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+                width: 600,
+                height: 800
+            },
+            parent: 'game-container',
             physics: { default: 'arcade', arcade: { debug: false, gravity: { y: 0 } } },
             scene: [GameScene]
         };
