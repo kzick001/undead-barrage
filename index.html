@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Undead Barrage - Version 10.6</title>
+    <title>Undead Barrage - Version 10.10</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.80.0/phaser.min.js"></script>
     <style>
         /* MINIMALIST MODERN UI & GRITTY REALISM */
@@ -60,6 +60,19 @@
         .icon-btn:hover { opacity: 1; transform: scale(1.1); }
         .icon-btn:active { transform: scale(0.9); }
 
+        /* OVERCHARGE BAR */
+        .oc-bar-bg {
+            width: 100px; height: 14px; background: rgba(0,0,0,0.8); 
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 2px; 
+            position: relative; overflow: hidden;
+        }
+        .oc-bar-fill {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: #eab308; box-shadow: 0 0 10px #eab308; transition: width 0.2s;
+        }
+        .oc-bar-fill.ready { background: #00ffcc; box-shadow: 0 0 15px #00ffcc; animation: pulse-oc 1s infinite alternate; }
+        @keyframes pulse-oc { from { opacity: 0.8; } to { opacity: 1; } }
+
         /* MINIMALIST DATA COLUMN */
         #data-column {
             position: absolute; top: 85px; left: 30px;
@@ -99,6 +112,8 @@
         }
         .btn:hover:not(:disabled) { background: #fff; color: #000; }
         .btn:disabled { opacity: 0.2; cursor: not-allowed; border-color: rgba(255,255,255,0.1); }
+        .btn-action { border-color: #3b82f6; color: #3b82f6; }
+        .btn-action:hover:not(:disabled) { background: #3b82f6; color: #fff; }
 
         /* Settings Toggles */
         .setting-row {
@@ -132,22 +147,30 @@
         }
 
         /* SHOP ITEMS */
+        .shop-section-title {
+            color: #525252; font-weight: 800; font-size: 0.8em; letter-spacing: 4px; text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-bottom: 15px; margin-top: 10px; text-align: left;
+        }
+
         .shop-item {
-            border: 1px solid rgba(255,255,255,0.1); padding: 20px; 
+            border: 1px solid rgba(255,255,255,0.1); padding: 15px; 
             cursor: pointer; transition: all 0.2s; background: rgba(0,0,0,0.4);
             display: flex; flex-direction: column; justify-content: space-between;
         }
         .shop-item:hover:not(.locked) { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
         .shop-item.locked { opacity: 0.5; cursor: not-allowed; }
         
-        .nav-btn {
-            background: transparent; border: none; font-size: 2.5em; color: #fff; cursor: pointer;
-            transition: transform 0.2s, color 0.2s;
-        }
-        .nav-btn:hover { color: #3b82f6; transform: scale(1.2); }
+        .weapon-slot { border-radius: 4px; position: relative; }
+        .weapon-slot:hover { border-color: #94a3b8 !important; }
+        
+        #shop-weapon-grid::-webkit-scrollbar { height: 8px; }
+        #shop-weapon-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #shop-weapon-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        #shop-weapon-grid::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
 <div id="game-wrapper">
     <div id="vignette"></div>
@@ -157,8 +180,14 @@
         <!-- Minimalist Top Bar -->
         <div id="top-bar">
             <div class="stat-group">HP <span id="ui-hp" class="stat-val">❤️❤️❤️</span></div>
-            <div class="stat-group" style="margin-left:40px;">ARMOR <span id="ui-armor" class="stat-val" style="font-size:1.1em">🛡️ 0</span></div>
-            <div class="stat-group" style="margin-left:40px;">BOMBS <span id="ui-bombs" class="stat-val" style="font-size:1.1em">💣 0</span></div>
+            <div class="stat-group" style="margin-left:20px;">ARMOR <span id="ui-armor" class="stat-val" style="font-size:1.1em">🛡️ 0</span></div>
+            <div class="stat-group" style="margin-left:20px;">GRENADES <span id="ui-bombs" class="stat-val" style="font-size:1.1em">🍍 0</span></div>
+            <div class="stat-group" style="margin-left:20px;">
+                <span title="OVERCHARGE (RIGHT CLICK / Y)">⚡</span>
+                <div class="oc-bar-bg">
+                    <div id="ui-overcharge-bar" class="oc-bar-fill"></div>
+                </div>
+            </div>
             <div style="flex-grow: 1;"></div>
             <button class="icon-btn" id="btn-settings">⚙️</button>
         </div>
@@ -202,6 +231,17 @@
             <button id="btn-open-settings" class="btn">SETTINGS</button>
         </div>
 
+        <!-- Quartermaster Shop Tooltip Modal -->
+        <div id="screen-qm-tip" class="overlay-screen" style="z-index: 60;">
+            <div class="modal-box" style="border-color: #f59e0b; max-width: 500px; text-align:left;">
+                <h3 style="color:#f59e0b; margin-top:0; letter-spacing: 2px;">TRANSMISSION: QUARTERMASTER</h3>
+                <p style="color:#e2e8f0; line-height:1.6; font-size: 0.95em;">
+                    "Look, I don't know why these walking corpses carry mint-condition gold coins, and frankly, I don't care. You pick 'em up before they vanish, bring 'em to me, and I give you guns. You can also upgrade your gear or buy frag grenades to clear a path. Stay alive. Dead customers don't pay."
+                </p>
+                <button id="btn-close-qm-tip" class="btn" style="width:100%; border-color:#f59e0b; color:#f59e0b;">DEAL.</button>
+            </div>
+        </div>
+
         <!-- Tutorial Modal -->
         <div id="screen-tutorial" class="overlay-screen">
             <div class="modal-box" style="text-align: left; max-width: 600px;">
@@ -238,60 +278,90 @@
 
         <!-- Shop Screen (The Armory) -->
         <div id="screen-shop" class="overlay-screen">
-            <div class="modal-box" style="min-width: 650px;">
-                <h2 style="color:#fff; margin-top:0; letter-spacing: 4px; font-weight:300;">THE <strong>ARMORY</strong></h2>
-                <div style="color:#22c55e; font-size: 1.2em; margin-bottom: 10px; font-weight: bold; letter-spacing: 2px;">FUNDS: $<span id="shop-bank">0</span></div>
-                
-                <div style="display: flex; align-items: flex-start; justify-content: center; gap: 30px; margin-bottom: 30px;">
-                    <button id="btn-wpn-prev" class="nav-btn" style="margin-top: 25px;">&lt;</button>
-                    <div style="display: flex; flex-direction: column; align-items: center; width: 320px;">
-                        <div id="shop-wpn-visual" style="width: 96px; height: 96px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));"></div>
-                        <div style="text-align: center; width: 100%;">
-                            <div style="color:#a3a3a3; font-size: 0.85em; letter-spacing: 2px;">EQUIPPED</div>
-                            <div id="shop-current-wpn" style="color:#3b82f6; font-size: 1.3em; font-weight: 800; letter-spacing: 1px;">Crappy BB Gun</div>
-                            
-                            <!-- DYNAMIC WEAPON STATS -->
-                            <div id="shop-equipped-stats" style="margin-top: 15px; font-size: 0.9em; color: #a3a3a3; width: 100%; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.5); padding: 15px; border: 1px solid #334155; border-radius: 4px; text-align: left;">
-                                <div style="display: flex; justify-content: space-between;"><span>DAMAGE <span id="shop-eq-dmg-lvl" style="color:#64748b">(Lv.0)</span></span> <span id="shop-eq-dmg" style="color:#fff; font-weight:bold;">1.0</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>FIRE RATE <span id="shop-eq-rate-lvl" style="color:#64748b">(Lv.0)</span></span> <span id="shop-eq-rate" style="color:#fff; font-weight:bold;">171 BPM</span></div>
-                                <div style="display: flex; justify-content: space-between; border-top: 1px solid #334155; padding-top: 8px; margin-top: 4px;"><span>SPECIAL</span> <span id="shop-eq-spc" style="color:#3b82f6; font-weight:bold; text-transform: uppercase; text-align:right;">Kinetic Single</span></div>
+            <div class="modal-box" style="min-width: 850px; padding: 30px 40px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+                    <h2 style="color:#fff; margin:0; letter-spacing: 4px; font-weight:300;">THE <strong>ARMORY</strong></h2>
+                    <div style="color:#22c55e; font-size: 1.3em; font-weight: bold; letter-spacing: 2px;">FUNDS: $<span id="shop-bank">0</span></div>
+                </div>
+
+                <!-- The Weapon Grid -->
+                <div id="shop-weapon-grid" style="display:flex; gap:12px; overflow-x:auto; padding: 5px 0 15px 0; margin-bottom:20px;">
+                    <!-- JS populated -->
+                </div>
+
+                <!-- Selected Weapon Display -->
+                <div style="background: rgba(0,0,0,0.5); border: 1px solid #334155; padding: 20px; display:flex; gap: 25px; align-items: center; margin-bottom: 20px; border-radius: 4px;">
+                     <div id="shop-sel-visual" style="width: 96px; height: 96px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));"></div>
+                     <div style="flex-grow:1; text-align:left;">
+                         <h3 id="shop-sel-name" style="margin:0 0 10px 0; color:#3b82f6; letter-spacing: 1px; font-size: 1.2em;">Weapon Name</h3>
+                         <div style="font-size:0.9em; color:#a3a3a3; display:flex; flex-direction:column; gap:8px;">
+                             <div style="display:flex; justify-content:space-between;"><span>DAMAGE <span id="shop-sel-dmg-lvl" style="color:#64748b">(Lv.0)</span></span> <span id="shop-sel-dmg" style="color:#fff; font-weight:bold;">1.0</span></div>
+                             <div style="display:flex; justify-content:space-between;"><span>FIRE RATE <span id="shop-sel-rate-lvl" style="color:#64748b">(Lv.0)</span></span> <span id="shop-sel-rate" style="color:#fff; font-weight:bold;">300 BPM</span></div>
+                             <div style="display:flex; justify-content:space-between; border-top: 1px solid #1e293b; padding-top: 6px;"><span>PATTERN</span> <span id="shop-sel-spc" style="color:#3b82f6; font-weight:bold; text-transform: uppercase;">None</span></div>
+                         </div>
+                     </div>
+                     <div style="min-width: 180px; display: flex; align-items: center; justify-content: center;">
+                         <button id="btn-shop-action" class="btn btn-action" style="width: 100%; margin:0; padding: 16px 20px;">EQUIP</button>
+                     </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; text-align: left; margin-bottom: 30px;">
+                    <!-- WEAPON UPGRADES -->
+                    <div style="flex: 1;">
+                        <div class="shop-section-title">WEAPON CALIBRATION</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="shop-item" id="btn-buy-dmg">
+                                <h3 style="margin: 0 0 5px 0; color:#fde047; letter-spacing: 1px; font-size: 0.85em;">+ WPN DAMAGE</h3>
+                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">Increase payload.</p>
+                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
+                                    <span>Lvl <span id="shop-lvl-dmg">0</span></span>
+                                    <span style="color:#22c55e;">$<span id="shop-cost-dmg">50</span></span>
+                                </div>
+                            </div>
+                            <div class="shop-item" id="btn-buy-rate">
+                                <h3 style="margin: 0 0 5px 0; color:#fde047; letter-spacing: 1px; font-size: 0.85em;">+ WPN RATE</h3>
+                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">Cycle rounds faster.</p>
+                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
+                                    <span>Lvl <span id="shop-lvl-rate">0</span></span>
+                                    <span style="color:#22c55e;">$<span id="shop-cost-rate">75</span></span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <button id="btn-wpn-next" class="nav-btn" style="margin-top: 25px;">&gt;</button>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; text-align: left;">
-                    <div class="shop-item" id="btn-buy-dmg">
-                        <h3 style="margin: 0 0 10px 0; color:#fde047; letter-spacing: 1px;">+ DAMAGE</h3>
-                        <p style="margin:0; color:#a3a3a3; font-size: 0.85em;">Increase core damage output.</p>
-                        <div style="margin-top: 15px; display: flex; justify-content: space-between; color:#fff; font-weight: bold;">
-                            <span>Lvl <span id="shop-lvl-dmg">0</span></span>
-                            <span style="color:#22c55e;">$<span id="shop-cost-dmg">50</span></span>
-                        </div>
-                    </div>
-                    <div class="shop-item" id="btn-buy-rate">
-                        <h3 style="margin: 0 0 10px 0; color:#fde047; letter-spacing: 1px;">+ FIRE RATE</h3>
-                        <p style="margin:0; color:#a3a3a3; font-size: 0.85em;">Shoot faster. Kill quicker.</p>
-                        <div style="margin-top: 15px; display: flex; justify-content: space-between; color:#fff; font-weight: bold;">
-                            <span>Lvl <span id="shop-lvl-rate">0</span></span>
-                            <span style="color:#22c55e;">$<span id="shop-cost-rate">75</span></span>
+                    
+                    <!-- FIELD GEAR -->
+                    <div style="flex: 2;">
+                        <div class="shop-section-title">FIELD GEAR & ORDNANCE</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                            <div class="shop-item" id="btn-buy-bomb">
+                                <h3 style="margin: 0 0 5px 0; color:#ef4444; letter-spacing: 1px; font-size: 0.85em;">BUY GRENADE</h3>
+                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">Standard frag ordnance.</p>
+                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
+                                    <span>Inv <span id="shop-inv-bomb">0</span></span>
+                                    <span style="color:#22c55e;">$<span id="shop-cost-bomb">150</span></span>
+                                </div>
+                            </div>
+                            <div class="shop-item" id="btn-buy-bomb-dmg">
+                                <h3 style="margin: 0 0 5px 0; color:#f97316; letter-spacing: 1px; font-size: 0.85em;">+ FRAG PAYLOAD</h3>
+                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">More explosive filler.</p>
+                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
+                                    <span>Lvl <span id="shop-lvl-bomb-dmg">0</span></span>
+                                    <span style="color:#22c55e;">$<span id="shop-cost-bomb-dmg">100</span></span>
+                                </div>
+                            </div>
+                            <div class="shop-item" id="btn-buy-speed">
+                                <h3 style="margin: 0 0 5px 0; color:#0ea5e9; letter-spacing: 1px; font-size: 0.85em;">+ LEG SERVOS</h3>
+                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">Boost run speed.</p>
+                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
+                                    <span>Lvl <span id="shop-lvl-speed">0</span></span>
+                                    <span style="color:#22c55e;">$<span id="shop-cost-speed">100</span></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="shop-item" id="btn-buy-weapon" style="display: flex; align-items: center; gap: 20px; text-align: left; margin-bottom: 30px;">
-                    <div id="shop-next-wpn-visual" style="width: 64px; height: 64px;"></div>
-                    <div style="flex-grow: 1;">
-                        <h3 style="margin: 0 0 5px 0; color:#3b82f6; letter-spacing: 1px;">ACQUIRE: <span id="shop-next-wpn-name"></span> <span id="shop-wpn-tier"></span></h3>
-                        <p id="shop-wpn-desc" style="margin:0; color:#a3a3a3; font-size: 0.9em;">Upgrade to the next tier weapon.</p>
-                    </div>
-                    <div style="color:#fff; font-weight: bold; font-size: 1.2em;">
-                        <span style="color:#22c55e;" id="shop-cost-wpn-container">$<span id="shop-cost-wpn">200</span></span>
-                    </div>
-                </div>
-                
-                <button id="btn-next-wave" class="btn" style="width: 100%;">COMMENCE NEXT WAVE</button>
+                <button id="btn-next-wave" class="btn" style="width: 100%;">DEPLOY TO TRENCH</button>
             </div>
         </div>
 
@@ -310,24 +380,25 @@
  */
 const DefaultGameData = {
     player: { maxHp: 5, startHp: 3, armor: 0, bombs: 1, baseSpeed: 300, dashSpeed: 800, dashCooldown: 1000 },
+    grenade: { baseDmg: 50, baseRadius: 100 },
     weapons: { 
-        0: { name: "Crappy BB Gun", element: "kinetic", pattern: "single", cost: 0, baseDamage: 1.0, baseFireRate: 400, special: "Standard Issue" },
-        1: { name: "Uzi", element: "kinetic", pattern: "burst", cost: 150, baseDamage: 0.8, baseFireRate: 250, special: "3-Round Burst" },
-        2: { name: "Trench Shotgun", element: "kinetic", pattern: "wide_spread", cost: 350, baseDamage: 1.2, baseFireRate: 750, special: "Wide 5-Shot Spread" },
-        3: { name: "Commie Typewriter", element: "kinetic", pattern: "single", cost: 600, baseDamage: 1.5, baseFireRate: 200, special: "Heavy Rounds" },
-        4: { name: "Standard Issue Freedom", element: "kinetic", pattern: "twin", cost: 1000, baseDamage: 1.8, baseFireRate: 250, special: "Twin Barrels" },
-        5: { name: "Crowd Control", element: "kinetic", pattern: "spread", cost: 1500, baseDamage: 1.5, baseFireRate: 400, special: "3-Shot Spread" },
-        6: { name: "The Compensator Pro Max", element: "kinetic", pattern: "twin_spread", cost: 2200, baseDamage: 2.0, baseFireRate: 400, special: "Heavy Twin Spread" },
-        7: { name: "Meat Grinder 9000", element: "kinetic", pattern: "gatling", cost: 3500, baseDamage: 2.2, baseFireRate: 100, special: "Gatling Spray" }
+        0: { name: "Crappy BB Gun", element: "kinetic", pattern: "single", cost: 0, baseDamage: 1.0, baseFireRate: 450, special: "Standard Issue" },
+        1: { name: "Uzi", element: "kinetic", pattern: "burst", cost: 150, baseDamage: 0.6, baseFireRate: 350, special: "3-Round Burst" },
+        2: { name: "Trench Shotgun", element: "kinetic", pattern: "wide_spread", cost: 400, baseDamage: 1.5, baseFireRate: 850, special: "Wide 5-Shot Spread" },
+        3: { name: "Commie Typewriter", element: "kinetic", pattern: "single", cost: 800, baseDamage: 2.5, baseFireRate: 300, special: "Heavy Rounds" },
+        4: { name: "Standard Issue Freedom", element: "kinetic", pattern: "twin", cost: 1500, baseDamage: 2.0, baseFireRate: 250, special: "Twin Barrels" },
+        5: { name: "Crowd Control", element: "kinetic", pattern: "spread", cost: 3000, baseDamage: 2.2, baseFireRate: 400, special: "3-Shot Spread" },
+        6: { name: "The Compensator Pro Max", element: "kinetic", pattern: "twin_spread", cost: 5500, baseDamage: 3.0, baseFireRate: 350, special: "Heavy Twin Spread" },
+        7: { name: "Meat Grinder 9000", element: "kinetic", pattern: "gatling", cost: 10000, baseDamage: 2.5, baseFireRate: 80, special: "Gatling Spray" }
     },
     budget: { base: 20, scalingFactor: 8 },
-    costs: { upgradeDmg: 50, upgradeRate: 75 }
+    costs: { upgradeDmg: 50, upgradeRate: 75, upgradeSpeed: 100, bomb: 150, bombDmg: 100 }
 };
 
 const TutorialTexts = {
     1: "You're the only one who can protect the civilians behind that barricade. Hold out until help arrives, try not to die.<br><br><strong style='color:#fff'>CONTROLS:</strong><br>Keyboard: WASD to move, mouse to aim, LMB to shoot.<br>Touch: Joystick to move (auto-aims where you face), A to shoot.",
-    2: "Pick up those coins if you want some better gear. The quartermaster is on his way with a payload of gear, but he ain't giving it away.",
-    3: "Watch out for those sprinters. They're squishy, but they can do a number on those barricades."
+    2: "Quartermaster here. Look, you're the only thing standing between the horde and the civvies. You'll get a chance to buy gear in between each wave. Stock up on what you need to survive, but sometimes it's worth saving up for a bigger upgrade. Stay frosty.",
+    3: "Look at you, wanting to blow things up. I sourced these frag grenades from an old depot. They lob north in a heavy arc and detonate on impact, turning meat into mist. I can tweak the payload... for a fee."
 };
 
 // --- META PROGRESSION (SAVE MANAGER) ---
@@ -349,11 +420,13 @@ const AppSettings = {
     skipTutorial: localStorage.getItem('UB_SkipTutorial') === 'true',
     controlsOn: localStorage.getItem('UB_ControlsOn') !== 'false',
     shakeOn: localStorage.getItem('UB_ShakeOn') !== 'false',
+    seenArmoryTip: localStorage.getItem('UB_SeenArmoryTip') === 'true',
     devOn: false,
     godMode: false
 };
 
 const RawSVGs = {
+    padlock: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="10" rx="2" fill="#334155" stroke="#111" stroke-width="1.5"/><path d="M8 11V7a4 4 0 018 0v4" stroke="#475569" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="#f8fafc"/></svg>`,
     player: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1, 2)" fill="rgba(0,0,0,0.5)"><rect x="5" y="10" width="14" height="8" rx="2"/><rect x="4" y="6" width="4" height="6" rx="1"/><rect x="16" y="6" width="4" height="6" rx="1"/><circle cx="12" cy="10" r="4.5"/></g><rect x="5" y="10" width="14" height="8" rx="2" fill="#2563eb" stroke="#111" stroke-width="1.5"/><rect x="4" y="6" width="4" height="6" rx="1" fill="#2563eb" stroke="#111" stroke-width="1.5"/><rect x="16" y="6" width="4" height="6" rx="1" fill="#2563eb" stroke="#111" stroke-width="1.5"/><rect x="10" y="0" width="4" height="12" fill="#475569" stroke="#111" stroke-width="1.5"/><rect x="9" y="4" width="6" height="6" fill="#1e293b" stroke="#111" stroke-width="1.5"/><circle cx="10" cy="6" r="2.5" fill="#fdba74" stroke="#111" stroke-width="1.5"/><circle cx="14" cy="8" r="2.5" fill="#fdba74" stroke="#111" stroke-width="1.5"/><circle cx="12" cy="10" r="4.5" fill="#fdba74" stroke="#111" stroke-width="1.5"/><path d="M 7.5 10 A 4.5 4.5 0 0 0 16.5 10 Z" fill="#451a03" stroke="#111" stroke-width="1.5"/></svg>`,
     
     // TOP DOWN WEAPONS
@@ -378,7 +451,7 @@ const RawSVGs = {
 
     // MOBS
     grunt: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1, 2)" fill="rgba(0,0,0,0.4)"><rect x="4" y="8" width="4" height="14" rx="2"/><rect x="16" y="8" width="4" height="14" rx="2"/><ellipse cx="12" cy="8" rx="10" ry="5"/><circle cx="12" cy="10" r="5"/></g><rect x="4" y="8" width="4" height="14" rx="2" fill="#15803d" stroke="#111" stroke-width="1"/><rect x="16" y="8" width="4" height="14" rx="2" fill="#22c55e" stroke="#111" stroke-width="1"/><ellipse cx="12" cy="8" rx="10" ry="5" fill="#064e3b" stroke="#111" stroke-width="1.5"/><circle cx="12" cy="10" r="5" fill="#22c55e" stroke="#111" stroke-width="1.5"/><circle cx="10" cy="12" r="1" fill="#fde047"/></svg>`,
-    sprinter: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180, 12, 12)"><g transform="translate(-1, -2)" fill="rgba(0,0,0,0.5)"><rect x="8" y="19" width="2" height="4"/><rect x="14" y="19" width="2" height="4"/><polygon points="10,20 14,20 16,13 8,13"/><rect x="5" y="9" width="4" height="7" rx="1" transform="rotate(-15 7 12)"/><rect x="15" y="9" width="4" height="7" rx="1" transform="rotate(15 17 12)"/><rect x="7" y="12" width="10" height="3"/><rect x="7" y="7" width="10" height="6" rx="1"/><rect x="8" y="4" width="8" height="4" rx="1"/></g><rect x="8" y="19" width="2" height="4" rx="1" fill="#15803d" stroke="#111" stroke-width="1.5"/><rect x="14" y="19" width="2" height="4" rx="1" fill="#15803d" stroke="#111" stroke-width="1.5"/><polygon points="10,20 14,20 16,13 8,13" fill="#15803d" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/><rect x="5" y="9" width="4" height="7" rx="1" fill="#22c55e" stroke="#111" stroke-width="1.5" transform="rotate(-15 7 12)"/><rect x="15" y="9" width="4" height="7" rx="1" fill="#22c55e" stroke="#111" stroke-width="1.5" transform="rotate(15 17 12)"/><rect x="7" y="12" width="10" height="3" fill="#9f1239" stroke="#111" stroke-width="1.5"/><polygon points="6,13 4,13.5 6,14" fill="#f8fafc" stroke="#111" stroke-width="1"/><polygon points="18,13 20,13.5 18,14" fill="#f8fafc" stroke="#111" stroke-width="1"/><rect x="7" y="7" width="10" height="6" rx="1" fill="#15803d" stroke="#111" stroke-width="1.5"/><rect x="8" y="4" width="8" height="4" rx="1" fill="#22c55e" stroke="#111" stroke-width="1.5"/><polygon points="9,4 10,1 11,4" fill="#f8fafc" stroke="#111" stroke-width="1" stroke-linejoin="round"/><polygon points="15,4 14,1 13,4" fill="#f8fafc" stroke="#111" stroke-width="1" stroke-linejoin="round"/><circle cx="10" cy="8" r="1.5" fill="#fde047"/><circle cx="14" cy="8" r="1.5" fill="#fde047"/><circle cx="10" cy="7.5" r="0.5" fill="#111"/><circle cx="14" cy="7.5" r="0.5" fill="#111"/></g></svg>`,
+    sprinter: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1, 1)"><path d="M11 2 L9 8 L3 12 L8 16 L6 22 L12 18 L18 22 L16 16 L21 12 L15 8 Z" fill="#65a30d" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/><path d="M11 4 L10 8 L6 12 L9 15 L8 19 L12 16 L16 19 L15 15 L18 12 L14 8 Z" fill="#bef264" stroke="#111" stroke-width="1" stroke-linejoin="round"/><circle cx="9" cy="11" r="1.5" fill="#ef4444"/><circle cx="13" cy="11" r="1.5" fill="#ef4444"/></g></svg>`,
     tank: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0, 3)" fill="rgba(0,0,0,0.4)"><rect x="2" y="6" width="10" height="20" rx="4"/><rect x="20" y="6" width="10" height="20" rx="4"/><ellipse cx="16" cy="12" rx="14" ry="10"/><circle cx="16" cy="14" r="7"/></g><rect x="2" y="6" width="10" height="20" rx="4" fill="#7f1d1d" stroke="#111" stroke-width="1.5"/><rect x="20" y="6" width="10" height="20" rx="4" fill="#9f1239" stroke="#111" stroke-width="1.5"/><ellipse cx="16" cy="12" rx="14" ry="10" fill="#450a0a" stroke="#111" stroke-width="1.5"/><circle cx="16" cy="14" r="7" fill="#dc2626" stroke="#111" stroke-width="1.5"/><circle cx="14" cy="16" r="2" fill="#fde047"/><circle cx="18" cy="16" r="2" fill="#fde047"/></svg>`,
     spitter: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1, 2)" fill="rgba(0,0,0,0.4)"><rect x="4" y="8" width="4" height="14" rx="2"/><rect x="16" y="8" width="4" height="14" rx="2"/><ellipse cx="12" cy="8" rx="10" ry="5"/><circle cx="12" cy="10" r="5"/></g><rect x="4" y="8" width="4" height="14" rx="2" fill="#16a34a" stroke="#111" stroke-width="1"/><rect x="16" y="8" width="4" height="14" rx="2" fill="#22c55e" stroke="#111" stroke-width="1"/><ellipse cx="12" cy="8" rx="10" ry="5" fill="#14532d" stroke="#111" stroke-width="1.5"/><circle cx="12" cy="10" r="5" fill="#4ade80" stroke="#111" stroke-width="1.5"/><ellipse cx="12" cy="14" rx="3" ry="1" fill="#bbf7d0"/></svg>`,
     burrower: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1, 2)" fill="rgba(0,0,0,0.4)"><rect x="4" y="8" width="4" height="14" rx="2"/><rect x="16" y="8" width="4" height="14" rx="2"/><ellipse cx="12" cy="8" rx="10" ry="4"/><circle cx="12" cy="10" r="4"/></g><rect x="4" y="8" width="4" height="14" rx="2" fill="#78350f" stroke="#111" stroke-width="1"/><rect x="16" y="8" width="4" height="14" rx="2" fill="#92400e" stroke="#111" stroke-width="1"/><ellipse cx="12" cy="8" rx="10" ry="4" fill="#451a03" stroke="#111" stroke-width="1.5"/><circle cx="12" cy="10" r="4" fill="#b45309" stroke="#111" stroke-width="1.5"/><circle cx="10" cy="12" r="1" fill="#fde047"/></svg>`,
@@ -387,12 +460,9 @@ const RawSVGs = {
     // MISC
     barricade: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="4" width="20" height="16" rx="1" fill="#222" stroke="#000" stroke-width="1.5"/><rect x="2" y="4" width="20" height="6" fill="#111" stroke="#000" stroke-width="1.5"/><circle cx="5" cy="7" r="1" fill="#0a0a0a"/><circle cx="19" cy="7" r="1" fill="#0a0a0a"/><rect x="4" y="12" width="16" height="4" fill="#ca8a04" stroke="#000" stroke-width="1.5"/><path d="M 6 12 L 4 14 L 4 16 L 8 12 Z M 12 12 L 8 16 L 10 16 L 14 12 Z M 18 12 L 14 16 L 16 16 L 20 12 Z" fill="#000"/></svg>`,
     bullet: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="11" y="6" width="4" height="12" rx="2" fill="rgba(0,0,0,0.5)"/><path d="M 10 16 L 14 16 L 12 22 Z" fill="#f59e0b"/><path d="M 11 16 L 13 16 L 12 20 Z" fill="#fde047"/><rect x="10" y="4" width="4" height="12" rx="2" fill="#fde047" stroke="#111" stroke-width="1.5"/><rect x="11" y="5" width="2" height="6" rx="1" fill="#fff"/></svg>`,
-    coin: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="11" fill="#ca8a04" stroke="#854d0e" stroke-width="2"/>
-        <circle cx="12" cy="12" r="8" fill="#fde047" stroke="#eab308" stroke-width="1"/>
-        <path d="M12 6 L12 18 M9 9 L15 9 M9 15 L15 15" stroke="#ca8a04" stroke-width="2" fill="none"/>
-        <circle cx="12" cy="12" r="5" fill="#fef08a" opacity="0.5"/>
-    </svg>`,
+    coin: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="14" r="10" fill="#854d0e"/><circle cx="12" cy="12" r="10" fill="#eab308" stroke="#ca8a04" stroke-width="1"/><circle cx="12" cy="12" r="7" fill="#fde047" stroke="#ca8a04" stroke-width="1"/><text x="12" y="16" font-family="monospace" font-weight="900" font-size="12" fill="#854d0e" text-anchor="middle">$</text><ellipse cx="9" cy="8" rx="2" ry="1" fill="#fef08a" transform="rotate(-45 9 8)"/></svg>`,
+    grenade_pickup: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0, 2)"><rect x="10" y="2" width="4" height="4" fill="#475569" stroke="#111" stroke-width="1.5"/><path d="M 14 3 Q 18 -2 20 6" fill="none" stroke="#64748b" stroke-width="1.5"/><ellipse cx="12" cy="14" rx="6" ry="8" fill="#15803d" stroke="#111" stroke-width="1.5"/><path d="M 7 12 L 17 12 M 7 16 L 17 16 M 10 7 L 10 21 M 14 7 L 14 21" stroke="#111" stroke-width="1.5" stroke-linecap="round"/></g></svg>`,
+    grenade_proj: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="12" rx="6" ry="8" fill="#15803d" stroke="#111" stroke-width="1.5"/><rect x="10" y="3" width="4" height="3" fill="#475569" stroke="#111" stroke-width="1.5"/><path d="M 7 10 L 17 10 M 7 14 L 17 14 M 10 5 L 10 19 M 14 5 L 14 19" stroke="#111" stroke-width="1.5" stroke-linecap="round"/></svg>`,
     toxic: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><ellipse cx="16" cy="16" rx="14" ry="8" fill="rgba(34, 197, 94, 0.6)" stroke="#16a34a" stroke-width="2"/><ellipse cx="12" cy="14" rx="3" ry="1.5" fill="rgba(74, 222, 128, 0.8)"/><ellipse cx="20" cy="17" rx="2" ry="1" fill="rgba(74, 222, 128, 0.8)"/></svg>`,
     explosion: `<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="22" fill="rgba(239, 68, 68, 0.8)" stroke="#fca5a5" stroke-width="2"/><circle cx="24" cy="24" r="14" fill="#f59e0b"/><circle cx="24" cy="24" r="6" fill="#fef08a"/></svg>`
 };
@@ -407,20 +477,16 @@ class RunState {
         this.hp = DefaultGameData.player.startHp;
         this.armor = DefaultGameData.player.armor; 
         this.bombs = DefaultGameData.player.bombs;
+        this.speedUpg = 0; 
+        this.overchargeCharge = 0; 
+        this.grenadeUpg = { dmg: 0, radius: 0 };
         
-        // Individual upgrades per weapon tier
         this.upgrades = {
-            0: { dmg: 0, rate: 0 },
-            1: { dmg: 0, rate: 0 },
-            2: { dmg: 0, rate: 0 },
-            3: { dmg: 0, rate: 0 },
-            4: { dmg: 0, rate: 0 },
-            5: { dmg: 0, rate: 0 },
-            6: { dmg: 0, rate: 0 },
-            7: { dmg: 0, rate: 0 }
+            0: { dmg: 0, rate: 0 }, 1: { dmg: 0, rate: 0 }, 2: { dmg: 0, rate: 0 }, 3: { dmg: 0, rate: 0 },
+            4: { dmg: 0, rate: 0 }, 5: { dmg: 0, rate: 0 }, 6: { dmg: 0, rate: 0 }, 7: { dmg: 0, rate: 0 }
         };
         
-        this.weaponTier = 0; // Starts equipped with tier 0. Unlocked items are in SaveManager.
+        this.weaponTier = 0; 
         this.overchargeTimer = 0;
     }
 }
@@ -432,9 +498,12 @@ const currentRun = new RunState();
 class UIManager {
     constructor(scene) {
         this.scene = scene;
+        this.selectedShopWeapon = 0;
+        
         this.uiHp = document.getElementById('ui-hp');
         this.uiArmor = document.getElementById('ui-armor');
         this.uiBombs = document.getElementById('ui-bombs');
+        this.uiOverchargeBar = document.getElementById('ui-overcharge-bar');
         
         this.uiWave = document.getElementById('ui-wave');
         this.uiBudget = document.getElementById('ui-budget');
@@ -449,6 +518,7 @@ class UIManager {
             tutorial: document.getElementById('screen-tutorial'),
             settings: document.getElementById('screen-settings'),
             shop: document.getElementById('screen-shop'),
+            qmTip: document.getElementById('screen-qm-tip'),
             gameOver: document.getElementById('screen-game-over') 
         };
         
@@ -469,7 +539,6 @@ class UIManager {
         document.getElementById('dev-panel').addEventListener('touchstart', stopProp);
 
         document.getElementById('btn-new-game').addEventListener('click', () => {
-            // Fresh run, wipe meta progression for a true reset
             SaveManager.data.unlockedWeaponTier = 0;
             SaveManager.save();
             this.hideAllScreens(); 
@@ -481,7 +550,6 @@ class UIManager {
         });
 
         document.getElementById('btn-restart').addEventListener('click', () => {
-            // Clean wipe for Game Over restart
             SaveManager.data.unlockedWeaponTier = 0;
             SaveManager.save();
             this.hideAllScreens(); 
@@ -489,53 +557,71 @@ class UIManager {
         });
         
         // Shop Interactions
-        document.getElementById('btn-wpn-prev').addEventListener('click', () => {
-            if (currentRun.weaponTier > 0) {
-                currentRun.weaponTier--;
-                this.scene.player.updateWeaponGraphic();
-                this.updateShop();
-                this.updateHUD(this.scene.director.budget);
-            }
-        });
-
-        document.getElementById('btn-wpn-next').addEventListener('click', () => {
-            if (currentRun.weaponTier < SaveManager.data.unlockedWeaponTier) {
-                currentRun.weaponTier++;
-                this.scene.player.updateWeaponGraphic();
-                this.updateShop();
-                this.updateHUD(this.scene.director.budget);
-            }
-        });
-
         document.getElementById('btn-buy-dmg').addEventListener('click', () => {
-            if (currentRun.bank >= DefaultGameData.costs.upgradeDmg) {
+            if (currentRun.bank >= DefaultGameData.costs.upgradeDmg && this.selectedShopWeapon <= SaveManager.data.unlockedWeaponTier) {
                 currentRun.bank -= DefaultGameData.costs.upgradeDmg;
-                currentRun.upgrades[currentRun.weaponTier].dmg++;
+                currentRun.upgrades[this.selectedShopWeapon].dmg++;
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
             }
         });
 
         document.getElementById('btn-buy-rate').addEventListener('click', () => {
-            if (currentRun.bank >= DefaultGameData.costs.upgradeRate) {
+            if (currentRun.bank >= DefaultGameData.costs.upgradeRate && this.selectedShopWeapon <= SaveManager.data.unlockedWeaponTier) {
                 currentRun.bank -= DefaultGameData.costs.upgradeRate;
-                currentRun.upgrades[currentRun.weaponTier].rate++;
+                currentRun.upgrades[this.selectedShopWeapon].rate++;
+                this.updateShop();
+                this.updateHUD(this.scene.director.budget);
+            }
+        });
+        
+        document.getElementById('btn-buy-speed').addEventListener('click', () => {
+            if (currentRun.bank >= DefaultGameData.costs.upgradeSpeed) {
+                currentRun.bank -= DefaultGameData.costs.upgradeSpeed;
+                currentRun.speedUpg++;
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
             }
         });
 
-        document.getElementById('btn-buy-weapon').addEventListener('click', () => {
-            let nextTierToUnlock = SaveManager.data.unlockedWeaponTier + 1;
-            let wpn = DefaultGameData.weapons[nextTierToUnlock];
-            if (wpn && currentRun.bank >= wpn.cost) {
-                currentRun.bank -= wpn.cost;
-                SaveManager.data.unlockedWeaponTier = nextTierToUnlock;
-                currentRun.weaponTier = nextTierToUnlock; // Auto-equip newly bought weapon
-                SaveManager.save();
+        document.getElementById('btn-buy-bomb').addEventListener('click', () => {
+            if (currentRun.bank >= DefaultGameData.costs.bomb) {
+                currentRun.bank -= DefaultGameData.costs.bomb;
+                currentRun.bombs++;
+                this.updateShop();
+                this.updateHUD(this.scene.director.budget);
+            }
+        });
+        
+        document.getElementById('btn-buy-bomb-dmg').addEventListener('click', () => {
+            if (currentRun.bank >= DefaultGameData.costs.bombDmg) {
+                currentRun.bank -= DefaultGameData.costs.bombDmg;
+                currentRun.grenadeUpg.dmg++;
+                this.updateShop();
+                this.updateHUD(this.scene.director.budget);
+            }
+        });
+
+        document.getElementById('btn-shop-action').addEventListener('click', () => {
+            let sel = this.selectedShopWeapon;
+            let unlocked = SaveManager.data.unlockedWeaponTier;
+            let wpn = DefaultGameData.weapons[sel];
+            
+            if (sel <= unlocked && sel !== currentRun.weaponTier) {
+                currentRun.weaponTier = sel;
                 this.scene.player.updateWeaponGraphic();
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
+            } else if (sel === unlocked + 1) {
+                if (currentRun.bank >= wpn.cost) {
+                    currentRun.bank -= wpn.cost;
+                    SaveManager.data.unlockedWeaponTier = sel;
+                    currentRun.weaponTier = sel; 
+                    SaveManager.save();
+                    this.scene.player.updateWeaponGraphic();
+                    this.updateShop();
+                    this.updateHUD(this.scene.director.budget);
+                }
             }
         });
 
@@ -555,6 +641,12 @@ class UIManager {
                 this.hideAllScreens(); 
                 if(this.scene.gameState === 'TRENCH') this.scene.physics.world.resume();
             }
+        });
+        
+        document.getElementById('btn-close-qm-tip').addEventListener('click', () => {
+            AppSettings.seenArmoryTip = true;
+            localStorage.setItem('UB_SeenArmoryTip', 'true');
+            document.getElementById('screen-qm-tip').style.display = 'none';
         });
 
         document.getElementById('tog-controls').addEventListener('click', (e) => {
@@ -590,7 +682,16 @@ class UIManager {
     showScreen(key) {
         this.hideAllScreens();
         if (this.screens[key]) this.screens[key].style.display = 'flex';
-        if (key === 'shop') this.updateShop();
+        
+        if (key === 'shop') {
+            this.selectedShopWeapon = currentRun.weaponTier;
+            this.updateShop();
+            
+            if (currentRun.wave === 1 && !AppSettings.seenArmoryTip) {
+                document.getElementById('screen-qm-tip').style.display = 'flex';
+            }
+        }
+        
         if (key === 'gameOver') document.getElementById('game-over-stats').innerText = `WAVES SURVIVED: ${currentRun.wave - 1}`;
     }
     
@@ -605,65 +706,118 @@ class UIManager {
     hideAllScreens() { Object.values(this.screens).forEach(s => s.style.display = 'none'); }
 
     updateShop() {
-        let tier = currentRun.weaponTier;
+        let sel = this.selectedShopWeapon;
         let unlockedTier = SaveManager.data.unlockedWeaponTier;
-        let wpnBase = DefaultGameData.weapons[tier];
-        let upgs = currentRun.upgrades[tier];
+        let wpnBase = DefaultGameData.weapons[sel];
+        let upgs = currentRun.upgrades[sel];
+        let isUnlockedSel = sel <= unlockedTier;
 
         document.getElementById('shop-bank').innerText = currentRun.bank;
         
-        // Navigation Buttons styling based on boundaries
-        let btnPrev = document.getElementById('btn-wpn-prev');
-        let btnNext = document.getElementById('btn-wpn-next');
-        btnPrev.style.opacity = tier > 0 ? '1' : '0.2';
-        btnPrev.style.cursor = tier > 0 ? 'pointer' : 'not-allowed';
-        btnNext.style.opacity = tier < unlockedTier ? '1' : '0.2';
-        btnNext.style.cursor = tier < unlockedTier ? 'pointer' : 'not-allowed';
+        // Build Weapon Grid
+        let gridHtml = '';
+        for(let i=0; i<8; i++) {
+            let isUnlocked = i <= unlockedTier;
+            let isNext = i === unlockedTier + 1;
+            let isSelected = i === sel;
+            let svgStr = RawSVGs['wpn_side_'+i].replace('width="24"','width="100%"').replace('height="24"','height="100%"');
+            
+            let opacity = isUnlocked ? 1 : 0.4;
+            let border = isSelected ? '#3b82f6' : '#334155';
+            let bg = isSelected ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0,0,0,0.5)';
+            
+            let overlay = !isUnlocked ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); pointer-events:none;"><div style="width:32px; height:32px; opacity:0.8;">${RawSVGs.padlock}</div></div>` : '';
 
-        // Equipped Weapon HUD (General Info)
-        document.getElementById('shop-current-wpn').innerText = wpnBase.name;
-        document.getElementById('shop-wpn-visual').innerHTML = RawSVGs['wpn_side_' + tier].replace('width="24"', 'width="100%"').replace('height="24"', 'height="100%"');
+            gridHtml += `<div class="weapon-slot" data-index="${i}" style="width: 70px; height: 70px; flex-shrink: 0; border: 2px solid ${border}; background: ${bg}; cursor: pointer; padding: 5px; box-sizing: border-box; transition: all 0.2s; position:relative;">
+                <div style="opacity: ${opacity}; width:100%; height:100%; filter: ${!isUnlocked ? 'grayscale(100%)' : 'none'};">${svgStr}</div>
+                ${overlay}
+            </div>`;
+        }
+        document.getElementById('shop-weapon-grid').innerHTML = gridHtml;
 
-        // Decreasing Marginal Utility Math & Shop Display
-        let bonusDmg = Math.round(Math.sqrt(upgs.dmg) * 1.5 * 10) / 10;
+        document.querySelectorAll('.weapon-slot').forEach(slot => {
+            slot.addEventListener('click', (e) => {
+                let idx = parseInt(e.currentTarget.getAttribute('data-index'));
+                // Allow clicking any weapon to view specs (or ??? if locked)
+                this.selectedShopWeapon = idx;
+                this.updateShop();
+            });
+        });
+
+        // Selected Weapon Details Panel
+        document.getElementById('shop-sel-name').innerText = isUnlockedSel || sel === unlockedTier + 1 ? wpnBase.name : "CLASSIFIED PROTOTYPE";
+        document.getElementById('shop-sel-visual').innerHTML = RawSVGs['wpn_side_' + sel].replace('width="24"', 'width="100%"').replace('height="24"', 'height="100%"');
+        document.getElementById('shop-sel-visual').style.filter = isUnlockedSel ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.3))' : 'grayscale(100%) opacity(0.3)';
+
+        // Stats Logic
+        let bonusDmg = Math.round(Math.pow(upgs.dmg, 0.75) * wpnBase.baseDamage * 0.4 * 10) / 10;
         let currentDmg = (wpnBase.baseDamage + bonusDmg).toFixed(1);
-        
-        let currentRateMs = wpnBase.baseFireRate * Math.pow(0.85, upgs.rate);
+        let currentRateMs = wpnBase.baseFireRate * Math.pow(0.90, upgs.rate);
         let bpm = Math.round(60000 / currentRateMs);
 
-        document.getElementById('shop-eq-dmg-lvl').innerText = `(Lv.${upgs.dmg})`;
-        document.getElementById('shop-eq-dmg').innerText = currentDmg;
-        document.getElementById('shop-eq-rate-lvl').innerText = `(Lv.${upgs.rate})`;
-        document.getElementById('shop-eq-rate').innerText = `${bpm} BPM`;
-        document.getElementById('shop-eq-spc').innerText = `${wpnBase.element} ${wpnBase.pattern}`;
-
-        document.getElementById('shop-lvl-dmg').innerText = upgs.dmg;
-        document.getElementById('shop-lvl-rate').innerText = upgs.rate;
-        document.getElementById('shop-cost-dmg').innerText = DefaultGameData.costs.upgradeDmg;
-        document.getElementById('shop-cost-rate').innerText = DefaultGameData.costs.upgradeRate;
-
-        // New Weapon Unlock Display Logic
-        let nextTierToUnlock = unlockedTier + 1;
-        let nextWpn = DefaultGameData.weapons[nextTierToUnlock];
-        let btnWpn = document.getElementById('btn-buy-weapon');
+        document.getElementById('shop-sel-dmg-lvl').innerText = isUnlockedSel ? `(Lv.${upgs.dmg})` : '';
+        document.getElementById('shop-sel-dmg').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? currentDmg : '???';
+        document.getElementById('shop-sel-dmg').style.color = isUnlockedSel ? '#fff' : '#64748b';
         
-        if (nextWpn) {
-            document.getElementById('shop-wpn-tier').innerText = `(TIER ${nextTierToUnlock})`;
-            document.getElementById('shop-wpn-desc').innerText = nextWpn.desc;
-            document.getElementById('shop-cost-wpn').innerText = nextWpn.cost;
-            document.getElementById('shop-next-wpn-name').innerText = nextWpn.name;
-            document.getElementById('shop-next-wpn-visual').innerHTML = RawSVGs['wpn_side_' + nextTierToUnlock].replace('width="24"', 'width="100%"').replace('height="24"', 'height="100%"');
-            
-            document.getElementById('shop-cost-wpn-container').style.display = 'inline';
-            btnWpn.className = currentRun.bank >= nextWpn.cost ? 'shop-item' : 'shop-item locked';
+        document.getElementById('shop-sel-rate-lvl').innerText = isUnlockedSel ? `(Lv.${upgs.rate})` : '';
+        document.getElementById('shop-sel-rate').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? `${bpm} BPM` : '???';
+        document.getElementById('shop-sel-rate').style.color = isUnlockedSel ? '#fff' : '#64748b';
+        
+        document.getElementById('shop-sel-spc').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? `${wpnBase.element} ${wpnBase.pattern}` : '???';
+        document.getElementById('shop-sel-spc').style.color = isUnlockedSel ? '#3b82f6' : '#64748b';
+
+        // Action Button Logic
+        let actionBtn = document.getElementById('btn-shop-action');
+        if (sel === currentRun.weaponTier) {
+            actionBtn.innerText = "EQUIPPED";
+            actionBtn.disabled = true;
+            actionBtn.className = "btn";
+            actionBtn.style.borderColor = "rgba(255,255,255,0.1)";
+            actionBtn.style.color = "#a3a3a3";
+        } else if (isUnlockedSel) {
+            actionBtn.innerText = "EQUIP";
+            actionBtn.disabled = false;
+            actionBtn.className = "btn btn-action";
+            actionBtn.style.borderColor = "#3b82f6";
+            actionBtn.style.color = "#3b82f6";
+        } else if (sel === unlockedTier + 1) {
+            actionBtn.innerHTML = `BUY: $${wpnBase.cost}`;
+            actionBtn.disabled = currentRun.bank < wpnBase.cost;
+            actionBtn.className = currentRun.bank >= wpnBase.cost ? "btn btn-action" : "btn";
+            actionBtn.style.borderColor = currentRun.bank >= wpnBase.cost ? "#22c55e" : "rgba(255,255,255,0.1)";
+            actionBtn.style.color = currentRun.bank >= wpnBase.cost ? "#22c55e" : "#a3a3a3";
         } else {
-            document.getElementById('shop-wpn-tier').innerText = `(MAXED)`;
-            document.getElementById('shop-wpn-desc').innerText = "Arsenal fully upgraded.";
-            document.getElementById('shop-next-wpn-name').innerText = "";
-            document.getElementById('shop-next-wpn-visual').innerHTML = "";
-            document.getElementById('shop-cost-wpn-container').style.display = 'none';
-            btnWpn.className = 'shop-item locked';
+            actionBtn.innerText = "LOCKED";
+            actionBtn.disabled = true;
+            actionBtn.className = "btn";
+            actionBtn.style.borderColor = "rgba(255,255,255,0.05)";
+            actionBtn.style.color = "rgba(255,255,255,0.2)";
         }
+
+        // Upgrades Display
+        document.getElementById('shop-lvl-dmg').innerText = isUnlockedSel ? upgs.dmg : '-';
+        document.getElementById('shop-lvl-rate').innerText = isUnlockedSel ? upgs.rate : '-';
+        document.getElementById('shop-lvl-speed').innerText = currentRun.speedUpg;
+        document.getElementById('shop-inv-bomb').innerText = currentRun.bombs;
+        document.getElementById('shop-lvl-bomb-dmg').innerText = currentRun.grenadeUpg.dmg;
+        
+        let dmgCostContainer = document.getElementById('btn-buy-dmg');
+        let rateCostContainer = document.getElementById('btn-buy-rate');
+        let speedCostContainer = document.getElementById('btn-buy-speed');
+        let bombCostContainer = document.getElementById('btn-buy-bomb');
+        let bombDmgCostContainer = document.getElementById('btn-buy-bomb-dmg');
+        
+        if(!isUnlockedSel) {
+            dmgCostContainer.className = 'shop-item locked';
+            rateCostContainer.className = 'shop-item locked';
+        } else {
+            dmgCostContainer.className = currentRun.bank >= DefaultGameData.costs.upgradeDmg ? 'shop-item' : 'shop-item locked';
+            rateCostContainer.className = currentRun.bank >= DefaultGameData.costs.upgradeRate ? 'shop-item' : 'shop-item locked';
+        }
+        
+        speedCostContainer.className = currentRun.bank >= DefaultGameData.costs.upgradeSpeed ? 'shop-item' : 'shop-item locked';
+        bombCostContainer.className = currentRun.bank >= DefaultGameData.costs.bomb ? 'shop-item' : 'shop-item locked';
+        bombDmgCostContainer.className = currentRun.bank >= DefaultGameData.costs.bombDmg ? 'shop-item' : 'shop-item locked';
     }
 
     updateHUD(activeBudget = 0) {
@@ -674,8 +828,12 @@ class UIManager {
         this.uiHp.innerHTML = hearts;
         
         this.uiArmor.innerText = `🛡️ ${currentRun.armor}`;
-        this.uiBombs.innerText = `💣 ${currentRun.bombs}`;
+        this.uiBombs.innerText = `🍍 ${currentRun.bombs}`;
         
+        this.uiOverchargeBar.style.width = currentRun.overchargeCharge + '%';
+        if(currentRun.overchargeCharge >= 100) this.uiOverchargeBar.classList.add('ready');
+        else this.uiOverchargeBar.classList.remove('ready');
+
         this.uiWave.innerText = currentRun.wave;
         this.uiBudget.innerText = activeBudget;
         this.uiBank.innerText = currentRun.bank;
@@ -698,44 +856,54 @@ class DirectorAI {
         this.scene = scene;
         this.active = false;
         this.budget = 0;
-        this.subWaves = 0;
         this.spawnTimer = 0;
         this.isBossWave = false;
         this.isSwarmWave = false;
-        this.clearing = false; // Add flag to delay end wave
+        this.clearing = false; 
+        this.clearWaitTime = 0;
+        this.clusterQueue = [];
     }
 
     startWave() {
         this.active = true;
         this.clearing = false;
+        this.clearWaitTime = 0;
+        this.clusterQueue = [];
         this.isBossWave = currentRun.wave % 5 === 0;
         this.isSwarmWave = (currentRun.wave === 4 || currentRun.wave === 9 || currentRun.wave === 14);
 
         let baseBudget = DefaultGameData.budget.base + (currentRun.wave * DefaultGameData.budget.scalingFactor);
 
         if (this.isBossWave) {
-            this.subWaves = 1; 
             this.budget = baseBudget * 2;
-        } else if (this.isSwarmWave) {
-            this.subWaves = 3;
-            this.budget = Math.floor(baseBudget * 1.5); 
+            this.clusterQueue.push({ type: 'boss', count: 1, delay: 500 });
+            this.clusterQueue.push({ type: 'grunt', count: 5, delay: 2000 });
         } else {
-            this.subWaves = 3; 
-            this.budget = baseBudget;
-            if (currentRun.wave <= 3) {
-                this.budget = Math.floor(this.budget * 0.75); 
+            if (this.isSwarmWave) this.budget = Math.floor(baseBudget * 1.5); 
+            else if (currentRun.wave <= 3) this.budget = Math.floor(baseBudget * 0.75); 
+            else this.budget = baseBudget;
+            
+            // Pre-calculate trickle clusters
+            let remaining = this.budget;
+            let currentDelay = 500;
+            while(remaining > 0) {
+                let clusterSize = Phaser.Math.Between(3, 10);
+                clusterSize = Math.min(clusterSize, remaining);
+                this.clusterQueue.push({ count: clusterSize, delay: currentDelay });
+                remaining -= clusterSize;
+                currentDelay += Phaser.Math.Between(1500, 3000); 
             }
         }
 
         this.scene.uiManager.updateHUD(this.budget);
         
         let pausedForTutorial = this.scene.uiManager.showTutorial(currentRun.wave);
-        if(!pausedForTutorial) this.triggerSubWave();
+        if(!pausedForTutorial) this.triggerNextCluster();
         else {
             const checkUnpause = setInterval(() => {
                 if(!this.scene.physics.world.isPaused) {
                     clearInterval(checkUnpause);
-                    this.triggerSubWave();
+                    this.triggerNextCluster();
                 }
             }, 100);
         }
@@ -745,74 +913,60 @@ class DirectorAI {
         if (!this.active) return;
         let activeEnemies = this.scene.enemyPool.countActive() + this.scene.bossPool.countActive();
 
-        if (this.subWaves > 0 && activeEnemies <= (this.isBossWave ? 0 : 3) && this.spawnTimer <= 0) {
-            this.triggerSubWave();
-        } else if (this.subWaves === 0 && activeEnemies === 0 && !this.clearing) {
+        if (this.clusterQueue.length === 0 && activeEnemies === 0 && !this.clearing) {
             this.clearing = true;
-            this.scene.time.delayedCall(2500, () => {
+            this.clearWaitTime = 0;
+        }
+        
+        if (this.clearing) {
+            this.clearWaitTime += delta;
+            let noLoot = this.scene.coinPool.countActive() === 0 && this.scene.bombPickupPool.countActive() === 0;
+            if (noLoot || this.clearWaitTime >= 10000) {
                 this.active = false;
                 this.scene.events.emit('WAVE_CLEARED');
-            });
+            }
         }
-        if (this.spawnTimer > 0) this.spawnTimer -= delta;
     }
 
-    triggerSubWave() {
-        this.subWaves--;
-        let subBudget = Math.ceil(this.budget / (this.subWaves + 1)); 
-        this.budget -= subBudget;
+    triggerNextCluster() {
+        if(this.clusterQueue.length === 0) return;
         
-        if (this.isBossWave) {
-            this.scene.time.delayedCall(500, () => {
+        let cluster = this.clusterQueue.shift();
+        
+        this.scene.time.delayedCall(cluster.delay, () => {
+            if(!this.active) return;
+            
+            let spawnX = Phaser.Math.Between(350, 730);
+            
+            if(cluster.type === 'boss') {
                 let boss = this.scene.bossPool.get();
                 if (boss) boss.spawn(540, -100, currentRun.wave * 15, 30, 'boss');
-            });
-            for(let i=0; i < 5; i++) {
-                this.scene.time.delayedCall(i * 200, () => {
-                    let enemy = this.scene.enemyPool.get();
-                    if (enemy) enemy.spawn(Phaser.Math.Between(350, 730), -50, 2, 80, 'grunt');
-                });
-            }
-        } else {
-            let numClusters = Phaser.Math.Between(1, Math.min(3, Math.ceil(subBudget / 2)));
-            let clusters = [];
-            for (let c=0; c<numClusters; c++) {
-                clusters.push({
-                    x: Phaser.Math.Between(350, 730), 
-                    y: Phaser.Math.Between(-250, -100) 
-                });
-            }
-            
-            for(let i=0; i < subBudget; i++) {
-                this.scene.time.delayedCall(i * 100, () => { 
-                    let enemy = this.scene.enemyPool.get();
-                    if (enemy) {
-                        let cluster = Phaser.Utils.Array.GetRandom(clusters);
-                        let spawnX = cluster.x + Phaser.Math.Between(-40, 40);
-                        let spawnY = cluster.y + Phaser.Math.Between(-40, 40);
-                        
-                        // Type Selection Logic
-                        let type = 'grunt';
-                        if (this.isSwarmWave) {
-                            type = 'sprinter';
-                        } else {
-                            let roll = Phaser.Math.Between(1, 100);
-                            if (currentRun.wave >= 2 && roll <= 20) type = 'sprinter';
-                            else if (currentRun.wave >= 4 && roll > 20 && roll <= 35) type = 'spitter';
-                            else if (currentRun.wave >= 6 && roll > 35 && roll <= 50) type = 'tank';
-                            else if (currentRun.wave >= 8 && roll > 50 && roll <= 65) type = 'burrower';
-                        }
+            } else {
+                for(let i=0; i<cluster.count; i++) {
+                    this.scene.time.delayedCall(i * Phaser.Math.Between(100, 300), () => {
+                        if(!this.active) return;
+                        let enemy = this.scene.enemyPool.get();
+                        if (enemy) {
+                            let type = 'grunt';
+                            if (this.isSwarmWave) {
+                                type = 'sprinter';
+                            } else {
+                                let roll = Phaser.Math.Between(1, 100);
+                                if (currentRun.wave >= 2 && roll <= 20) type = 'sprinter';
+                                else if (currentRun.wave >= 4 && roll > 20 && roll <= 35) type = 'spitter';
+                                else if (currentRun.wave >= 6 && roll > 35 && roll <= 50) type = 'tank';
+                                else if (currentRun.wave >= 8 && roll > 50 && roll <= 65) type = 'burrower';
+                            }
 
-                        let hp = 1 + Math.floor(currentRun.wave * 1.2);
-                        let speed = 60 + Math.min(currentRun.wave * 6, 150);
-                        enemy.spawn(spawnX, spawnY, hp, speed, type);
-                    }
-                });
+                            let hp = 1 + Math.floor(currentRun.wave * 1.2);
+                            let speed = 60 + Math.min(currentRun.wave * 6, 150);
+                            enemy.spawn(spawnX + Phaser.Math.Between(-40, 40), -50, hp, speed, type);
+                        }
+                    });
+                }
             }
-        }
-        
-        this.spawnTimer = 2000;
-        this.scene.uiManager.updateHUD(this.budget);
+            this.triggerNextCluster();
+        });
     }
 }
 
@@ -831,7 +985,7 @@ class HazardEntity extends Phaser.Physics.Arcade.Sprite {
         } else if (type === 'explosion') {
             this.setTexture('explosion'); this.setScale(3); this.body.setSize(40, 40);
             this.lifeTime = 200; this.alpha = 1;
-            if(AppSettings.shakeOn) this.scene.cameras.main.shake(150, 0.02);
+            if(AppSettings.shakeOn) this.scene.cameras.main.shake(200, 0.025);
         }
     }
     tick(time, delta) {
@@ -851,14 +1005,12 @@ class PlayerEntity extends Phaser.Physics.Arcade.Sprite {
         this.setScale(1.5);
         this.body.setSize(12, 16); 
         this.body.setOffset(6, 4);
-        
         this.body.setBounce(0,0);
         this.body.setDrag(0,0);
 
         this.lastFired = 0; this.lastDashed = 0; this.isDashing = false;
         this.isInvulnerable = false;
         
-        // Setup Dynamic Weapon Sprite mapping to player's rotation
         this.weaponSprite = scene.add.sprite(x, y, 'wpn_' + currentRun.weaponTier);
         this.weaponSprite.setDepth(RenderLayerDict.Player + 1);
         this.weaponSprite.setScale(1.5);
@@ -876,17 +1028,16 @@ class PlayerEntity extends Phaser.Physics.Arcade.Sprite {
         let wpnBase = DefaultGameData.weapons[tier];
         let upgs = currentRun.upgrades[tier];
 
-        let fr = wpnBase.baseFireRate * Math.pow(0.85, upgs.rate); // 15% faster per level compounded
+        let fr = wpnBase.baseFireRate * Math.pow(0.90, upgs.rate);
         if (currentRun.overchargeTimer > 0) fr /= 2; 
 
-        // Decreasing marginal utility: sqrt based dmg bonus
-        let bonusDmg = Math.round(Math.sqrt(upgs.dmg) * 1.5 * 10) / 10;
+        let bonusDmg = Math.round(Math.pow(upgs.dmg, 0.75) * wpnBase.baseDamage * 0.4 * 10) / 10;
 
         return { 
-            speed: DefaultGameData.player.baseSpeed, 
+            speed: DefaultGameData.player.baseSpeed + (currentRun.speedUpg * 15), 
             damage: wpnBase.baseDamage + bonusDmg,
-            fireRate: Math.max(50, fr),
-            dashSpeed: DefaultGameData.player.dashSpeed
+            fireRate: Math.max(30, fr),
+            dashSpeed: DefaultGameData.player.dashSpeed + (currentRun.speedUpg * 20)
         };
     }
 
@@ -930,7 +1081,6 @@ class PlayerEntity extends Phaser.Physics.Arcade.Sprite {
         const spawnBullet = (ang, offsetX = 0) => {
             let bullet = this.scene.bulletPool.get();
             if (bullet) {
-                // Offset bullet generation to account for twin-barrel weapons
                 let spawnX = this.x + Math.cos(ang) * 20 + Math.cos(ang + Math.PI/2) * offsetX;
                 let spawnY = this.y + Math.sin(ang) * 20 + Math.sin(ang + Math.PI/2) * offsetX;
                 bullet.fire(spawnX, spawnY, ang, damage, wpn.element);
@@ -962,19 +1112,22 @@ class PlayerEntity extends Phaser.Physics.Arcade.Sprite {
         if (currentRun.bombs > 0) {
             currentRun.bombs--;
             this.scene.uiManager.updateHUD(this.scene.director.budget);
-            if(AppSettings.shakeOn) this.scene.cameras.main.shake(400, 0.03);
             
-            let flash = this.scene.add.rectangle(540, 720, 1080, 1440, 0xffffff).setDepth(RenderLayerDict.VirtualUI - 1);
-            this.scene.tweens.add({ targets: flash, alpha: 0, duration: 500, onComplete: () => flash.destroy() });
-
-            this.scene.enemyPool.getChildren().forEach(e => { if (e.active) e.takeDamage(100, null, false); });
-            this.scene.bossPool.getChildren().forEach(e => { if (e.active) e.takeDamage(50, null, false); });
+            let grenade = this.scene.grenadeProjPool.get();
+            if (grenade) {
+                let dmg = DefaultGameData.grenade.baseDmg + (currentRun.grenadeUpg.dmg * 25);
+                let rad = DefaultGameData.grenade.baseRadius; // Could add upgrade here too
+                grenade.spawn(this.x, this.y - 20, dmg, rad);
+            }
         }
     }
 
     useOvercharge() {
-        if (currentRun.overchargeTimer <= 0) {
+        if (currentRun.overchargeCharge >= 100) {
+            currentRun.overchargeCharge = 0;
             currentRun.overchargeTimer = 5000; 
+            this.scene.uiManager.updateHUD(this.scene.director.budget);
+            
             let aura = this.scene.add.circle(this.x, this.y, 30, 0xeab308, 0.4).setDepth(RenderLayerDict.Player - 1);
             this.scene.tweens.add({
                 targets: aura, scale: 1.5, alpha: 0, duration: 500, repeat: 9,
@@ -1041,6 +1194,63 @@ class ProjectileEntity extends Phaser.Physics.Arcade.Sprite {
     die() { this.setActive(false).setVisible(false); this.body.stop(); this.setPosition(-100, -100); }
 }
 
+class GrenadeProjEntity extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y) { super(scene, x, y, 'grenade_proj'); this.damagePayload = 50; this.blastRadius = 100; }
+    spawn(x, y, dmg, radius) {
+        this.scene.add.existing(this); this.scene.physics.add.existing(this);
+        this.setActive(true).setVisible(true); this.setPosition(x, y); this.setDepth(RenderLayerDict.Projectiles + 1);
+        this.setScale(1.5);
+        this.damagePayload = dmg;
+        this.blastRadius = radius;
+        this.rotation = 0;
+        
+        // Fly straight north
+        this.scene.physics.velocityFromRotation(-Math.PI/2, 400, this.body.velocity);
+        
+        // Slight arc effect (z-axis zoom)
+        this.scene.tweens.add({
+            targets: this,
+            scale: 2.5,
+            duration: 400,
+            yoyo: true,
+            ease: 'Sine.easeInOut'
+        });
+        
+        this.scene.tweens.add({
+            targets: this,
+            rotation: Math.PI * 4,
+            duration: 800
+        });
+
+        // Failsafe auto-detonate if it misses
+        this.failsafeTimer = this.scene.time.delayedCall(1200, () => { if(this.active) this.explode(); });
+    }
+    
+    explode() {
+        if(!this.active) return;
+        this.setActive(false).setVisible(false); 
+        this.body.stop();
+        if(this.failsafeTimer) this.failsafeTimer.remove();
+        this.scene.tweens.killTweensOf(this);
+        
+        let haz = this.scene.hazardPool.get();
+        if(haz) haz.spawn(this.x, this.y, 'explosion');
+        
+        // AoE Damage
+        let checkHit = (pool) => {
+            pool.getChildren().forEach(e => {
+                if(e.active && Phaser.Math.Distance.Between(this.x, this.y, e.x, e.y) <= this.blastRadius) {
+                    e.takeDamage(this.damagePayload, null, false);
+                }
+            });
+        };
+        checkHit(this.scene.enemyPool);
+        checkHit(this.scene.bossPool);
+        
+        this.setPosition(-100, -100);
+    }
+}
+
 class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) { 
         super(scene, x, y, 'grunt'); 
@@ -1058,7 +1268,7 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
         this.lastAttackTime = 0;
         
         switch(type) {
-            case 'sprinter': this.setTexture('sprinter'); this.setScale(2.25); hp *= 0.5; speed *= 1.5; break;
+            case 'sprinter': this.setTexture('sprinter'); this.setScale(2.0); hp *= 0.5; speed *= 1.8; break;
             case 'tank': this.setTexture('tank'); this.setScale(2.2); hp *= 3.0; speed *= 0.6; break;
             case 'spitter': this.setTexture('spitter'); this.setScale(1.5); break;
             case 'burrower': this.setTexture('burrower'); this.setScale(1.4); break;
@@ -1069,7 +1279,7 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
         this.body.setSize(14, 18); this.body.setOffset(5, 3);
         if(this.isBoss) { this.body.setSize(20, 24); this.body.setOffset(2, 0); }
         else if(this.type === 'tank') { this.body.setSize(18, 20); this.body.setOffset(7, 6); }
-        else if(this.type === 'sprinter') { this.body.setSize(10, 16); this.body.setOffset(7, 5); }
+        else if(this.type === 'sprinter') { this.body.setSize(12, 16); this.body.setOffset(6, 5); }
         
         this.body.setBounce(0,0);
         this.hp = hp; this.baseSpeed = speed; 
@@ -1145,8 +1355,20 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
         let isTank = this.type === 'tank';
         let poolColor = Phaser.Utils.Array.GetRandom(BloodColors);
         
+        let generateBloodSplatter = (cx, cy, scaleMult) => {
+            let parts = Phaser.Math.Between(4, 7);
+            for(let i=0; i<parts; i++) {
+                let px = cx + Phaser.Math.Between(-15 * scaleMult, 15 * scaleMult);
+                let py = cy + Phaser.Math.Between(-10 * scaleMult, 10 * scaleMult);
+                let pr = Phaser.Math.Between(5 * scaleMult, 20 * scaleMult);
+                let blood = this.scene.add.circle(px, py, pr, poolColor, 0.85).setDepth(RenderLayerDict.GoreBase);
+                blood.scaleY = Phaser.Math.FloatBetween(0.4, 0.8);
+                blood.rotation = Phaser.Math.FloatBetween(0, Math.PI);
+                this.scene.tweens.add({ targets: blood, alpha: 0, duration: 20000, ease: 'Sine.easeOut', onComplete: () => blood.destroy() });
+            }
+        };
+
         if (isTank) {
-            // Massive cherry pie balloon pop for the tank
             for(let i=0; i<40; i++) {
                 let color = Phaser.Utils.Array.GetRandom(BloodColors);
                 let blood = this.scene.add.circle(this.x, this.y, Phaser.Math.Between(4,12), color).setDepth(RenderLayerDict.Gore);
@@ -1156,40 +1378,30 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
                 blood.body.setVelocity(Math.cos(angle)*speed, Math.sin(angle)*speed);
                 this.scene.tweens.add({ targets: blood, alpha: 0, duration: 1500, onComplete: () => blood.destroy() });
             }
-            // Giant pools
-            for(let i=0; i<6; i++) {
-                let px = this.x + Phaser.Math.Between(-40, 40);
-                let py = this.y + 10 + Phaser.Math.Between(-30, 30);
-                let pr = Phaser.Math.Between(30, 70);
-                let pool = this.scene.add.circle(px, py, pr, poolColor, 0.9).setDepth(RenderLayerDict.GoreBase);
-                pool.scaleY = 0.4; 
-                pool.rotation = Phaser.Math.FloatBetween(0, Math.PI);
-                this.scene.tweens.add({ targets: pool, alpha: 0, duration: 25000, onComplete: () => pool.destroy() });
-            }
+            generateBloodSplatter(this.x, this.y + 10, 2.5);
             let haz = this.scene.hazardPool.get();
             if(haz) haz.spawn(this.x, this.y, 'explosion');
         } else {
-            // Normal death gore
-            let poolCount = this.isBoss ? 8 : Phaser.Math.Between(2, 4);
-            for(let i=0; i<poolCount; i++) {
-                let px = this.x + Phaser.Math.Between(this.isBoss?-30: -15, this.isBoss?30:15);
-                let py = this.y + 10 + Phaser.Math.Between(-10, 10);
-                let pr = Phaser.Math.Between(15, this.isBoss?60:35);
-                let pool = this.scene.add.circle(px, py, pr, poolColor, 0.8).setDepth(RenderLayerDict.GoreBase);
-                pool.scaleY = 0.4; 
-                pool.rotation = Phaser.Math.FloatBetween(0, Math.PI);
-                this.scene.tweens.add({ targets: pool, alpha: 0, duration: 15000, onComplete: () => pool.destroy() });
-            }
+            generateBloodSplatter(this.x, this.y + 10, this.isBoss ? 2.5 : 1.0);
             if (this.type === 'spitter') {
                 let haz = this.scene.hazardPool.get();
                 if(haz) haz.spawn(this.x, this.y, 'toxic');
             }
         }
         
-        let drops = this.isBoss ? Phaser.Math.Between(10, 15) : (Phaser.Math.Between(1, 100) <= 60 ? 1 : 0);
+        currentRun.overchargeCharge = Math.min(100, currentRun.overchargeCharge + (this.isBoss ? 25 : 5));
+        this.scene.uiManager.updateHUD(this.scene.director.budget);
+        
+        let drops = this.isBoss ? Phaser.Math.Between(10, 15) : (Phaser.Math.Between(1, 100) <= 30 ? 1 : 0);
         for (let d=0; d<drops; d++) {
             let coin = this.scene.coinPool.get();
             if (coin) coin.spawn(this.x + Phaser.Math.Between(-20, 20), this.y + Phaser.Math.Between(-20, 20));
+        }
+
+        let bombDropRoll = Phaser.Math.Between(1, 100);
+        if (this.isBoss || bombDropRoll <= 2) {
+            let bombPickup = this.scene.bombPickupPool.get();
+            if (bombPickup) bombPickup.spawn(this.x + Phaser.Math.Between(-10, 10), this.y + Phaser.Math.Between(-10, 10));
         }
 
         this.despawn();
@@ -1231,24 +1443,15 @@ class BarricadeBlock extends Phaser.Physics.Arcade.Sprite {
 }
 
 class CoinEntity extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y) { super(scene, x, y, 'coin'); this.value = 15; }
+    constructor(scene, x, y) { super(scene, x, y, 'coin'); this.value = 25; }
     spawn(x, y) {
         this.scene.add.existing(this); this.scene.physics.add.existing(this);
         this.setActive(true).setVisible(true); this.setPosition(x, y); this.setDepth(RenderLayerDict.Pickups);
-        this.setScale(1.2); this.body.setSize(16, 16);
+        this.setScale(1.3); this.body.setSize(16, 16);
         
-        this.setVelocityY(-60);
-        this.scene.time.delayedCall(150, () => {
-            if (this.active) this.setVelocityY(40);
-        });
-
-        this.scene.tweens.add({
-            targets: this,
-            scaleX: 0.1,
-            duration: 800,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
+        this.setVelocityY(-80);
+        this.scene.time.delayedCall(200, () => {
+            if (this.active) this.setVelocityY(80);
         });
     }
     collect() {
@@ -1261,6 +1464,39 @@ class CoinEntity extends Phaser.Physics.Arcade.Sprite {
         this.scene.tweens.killTweensOf(this);
     }
 }
+
+class BombPickupEntity extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y) { super(scene, x, y, 'grenade_pickup'); }
+    spawn(x, y) {
+        this.scene.add.existing(this); this.scene.physics.add.existing(this);
+        this.setActive(true).setVisible(true); this.setPosition(x, y); this.setDepth(RenderLayerDict.Pickups);
+        this.setScale(1.5); this.body.setSize(16, 16);
+        
+        this.setVelocityY(-80);
+        this.scene.time.delayedCall(200, () => {
+            if (this.active) this.setVelocityY(80);
+        });
+
+        this.scene.tweens.add({
+            targets: this,
+            rotation: 0.2,
+            duration: 400,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+    }
+    collect() {
+        this.despawn();
+        currentRun.bombs++;
+        this.scene.uiManager.updateHUD(this.scene.director.budget);
+    }
+    despawn() {
+        this.setActive(false).setVisible(false); this.body.stop(); this.setPosition(-100, -100);
+        this.scene.tweens.killTweensOf(this);
+    }
+}
+
 
 /**
  * GAME SCENE
@@ -1276,8 +1512,9 @@ class GameScene extends Phaser.Scene {
     create() {
         this.gameState = 'BOOT';
         const w = 1080; const h = 1440; 
+        
+        this.input.mouse.disableContextMenu();
 
-        // Generate Procedural Noise Texture for Gritty Realism
         let noiseCanvas = document.createElement('canvas');
         noiseCanvas.width = 128; noiseCanvas.height = 128;
         let ctx = noiseCanvas.getContext('2d');
@@ -1290,7 +1527,6 @@ class GameScene extends Phaser.Scene {
         }
         this.textures.addCanvas('noise', noiseCanvas);
 
-        // DETAILED GRITTY STREET BACKGROUND
         this.add.rectangle(w/2, h/2, w, h, 0x222222).setDepth(RenderLayerDict.Sidewalk); 
         this.add.tileSprite(w/2, h/2, w, h, 'noise').setAlpha(0.4).setDepth(RenderLayerDict.Sidewalk).setBlendMode(Phaser.BlendModes.MULTIPLY);
         
@@ -1320,9 +1556,11 @@ class GameScene extends Phaser.Scene {
         this.director = new DirectorAI(this);
 
         this.bulletPool = this.physics.add.group({ classType: ProjectileEntity, runChildUpdate: false });
+        this.grenadeProjPool = this.physics.add.group({ classType: GrenadeProjEntity, runChildUpdate: false });
         this.enemyPool = this.physics.add.group({ classType: EnemyEntity, runChildUpdate: false });
         this.bossPool = this.physics.add.group({ classType: BossEntity, runChildUpdate: false });
         this.coinPool = this.physics.add.group({ classType: CoinEntity, runChildUpdate: false });
+        this.bombPickupPool = this.physics.add.group({ classType: BombPickupEntity, runChildUpdate: false });
         this.hazardPool = this.physics.add.group({ classType: HazardEntity, runChildUpdate: false });
         this.barricadeGroup = this.physics.add.staticGroup();
 
@@ -1333,11 +1571,9 @@ class GameScene extends Phaser.Scene {
             this.barricadeGroup.add(block);
         }
         
-        // KILL ZONE: Failsafe barrier behind the barricades. Game over if enemies reach it.
         this.killZone = this.add.rectangle(w/2, barricadeY + 150, w, 50).setAlpha(0);
         this.physics.add.existing(this.killZone, true);
 
-        // Minimalist Barricade UI
         let bottomUIY = h - 60;
         this.barricadeHpBg = this.add.rectangle(w/2, bottomUIY, 450, 4, 0x1a1a1a).setDepth(RenderLayerDict.VirtualUI);
         this.barricadeHpFill = this.add.rectangle(w/2 - 225, bottomUIY, 450, 4, 0xef4444).setOrigin(0, 0.5).setDepth(RenderLayerDict.VirtualUI);
@@ -1428,6 +1664,14 @@ class GameScene extends Phaser.Scene {
                     bullet.die(); 
                 }
             });
+            
+            this.physics.add.overlap(this.grenadeProjPool, pool, (o1, o2) => {
+                let grenade = o1 instanceof GrenadeProjEntity ? o1 : o2;
+                let enemy = o1 instanceof EnemyEntity ? o1 : o2;
+                if (grenade && enemy && grenade.active && enemy.active) { 
+                    grenade.explode();
+                }
+            });
 
             this.physics.add.collider(pool, this.barricadeGroup, (o1, o2) => {
                 let enemy = o1 instanceof EnemyEntity ? o1 : o2;
@@ -1474,6 +1718,12 @@ class GameScene extends Phaser.Scene {
             let coin = o1 instanceof CoinEntity ? o1 : o2;
             if (coin && player && coin.active && !player.isDashing) coin.collect();
         });
+        
+        this.physics.add.overlap(this.player, this.bombPickupPool, (o1, o2) => {
+            let player = o1 instanceof PlayerEntity ? o1 : o2;
+            let pickup = o1 instanceof BombPickupEntity ? o1 : o2;
+            if (pickup && player && pickup.active && !player.isDashing) pickup.collect();
+        });
 
         this.physics.add.overlap(this.player, this.hazardPool, (o1, o2) => {
             let player = o1 instanceof PlayerEntity ? o1 : o2;
@@ -1501,14 +1751,14 @@ class GameScene extends Phaser.Scene {
             this.barricadeGroup.getChildren().forEach(b => { b.hp = b.maxHp; b.setActive(true).setVisible(true); b.body.checkCollision.none = false; b.clearTint(); });
             this.updateBarricadeUI();
             
-            // Clean entities out without triggering death drops
             this.enemyPool.getChildren().forEach(e => e.despawn());
             this.bossPool.getChildren().forEach(e => e.despawn());
             this.hazardPool.getChildren().forEach(e => e.die());
             this.bulletPool.getChildren().forEach(b => b.die());
+            this.grenadeProjPool.getChildren().forEach(g => g.explode());
             this.coinPool.getChildren().forEach(c => c.despawn());
+            this.bombPickupPool.getChildren().forEach(b => b.despawn());
             
-            // Clean Gore
             const gore = this.children.list.filter(c => c.depth === RenderLayerDict.Gore || c.depth === RenderLayerDict.GoreBase);
             gore.forEach(g => g.destroy());
             
@@ -1572,7 +1822,7 @@ class GameScene extends Phaser.Scene {
         if (isBombing && !this.prevBtnState.b) this.player.useBomb();
         this.prevBtnState.b = isBombing;
 
-        let isOvercharge = this.btnState.y || this.input.keyboard.addKey('Q').isDown;
+        let isOvercharge = this.btnState.y || this.input.keyboard.addKey('Q').isDown || this.input.activePointer.rightButtonDown();
         if (isOvercharge && !this.prevBtnState.y) this.player.useOvercharge();
         this.prevBtnState.y = isOvercharge;
 
@@ -1586,12 +1836,11 @@ class GameScene extends Phaser.Scene {
 
         this.player.tick(time, delta, aimAngle, isFiring, finalMove, isDashing);
         
-        // OOB Cleanups
         this.bulletPool.getChildren().forEach(b => { if (b.active && (b.y < -50 || b.x < -50 || b.x > 1150 || b.y > 1500)) b.die(); });
         this.coinPool.getChildren().forEach(c => { if (c.active && c.y > 1500) c.despawn(); });
+        this.bombPickupPool.getChildren().forEach(b => { if (b.active && b.y > 1500) b.despawn(); });
     }
 
-    // DEV TOOLS FUNCTIONS
     devGodMode() { 
         AppSettings.godMode = !AppSettings.godMode; 
         document.getElementById('dev-god-txt').innerText = AppSettings.godMode ? "ON" : "OFF";
@@ -1605,7 +1854,7 @@ class GameScene extends Phaser.Scene {
             currentRun.upgrades[i].dmg = 10; 
             currentRun.upgrades[i].rate = 10; 
         }
-        currentRun.weaponTier = 7; // Max Tier
+        currentRun.weaponTier = 7;
         SaveManager.data.unlockedWeaponTier = 7;
         SaveManager.save();
         this.player.updateWeaponGraphic();
@@ -1617,7 +1866,7 @@ class GameScene extends Phaser.Scene {
         this.enemyPool.getChildren().forEach(e => e.despawn()); 
         this.bossPool.getChildren().forEach(e => e.despawn()); 
         this.director.clearing = true;
-        this.events.emit('WAVE_CLEARED'); 
+        this.director.clearWaitTime = 10000;
     }
     devRestartWave() { 
         if(this.gameState !== 'TRENCH') return;
