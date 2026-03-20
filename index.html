@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Undead Barrage - Version 10.10</title>
+    <title>Undead Barrage - Version 10.12</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.80.0/phaser.min.js"></script>
     <style>
         /* MINIMALIST MODERN UI & GRITTY REALISM */
@@ -146,7 +146,7 @@
             opacity: 0; transition: opacity 0.1s; z-index: 8;
         }
 
-        /* SHOP ITEMS */
+        /* SHOP ITEMS & PIPS */
         .shop-section-title {
             color: #525252; font-weight: 800; font-size: 0.8em; letter-spacing: 4px; text-transform: uppercase;
             border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-bottom: 15px; margin-top: 10px; text-align: left;
@@ -155,13 +155,20 @@
         .shop-item {
             border: 1px solid rgba(255,255,255,0.1); padding: 15px; 
             cursor: pointer; transition: all 0.2s; background: rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; justify-content: space-between;
+            display: flex; flex-direction: column; justify-content: space-between; border-radius: 4px;
         }
         .shop-item:hover:not(.locked) { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
         .shop-item.locked { opacity: 0.5; cursor: not-allowed; }
         
         .weapon-slot { border-radius: 4px; position: relative; }
         .weapon-slot:hover { border-color: #94a3b8 !important; }
+        
+        .pip-container { display: flex; gap: 4px; margin-top: 6px; }
+        .pip { width: 10px; height: 10px; background: rgba(255,255,255,0.1); border-radius: 2px; transition: all 0.3s;}
+        .pip.filled-dmg { background: #fde047; box-shadow: 0 0 5px rgba(253,224,71,0.5); }
+        .pip.filled-rate { background: #fde047; box-shadow: 0 0 5px rgba(253,224,71,0.5); }
+        .pip.filled-speed { background: #0ea5e9; box-shadow: 0 0 5px rgba(14,165,233,0.5); }
+        .pip.filled-grenade { background: #ef4444; box-shadow: 0 0 5px rgba(239,68,68,0.5); }
         
         #shop-weapon-grid::-webkit-scrollbar { height: 8px; }
         #shop-weapon-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
@@ -177,6 +184,14 @@
     <div id="ui-layer">
         <div id="damage-flash"></div>
         
+        <!-- BARRICADE HUD -->
+        <div id="barricade-hud" style="position:absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: 450px; pointer-events:none; display:none; flex-direction:column; align-items:center; z-index: 20;">
+            <div style="font-weight:600; font-size:13px; color:#737373; letter-spacing:4px; margin-bottom:6px; text-shadow: 0 2px 4px #000;">BARRICADE INTEGRITY</div>
+            <div style="width:100%; height:6px; background:rgba(0,0,0,0.8); border:1px solid rgba(255,255,255,0.2); border-radius: 2px; overflow:hidden;">
+                <div id="ui-barricade-fill" style="width:100%; height:100%; background:#22c55e; transition: width 0.2s, background-color 0.2s; box-shadow: 0 0 10px #22c55e;"></div>
+            </div>
+        </div>
+
         <!-- Minimalist Top Bar -->
         <div id="top-bar">
             <div class="stat-group">HP <span id="ui-hp" class="stat-val">❤️❤️❤️</span></div>
@@ -236,10 +251,15 @@
             <div class="modal-box" style="border-color: #f59e0b; max-width: 500px; text-align:left;">
                 <h3 style="color:#f59e0b; margin-top:0; letter-spacing: 2px;">TRANSMISSION: QUARTERMASTER</h3>
                 <p style="color:#e2e8f0; line-height:1.6; font-size: 0.95em;">
-                    "Look, I don't know why these walking corpses carry mint-condition gold coins, and frankly, I don't care. You pick 'em up before they vanish, bring 'em to me, and I give you guns. You can also upgrade your gear or buy frag grenades to clear a path. Stay alive. Dead customers don't pay."
+                    "I don't know why corpses carry mint-condition gold, and I don't care. Pick it up before it sinks into the mud. Bring it to me, I give you guns. Dead customers don't pay."
                 </p>
                 <button id="btn-close-qm-tip" class="btn" style="width:100%; border-color:#f59e0b; color:#f59e0b;">DEAL.</button>
             </div>
+        </div>
+
+        <!-- Wave Cleared Transition Overlay -->
+        <div id="screen-wave-clear" class="overlay-screen" style="background:transparent; pointer-events:none; z-index:90;">
+            <div id="wave-clear-text" class="overlay-title" style="transform:scale(0); opacity:0; color:#22c55e; text-shadow: 0 0 20px #22c55e; margin:0;">WAVE CLEARED</div>
         </div>
 
         <!-- Tutorial Modal -->
@@ -289,79 +309,83 @@
                     <!-- JS populated -->
                 </div>
 
-                <!-- Selected Weapon Display -->
-                <div style="background: rgba(0,0,0,0.5); border: 1px solid #334155; padding: 20px; display:flex; gap: 25px; align-items: center; margin-bottom: 20px; border-radius: 4px;">
-                     <div id="shop-sel-visual" style="width: 96px; height: 96px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));"></div>
-                     <div style="flex-grow:1; text-align:left;">
-                         <h3 id="shop-sel-name" style="margin:0 0 10px 0; color:#3b82f6; letter-spacing: 1px; font-size: 1.2em;">Weapon Name</h3>
-                         <div style="font-size:0.9em; color:#a3a3a3; display:flex; flex-direction:column; gap:8px;">
-                             <div style="display:flex; justify-content:space-between;"><span>DAMAGE <span id="shop-sel-dmg-lvl" style="color:#64748b">(Lv.0)</span></span> <span id="shop-sel-dmg" style="color:#fff; font-weight:bold;">1.0</span></div>
-                             <div style="display:flex; justify-content:space-between;"><span>FIRE RATE <span id="shop-sel-rate-lvl" style="color:#64748b">(Lv.0)</span></span> <span id="shop-sel-rate" style="color:#fff; font-weight:bold;">300 BPM</span></div>
-                             <div style="display:flex; justify-content:space-between; border-top: 1px solid #1e293b; padding-top: 6px;"><span>PATTERN</span> <span id="shop-sel-spc" style="color:#3b82f6; font-weight:bold; text-transform: uppercase;">None</span></div>
-                         </div>
-                     </div>
-                     <div style="min-width: 180px; display: flex; align-items: center; justify-content: center;">
-                         <button id="btn-shop-action" class="btn btn-action" style="width: 100%; margin:0; padding: 16px 20px;">EQUIP</button>
-                     </div>
-                </div>
-
-                <div style="display: flex; gap: 20px; text-align: left; margin-bottom: 30px;">
-                    <!-- WEAPON UPGRADES -->
-                    <div style="flex: 1;">
-                        <div class="shop-section-title">WEAPON CALIBRATION</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="shop-item" id="btn-buy-dmg">
-                                <h3 style="margin: 0 0 5px 0; color:#fde047; letter-spacing: 1px; font-size: 0.85em;">+ WPN DAMAGE</h3>
-                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">Increase payload.</p>
-                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
-                                    <span>Lvl <span id="shop-lvl-dmg">0</span></span>
-                                    <span style="color:#22c55e;">$<span id="shop-cost-dmg">50</span></span>
-                                </div>
+                <!-- Selected Weapon & Upgrades Block -->
+                <div style="background: rgba(0,0,0,0.5); border: 1px solid #334155; border-radius: 4px; padding: 20px; margin-bottom: 25px; display:flex; gap:20px;">
+                    <!-- Left: Icon & Equip -->
+                    <div style="display:flex; flex-direction:column; align-items:center; min-width: 160px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 20px;">
+                        <div id="shop-sel-visual" style="width: 96px; height: 96px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3)); margin-bottom: 15px;"></div>
+                        <button id="btn-shop-action" class="btn btn-action" style="width: 100%; margin:0; padding: 12px 10px; font-size: 0.85em;">EQUIP</button>
+                    </div>
+                    
+                    <!-- Center: Stats -->
+                    <div style="flex:1; display:flex; flex-direction:column; text-align: left;">
+                        <h3 id="shop-sel-name" style="margin:0 0 15px 0; color:#3b82f6; letter-spacing: 1px; font-size: 1.3em;">Weapon Name</h3>
+                        <div style="font-size:0.9em; color:#a3a3a3; display:flex; flex-direction:column; gap:12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="letter-spacing:1px; font-size:0.85em;">DAMAGE</span> 
+                                <span id="shop-sel-dmg" style="color:#fff; font-weight:bold; font-size:1.1em;">1.0</span>
                             </div>
-                            <div class="shop-item" id="btn-buy-rate">
-                                <h3 style="margin: 0 0 5px 0; color:#fde047; letter-spacing: 1px; font-size: 0.85em;">+ WPN RATE</h3>
-                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">Cycle rounds faster.</p>
-                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
-                                    <span>Lvl <span id="shop-lvl-rate">0</span></span>
-                                    <span style="color:#22c55e;">$<span id="shop-cost-rate">75</span></span>
-                                </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="letter-spacing:1px; font-size:0.85em;">FIRE RATE</span> 
+                                <span id="shop-sel-rate" style="color:#fff; font-weight:bold; font-size:1.1em;">300 BPM</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid #1e293b; padding-top: 10px;">
+                                <span style="letter-spacing:1px; font-size:0.85em;">PATTERN</span> 
+                                <span id="shop-sel-spc" style="color:#3b82f6; font-weight:bold; text-transform: uppercase; font-size:0.9em;">None</span>
                             </div>
                         </div>
                     </div>
-                    
+
+                    <!-- Right: Upgrades for this weapon -->
+                    <div style="flex:1.2; display:flex; flex-direction:column; gap:10px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px;">
+                        <div style="color:#525252; font-weight:800; font-size:0.75em; letter-spacing:2px; text-align:left;">WEAPON CALIBRATION</div>
+                        
+                        <div class="shop-item" id="btn-buy-dmg" style="padding:10px; margin:0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:#fde047; font-size:0.85em; font-weight:bold; letter-spacing: 1px;">+ DAMAGE</span>
+                                <span style="color:#22c55e; font-weight:bold; font-size:0.9em;">$<span id="shop-cost-dmg">50</span></span>
+                            </div>
+                            <div id="shop-pips-dmg" class="pip-container"></div>
+                        </div>
+                        
+                        <div class="shop-item" id="btn-buy-rate" style="padding:10px; margin:0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:#fde047; font-size:0.85em; font-weight:bold; letter-spacing: 1px;">+ RATE</span>
+                                <span style="color:#22c55e; font-weight:bold; font-size:0.9em;">$<span id="shop-cost-rate">75</span></span>
+                            </div>
+                            <div id="shop-pips-rate" class="pip-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; text-align: left; margin-bottom: 30px;">
                     <!-- FIELD GEAR -->
-                    <div style="flex: 2;">
+                    <div style="flex: 1;">
                         <div class="shop-section-title">FIELD GEAR & ORDNANCE</div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                             <div class="shop-item" id="btn-buy-bomb">
                                 <h3 style="margin: 0 0 5px 0; color:#ef4444; letter-spacing: 1px; font-size: 0.85em;">BUY GRENADE</h3>
-                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">Standard frag ordnance.</p>
-                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
-                                    <span>Inv <span id="shop-inv-bomb">0</span></span>
-                                    <span style="color:#22c55e;">$<span id="shop-cost-bomb">150</span></span>
-                                </div>
+                                <p style="margin:0 0 8px 0; color:#a3a3a3; font-size: 0.7em; line-height:1.4;">Restock frag ordnance. (Max 3)</p>
+                                <div id="shop-inv-bomb-pips" class="pip-container" style="margin-bottom:10px;"></div>
+                                <div style="display:flex; justify-content:flex-end;"><span style="color:#22c55e; font-weight:bold; font-size: 0.9em;">$<span id="shop-cost-bomb">150</span></span></div>
                             </div>
                             <div class="shop-item" id="btn-buy-bomb-dmg">
                                 <h3 style="margin: 0 0 5px 0; color:#f97316; letter-spacing: 1px; font-size: 0.85em;">+ FRAG PAYLOAD</h3>
-                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">More explosive filler.</p>
-                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
-                                    <span>Lvl <span id="shop-lvl-bomb-dmg">0</span></span>
-                                    <span style="color:#22c55e;">$<span id="shop-cost-bomb-dmg">100</span></span>
-                                </div>
+                                <p style="margin:0 0 8px 0; color:#a3a3a3; font-size: 0.7em; line-height:1.4;">More explosive filler.</p>
+                                <div id="shop-pips-bomb-dmg" class="pip-container" style="margin-bottom:10px;"></div>
+                                <div style="display:flex; justify-content:flex-end;"><span style="color:#22c55e; font-weight:bold; font-size: 0.9em;">$<span id="shop-cost-bomb-dmg">100</span></span></div>
                             </div>
                             <div class="shop-item" id="btn-buy-speed">
                                 <h3 style="margin: 0 0 5px 0; color:#0ea5e9; letter-spacing: 1px; font-size: 0.85em;">+ LEG SERVOS</h3>
-                                <p style="margin:0; color:#a3a3a3; font-size: 0.7em; min-height: 25px;">Boost run speed.</p>
-                                <div style="margin-top: 10px; display: flex; justify-content: space-between; color:#fff; font-weight: bold; font-size: 0.85em;">
-                                    <span>Lvl <span id="shop-lvl-speed">0</span></span>
-                                    <span style="color:#22c55e;">$<span id="shop-cost-speed">100</span></span>
-                                </div>
+                                <p style="margin:0 0 8px 0; color:#a3a3a3; font-size: 0.7em; line-height:1.4;">Boost movement speed.</p>
+                                <div id="shop-pips-speed" class="pip-container" style="margin-bottom:10px;"></div>
+                                <div style="display:flex; justify-content:flex-end;"><span style="color:#22c55e; font-weight:bold; font-size: 0.9em;">$<span id="shop-cost-speed">100</span></span></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <button id="btn-next-wave" class="btn" style="width: 100%;">DEPLOY TO TRENCH</button>
+                <button id="btn-next-wave" class="btn" style="width: 100%;">DEPLOY</button>
             </div>
         </div>
 
@@ -379,12 +403,12 @@
  * DATA LAYER & CONFIG
  */
 const DefaultGameData = {
-    player: { maxHp: 5, startHp: 3, armor: 0, bombs: 1, baseSpeed: 300, dashSpeed: 800, dashCooldown: 1000 },
+    player: { maxHp: 5, startHp: 3, armor: 0, bombs: 1, maxBombs: 3, baseSpeed: 300, dashSpeed: 800, dashCooldown: 1000 },
     grenade: { baseDmg: 50, baseRadius: 100 },
     weapons: { 
         0: { name: "Crappy BB Gun", element: "kinetic", pattern: "single", cost: 0, baseDamage: 1.0, baseFireRate: 450, special: "Standard Issue" },
-        1: { name: "Uzi", element: "kinetic", pattern: "burst", cost: 150, baseDamage: 0.6, baseFireRate: 350, special: "3-Round Burst" },
-        2: { name: "Trench Shotgun", element: "kinetic", pattern: "wide_spread", cost: 400, baseDamage: 1.5, baseFireRate: 850, special: "Wide 5-Shot Spread" },
+        1: { name: "Uzi", element: "kinetic", pattern: "burst", cost: 150, baseDamage: 0.4, baseFireRate: 350, special: "3-Round Burst" }, 
+        2: { name: "Trench Shotgun", element: "kinetic", pattern: "wide_spread", cost: 400, baseDamage: 1.5, baseFireRate: 700, special: "Wide 5-Shot Spread" },
         3: { name: "Commie Typewriter", element: "kinetic", pattern: "single", cost: 800, baseDamage: 2.5, baseFireRate: 300, special: "Heavy Rounds" },
         4: { name: "Standard Issue Freedom", element: "kinetic", pattern: "twin", cost: 1500, baseDamage: 2.0, baseFireRate: 250, special: "Twin Barrels" },
         5: { name: "Crowd Control", element: "kinetic", pattern: "spread", cost: 3000, baseDamage: 2.2, baseFireRate: 400, special: "3-Shot Spread" },
@@ -396,9 +420,9 @@ const DefaultGameData = {
 };
 
 const TutorialTexts = {
-    1: "You're the only one who can protect the civilians behind that barricade. Hold out until help arrives, try not to die.<br><br><strong style='color:#fff'>CONTROLS:</strong><br>Keyboard: WASD to move, mouse to aim, LMB to shoot.<br>Touch: Joystick to move (auto-aims where you face), A to shoot.",
-    2: "Quartermaster here. Look, you're the only thing standing between the horde and the civvies. You'll get a chance to buy gear in between each wave. Stock up on what you need to survive, but sometimes it's worth saving up for a bigger upgrade. Stay frosty.",
-    3: "Look at you, wanting to blow things up. I sourced these frag grenades from an old depot. They lob north in a heavy arc and detonate on impact, turning meat into mist. I can tweak the payload... for a fee."
+    1: "Civilians are behind that wall. The horde is in front of it. You're the meat in the sandwich. Hold the line until evac arrives.<br><br><strong style='color:#fff'>CONTROLS:</strong><br>Keyboard: WASD to move, mouse to aim, LMB to shoot.<br>Touch: Joystick to move (auto-aims where you face), A to shoot.",
+    2: "Quartermaster here. I don't run a charity, but I need you alive. I'll open the armory between waves. Buy gear, upgrade your rig, or save your coin for the heavy ordnance. Try not to die.",
+    3: "Sourced some old-world frag grenades. They lob heavy and detonate on impact. Good for turning crowds into mist. I can pack them with more explosive filler, provided you have the funds."
 };
 
 // --- META PROGRESSION (SAVE MANAGER) ---
@@ -460,7 +484,7 @@ const RawSVGs = {
     // MISC
     barricade: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="4" width="20" height="16" rx="1" fill="#222" stroke="#000" stroke-width="1.5"/><rect x="2" y="4" width="20" height="6" fill="#111" stroke="#000" stroke-width="1.5"/><circle cx="5" cy="7" r="1" fill="#0a0a0a"/><circle cx="19" cy="7" r="1" fill="#0a0a0a"/><rect x="4" y="12" width="16" height="4" fill="#ca8a04" stroke="#000" stroke-width="1.5"/><path d="M 6 12 L 4 14 L 4 16 L 8 12 Z M 12 12 L 8 16 L 10 16 L 14 12 Z M 18 12 L 14 16 L 16 16 L 20 12 Z" fill="#000"/></svg>`,
     bullet: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="11" y="6" width="4" height="12" rx="2" fill="rgba(0,0,0,0.5)"/><path d="M 10 16 L 14 16 L 12 22 Z" fill="#f59e0b"/><path d="M 11 16 L 13 16 L 12 20 Z" fill="#fde047"/><rect x="10" y="4" width="4" height="12" rx="2" fill="#fde047" stroke="#111" stroke-width="1.5"/><rect x="11" y="5" width="2" height="6" rx="1" fill="#fff"/></svg>`,
-    coin: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="14" r="10" fill="#854d0e"/><circle cx="12" cy="12" r="10" fill="#eab308" stroke="#ca8a04" stroke-width="1"/><circle cx="12" cy="12" r="7" fill="#fde047" stroke="#ca8a04" stroke-width="1"/><text x="12" y="16" font-family="monospace" font-weight="900" font-size="12" fill="#854d0e" text-anchor="middle">$</text><ellipse cx="9" cy="8" rx="2" ry="1" fill="#fef08a" transform="rotate(-45 9 8)"/></svg>`,
+    coin: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="14" r="10" fill="#854d0e"/><circle cx="12" cy="12" r="10" fill="#eab308" stroke="#ca8a04" stroke-width="1"/><circle cx="12" cy="12" r="7" fill="#fde047" stroke="#ca8a04" stroke-width="1"/><text x="12" y="16.5" font-family="monospace" font-weight="900" font-size="14" fill="#854d0e" text-anchor="middle">$</text><ellipse cx="8" cy="7" rx="2.5" ry="1.5" fill="#fef08a" transform="rotate(-45 8 7)"/></svg>`,
     grenade_pickup: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0, 2)"><rect x="10" y="2" width="4" height="4" fill="#475569" stroke="#111" stroke-width="1.5"/><path d="M 14 3 Q 18 -2 20 6" fill="none" stroke="#64748b" stroke-width="1.5"/><ellipse cx="12" cy="14" rx="6" ry="8" fill="#15803d" stroke="#111" stroke-width="1.5"/><path d="M 7 12 L 17 12 M 7 16 L 17 16 M 10 7 L 10 21 M 14 7 L 14 21" stroke="#111" stroke-width="1.5" stroke-linecap="round"/></g></svg>`,
     grenade_proj: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="12" rx="6" ry="8" fill="#15803d" stroke="#111" stroke-width="1.5"/><rect x="10" y="3" width="4" height="3" fill="#475569" stroke="#111" stroke-width="1.5"/><path d="M 7 10 L 17 10 M 7 14 L 17 14 M 10 5 L 10 19 M 14 5 L 14 19" stroke="#111" stroke-width="1.5" stroke-linecap="round"/></svg>`,
     toxic: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><ellipse cx="16" cy="16" rx="14" ry="8" fill="rgba(34, 197, 94, 0.6)" stroke="#16a34a" stroke-width="2"/><ellipse cx="12" cy="14" rx="3" ry="1.5" fill="rgba(74, 222, 128, 0.8)"/><ellipse cx="20" cy="17" rx="2" ry="1" fill="rgba(74, 222, 128, 0.8)"/></svg>`,
@@ -511,6 +535,9 @@ class UIManager {
         this.uiWpn = document.getElementById('ui-wpn');
         this.uiDmg = document.getElementById('ui-dmg');
         this.uiRate = document.getElementById('ui-rate');
+        
+        this.barricadeHud = document.getElementById('barricade-hud');
+        this.barricadeFill = document.getElementById('ui-barricade-fill');
 
         this.damageFlash = document.getElementById('damage-flash');
         this.screens = { 
@@ -530,6 +557,19 @@ class UIManager {
         if (!AppSettings.controlsOn) document.getElementById('tog-controls').className = 'toggle-btn';
         if (!AppSettings.shakeOn) document.getElementById('tog-shake').className = 'toggle-btn';
         document.getElementById('chk-skip-tutorial').checked = AppSettings.skipTutorial;
+    }
+
+    getCost(baseCost, level) {
+        return Math.floor(baseCost * Math.pow(1.15, level));
+    }
+
+    generatePips(current, max, colorClass) {
+        let html = '';
+        for(let i=0; i<max; i++) {
+            let filled = i < current ? `pip filled-${colorClass}` : 'pip';
+            html += `<div class="${filled}"></div>`;
+        }
+        return html;
     }
 
     bindEvents() {
@@ -558,8 +598,9 @@ class UIManager {
         
         // Shop Interactions
         document.getElementById('btn-buy-dmg').addEventListener('click', () => {
-            if (currentRun.bank >= DefaultGameData.costs.upgradeDmg && this.selectedShopWeapon <= SaveManager.data.unlockedWeaponTier) {
-                currentRun.bank -= DefaultGameData.costs.upgradeDmg;
+            let cost = this.getCost(DefaultGameData.costs.upgradeDmg, currentRun.upgrades[this.selectedShopWeapon].dmg);
+            if (currentRun.bank >= cost && this.selectedShopWeapon <= SaveManager.data.unlockedWeaponTier && currentRun.upgrades[this.selectedShopWeapon].dmg < 10) {
+                currentRun.bank -= cost;
                 currentRun.upgrades[this.selectedShopWeapon].dmg++;
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
@@ -567,8 +608,9 @@ class UIManager {
         });
 
         document.getElementById('btn-buy-rate').addEventListener('click', () => {
-            if (currentRun.bank >= DefaultGameData.costs.upgradeRate && this.selectedShopWeapon <= SaveManager.data.unlockedWeaponTier) {
-                currentRun.bank -= DefaultGameData.costs.upgradeRate;
+            let cost = this.getCost(DefaultGameData.costs.upgradeRate, currentRun.upgrades[this.selectedShopWeapon].rate);
+            if (currentRun.bank >= cost && this.selectedShopWeapon <= SaveManager.data.unlockedWeaponTier && currentRun.upgrades[this.selectedShopWeapon].rate < 10) {
+                currentRun.bank -= cost;
                 currentRun.upgrades[this.selectedShopWeapon].rate++;
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
@@ -576,8 +618,9 @@ class UIManager {
         });
         
         document.getElementById('btn-buy-speed').addEventListener('click', () => {
-            if (currentRun.bank >= DefaultGameData.costs.upgradeSpeed) {
-                currentRun.bank -= DefaultGameData.costs.upgradeSpeed;
+            let cost = this.getCost(DefaultGameData.costs.upgradeSpeed, currentRun.speedUpg);
+            if (currentRun.bank >= cost && currentRun.speedUpg < 10) {
+                currentRun.bank -= cost;
                 currentRun.speedUpg++;
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
@@ -585,8 +628,9 @@ class UIManager {
         });
 
         document.getElementById('btn-buy-bomb').addEventListener('click', () => {
-            if (currentRun.bank >= DefaultGameData.costs.bomb) {
-                currentRun.bank -= DefaultGameData.costs.bomb;
+            let cost = DefaultGameData.costs.bomb; 
+            if (currentRun.bank >= cost && currentRun.bombs < DefaultGameData.player.maxBombs) {
+                currentRun.bank -= cost;
                 currentRun.bombs++;
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
@@ -594,8 +638,9 @@ class UIManager {
         });
         
         document.getElementById('btn-buy-bomb-dmg').addEventListener('click', () => {
-            if (currentRun.bank >= DefaultGameData.costs.bombDmg) {
-                currentRun.bank -= DefaultGameData.costs.bombDmg;
+            let cost = this.getCost(DefaultGameData.costs.bombDmg, currentRun.grenadeUpg.dmg);
+            if (currentRun.bank >= cost && currentRun.grenadeUpg.dmg < 10) {
+                currentRun.bank -= cost;
                 currentRun.grenadeUpg.dmg++;
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
@@ -738,7 +783,6 @@ class UIManager {
         document.querySelectorAll('.weapon-slot').forEach(slot => {
             slot.addEventListener('click', (e) => {
                 let idx = parseInt(e.currentTarget.getAttribute('data-index'));
-                // Allow clicking any weapon to view specs (or ??? if locked)
                 this.selectedShopWeapon = idx;
                 this.updateShop();
             });
@@ -755,11 +799,9 @@ class UIManager {
         let currentRateMs = wpnBase.baseFireRate * Math.pow(0.90, upgs.rate);
         let bpm = Math.round(60000 / currentRateMs);
 
-        document.getElementById('shop-sel-dmg-lvl').innerText = isUnlockedSel ? `(Lv.${upgs.dmg})` : '';
         document.getElementById('shop-sel-dmg').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? currentDmg : '???';
         document.getElementById('shop-sel-dmg').style.color = isUnlockedSel ? '#fff' : '#64748b';
         
-        document.getElementById('shop-sel-rate-lvl').innerText = isUnlockedSel ? `(Lv.${upgs.rate})` : '';
         document.getElementById('shop-sel-rate').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? `${bpm} BPM` : '???';
         document.getElementById('shop-sel-rate').style.color = isUnlockedSel ? '#fff' : '#64748b';
         
@@ -794,12 +836,27 @@ class UIManager {
             actionBtn.style.color = "rgba(255,255,255,0.2)";
         }
 
-        // Upgrades Display
-        document.getElementById('shop-lvl-dmg').innerText = isUnlockedSel ? upgs.dmg : '-';
-        document.getElementById('shop-lvl-rate').innerText = isUnlockedSel ? upgs.rate : '-';
-        document.getElementById('shop-lvl-speed').innerText = currentRun.speedUpg;
-        document.getElementById('shop-inv-bomb').innerText = currentRun.bombs;
-        document.getElementById('shop-lvl-bomb-dmg').innerText = currentRun.grenadeUpg.dmg;
+        // Calculate Dynamic Costs
+        let dmgCost = this.getCost(DefaultGameData.costs.upgradeDmg, upgs.dmg);
+        let rateCost = this.getCost(DefaultGameData.costs.upgradeRate, upgs.rate);
+        let speedCost = this.getCost(DefaultGameData.costs.upgradeSpeed, currentRun.speedUpg);
+        let bombCost = DefaultGameData.costs.bomb;
+        let bombDmgCost = this.getCost(DefaultGameData.costs.bombDmg, currentRun.grenadeUpg.dmg);
+
+        // Update Pips Display
+        document.getElementById('shop-pips-dmg').innerHTML = this.generatePips(upgs.dmg, 10, 'dmg');
+        document.getElementById('shop-pips-rate').innerHTML = this.generatePips(upgs.rate, 10, 'rate');
+        document.getElementById('shop-pips-speed').innerHTML = this.generatePips(currentRun.speedUpg, 10, 'speed');
+        document.getElementById('shop-pips-bomb-dmg').innerHTML = this.generatePips(currentRun.grenadeUpg.dmg, 10, 'dmg');
+        
+        // Bomb Inventory (Max 3)
+        document.getElementById('shop-inv-bomb-pips').innerHTML = this.generatePips(currentRun.bombs, DefaultGameData.player.maxBombs, 'grenade');
+
+        document.getElementById('shop-cost-dmg').innerText = dmgCost;
+        document.getElementById('shop-cost-rate').innerText = rateCost;
+        document.getElementById('shop-cost-speed').innerText = speedCost;
+        document.getElementById('shop-cost-bomb').innerText = bombCost;
+        document.getElementById('shop-cost-bomb-dmg').innerText = bombDmgCost;
         
         let dmgCostContainer = document.getElementById('btn-buy-dmg');
         let rateCostContainer = document.getElementById('btn-buy-rate');
@@ -807,17 +864,40 @@ class UIManager {
         let bombCostContainer = document.getElementById('btn-buy-bomb');
         let bombDmgCostContainer = document.getElementById('btn-buy-bomb-dmg');
         
-        if(!isUnlockedSel) {
+        if(!isUnlockedSel || upgs.dmg >= 10) {
             dmgCostContainer.className = 'shop-item locked';
-            rateCostContainer.className = 'shop-item locked';
+            if(upgs.dmg >= 10) document.getElementById('shop-cost-dmg').innerText = 'MAX';
         } else {
-            dmgCostContainer.className = currentRun.bank >= DefaultGameData.costs.upgradeDmg ? 'shop-item' : 'shop-item locked';
-            rateCostContainer.className = currentRun.bank >= DefaultGameData.costs.upgradeRate ? 'shop-item' : 'shop-item locked';
+            dmgCostContainer.className = currentRun.bank >= dmgCost ? 'shop-item' : 'shop-item locked';
+        }
+
+        if(!isUnlockedSel || upgs.rate >= 10) {
+            rateCostContainer.className = 'shop-item locked';
+            if(upgs.rate >= 10) document.getElementById('shop-cost-rate').innerText = 'MAX';
+        } else {
+            rateCostContainer.className = currentRun.bank >= rateCost ? 'shop-item' : 'shop-item locked';
         }
         
-        speedCostContainer.className = currentRun.bank >= DefaultGameData.costs.upgradeSpeed ? 'shop-item' : 'shop-item locked';
-        bombCostContainer.className = currentRun.bank >= DefaultGameData.costs.bomb ? 'shop-item' : 'shop-item locked';
-        bombDmgCostContainer.className = currentRun.bank >= DefaultGameData.costs.bombDmg ? 'shop-item' : 'shop-item locked';
+        if(currentRun.speedUpg >= 10) {
+            speedCostContainer.className = 'shop-item locked';
+            document.getElementById('shop-cost-speed').innerText = 'MAX';
+        } else {
+            speedCostContainer.className = currentRun.bank >= speedCost ? 'shop-item' : 'shop-item locked';
+        }
+
+        if(currentRun.grenadeUpg.dmg >= 10) {
+            bombDmgCostContainer.className = 'shop-item locked';
+            document.getElementById('shop-cost-bomb-dmg').innerText = 'MAX';
+        } else {
+            bombDmgCostContainer.className = currentRun.bank >= bombDmgCost ? 'shop-item' : 'shop-item locked';
+        }
+
+        if (currentRun.bombs >= DefaultGameData.player.maxBombs) {
+            bombCostContainer.className = 'shop-item locked';
+            document.getElementById('shop-cost-bomb').innerText = 'FULL';
+        } else {
+            bombCostContainer.className = currentRun.bank >= bombCost ? 'shop-item' : 'shop-item locked';
+        }
     }
 
     updateHUD(activeBudget = 0) {
@@ -830,8 +910,9 @@ class UIManager {
         this.uiArmor.innerText = `🛡️ ${currentRun.armor}`;
         this.uiBombs.innerText = `🍍 ${currentRun.bombs}`;
         
-        this.uiOverchargeBar.style.width = currentRun.overchargeCharge + '%';
-        if(currentRun.overchargeCharge >= 100) this.uiOverchargeBar.classList.add('ready');
+        let chargePct = Math.min(100, (currentRun.overchargeCharge / 200) * 100);
+        this.uiOverchargeBar.style.width = chargePct + '%';
+        if(currentRun.overchargeCharge >= 200) this.uiOverchargeBar.classList.add('ready');
         else this.uiOverchargeBar.classList.remove('ready');
 
         this.uiWave.innerText = currentRun.wave;
@@ -842,6 +923,12 @@ class UIManager {
         this.uiWpn.innerText = DefaultGameData.weapons[currentRun.weaponTier].name;
         this.uiDmg.innerText = stats.damage.toFixed(1);
         this.uiRate.innerText = Math.round(60000 / stats.fireRate) + ' BPM';
+
+        if (this.scene.gameState === 'TRENCH') {
+            this.barricadeHud.style.display = 'flex';
+        } else {
+            this.barricadeHud.style.display = 'none';
+        }
     }
 
     flashDamage() {
@@ -856,23 +943,25 @@ class DirectorAI {
         this.scene = scene;
         this.active = false;
         this.budget = 0;
-        this.spawnTimer = 0;
         this.isBossWave = false;
         this.isSwarmWave = false;
         this.clearing = false; 
         this.clearWaitTime = 0;
         this.clusterQueue = [];
+        this.transitionStarted = false;
     }
 
     startWave() {
         this.active = true;
         this.clearing = false;
         this.clearWaitTime = 0;
+        this.transitionStarted = false;
         this.clusterQueue = [];
         this.isBossWave = currentRun.wave % 5 === 0;
         this.isSwarmWave = (currentRun.wave === 4 || currentRun.wave === 9 || currentRun.wave === 14);
 
-        let baseBudget = DefaultGameData.budget.base + (currentRun.wave * DefaultGameData.budget.scalingFactor);
+        let rawBaseBudget = DefaultGameData.budget.base + (currentRun.wave * DefaultGameData.budget.scalingFactor);
+        let baseBudget = Math.floor(rawBaseBudget * (1 + (currentRun.wave * 0.05)));
 
         if (this.isBossWave) {
             this.budget = baseBudget * 2;
@@ -883,16 +972,14 @@ class DirectorAI {
             else if (currentRun.wave <= 3) this.budget = Math.floor(baseBudget * 0.75); 
             else this.budget = baseBudget;
             
-            // Pre-calculate trickle clusters
             let remaining = this.budget;
-            let currentDelay = 500;
             while(remaining > 0) {
                 let clusterSize = Phaser.Math.Between(3, 10);
                 clusterSize = Math.min(clusterSize, remaining);
-                this.clusterQueue.push({ count: clusterSize, delay: currentDelay });
+                this.clusterQueue.push({ count: clusterSize, delay: Phaser.Math.Between(1500, 3000) });
                 remaining -= clusterSize;
-                currentDelay += Phaser.Math.Between(1500, 3000); 
             }
+            if (this.clusterQueue.length > 0) this.clusterQueue[0].delay = 500;
         }
 
         this.scene.uiManager.updateHUD(this.budget);
@@ -921,9 +1008,25 @@ class DirectorAI {
         if (this.clearing) {
             this.clearWaitTime += delta;
             let noLoot = this.scene.coinPool.countActive() === 0 && this.scene.bombPickupPool.countActive() === 0;
-            if (noLoot || this.clearWaitTime >= 10000) {
-                this.active = false;
-                this.scene.events.emit('WAVE_CLEARED');
+            
+            if (!this.transitionStarted && (noLoot || this.clearWaitTime >= 10000)) {
+                this.transitionStarted = true;
+                
+                // Trigger visual wave clear flair
+                document.getElementById('screen-wave-clear').style.display = 'flex';
+                let txt = document.getElementById('wave-clear-text');
+                txt.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s';
+                txt.style.transform = 'scale(1)';
+                txt.style.opacity = '1';
+                
+                this.scene.time.delayedCall(2500, () => {
+                    txt.style.transform = 'scale(0)';
+                    txt.style.opacity = '0';
+                    setTimeout(() => { document.getElementById('screen-wave-clear').style.display = 'none'; }, 500);
+                    
+                    this.active = false;
+                    this.scene.events.emit('WAVE_CLEARED');
+                });
             }
         }
     }
@@ -958,7 +1061,8 @@ class DirectorAI {
                                 else if (currentRun.wave >= 8 && roll > 50 && roll <= 65) type = 'burrower';
                             }
 
-                            let hp = 1 + Math.floor(currentRun.wave * 1.2);
+                            let cappedWave = Math.min(currentRun.wave, 10);
+                            let hp = 1 + Math.floor(cappedWave * 1.2);
                             let speed = 60 + Math.min(currentRun.wave * 6, 150);
                             enemy.spawn(spawnX + Phaser.Math.Between(-40, 40), -50, hp, speed, type);
                         }
@@ -1108,7 +1212,7 @@ class PlayerEntity extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    useBomb() {
+    useBomb(aimAngle) {
         if (currentRun.bombs > 0) {
             currentRun.bombs--;
             this.scene.uiManager.updateHUD(this.scene.director.budget);
@@ -1116,14 +1220,14 @@ class PlayerEntity extends Phaser.Physics.Arcade.Sprite {
             let grenade = this.scene.grenadeProjPool.get();
             if (grenade) {
                 let dmg = DefaultGameData.grenade.baseDmg + (currentRun.grenadeUpg.dmg * 25);
-                let rad = DefaultGameData.grenade.baseRadius; // Could add upgrade here too
-                grenade.spawn(this.x, this.y - 20, dmg, rad);
+                let rad = DefaultGameData.grenade.baseRadius;
+                grenade.spawn(this.x, this.y - 20, dmg, rad, aimAngle);
             }
         }
     }
 
     useOvercharge() {
-        if (currentRun.overchargeCharge >= 100) {
+        if (currentRun.overchargeCharge >= 200) {
             currentRun.overchargeCharge = 0;
             currentRun.overchargeTimer = 5000; 
             this.scene.uiManager.updateHUD(this.scene.director.budget);
@@ -1196,7 +1300,7 @@ class ProjectileEntity extends Phaser.Physics.Arcade.Sprite {
 
 class GrenadeProjEntity extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) { super(scene, x, y, 'grenade_proj'); this.damagePayload = 50; this.blastRadius = 100; }
-    spawn(x, y, dmg, radius) {
+    spawn(x, y, dmg, radius, aimAngle) {
         this.scene.add.existing(this); this.scene.physics.add.existing(this);
         this.setActive(true).setVisible(true); this.setPosition(x, y); this.setDepth(RenderLayerDict.Projectiles + 1);
         this.setScale(1.5);
@@ -1204,14 +1308,12 @@ class GrenadeProjEntity extends Phaser.Physics.Arcade.Sprite {
         this.blastRadius = radius;
         this.rotation = 0;
         
-        // Fly straight north
-        this.scene.physics.velocityFromRotation(-Math.PI/2, 400, this.body.velocity);
+        this.scene.physics.velocityFromRotation(aimAngle, 450, this.body.velocity);
         
-        // Slight arc effect (z-axis zoom)
         this.scene.tweens.add({
             targets: this,
-            scale: 2.5,
-            duration: 400,
+            scale: 2.2,
+            duration: 350,
             yoyo: true,
             ease: 'Sine.easeInOut'
         });
@@ -1219,11 +1321,10 @@ class GrenadeProjEntity extends Phaser.Physics.Arcade.Sprite {
         this.scene.tweens.add({
             targets: this,
             rotation: Math.PI * 4,
-            duration: 800
+            duration: 700
         });
 
-        // Failsafe auto-detonate if it misses
-        this.failsafeTimer = this.scene.time.delayedCall(1200, () => { if(this.active) this.explode(); });
+        this.failsafeTimer = this.scene.time.delayedCall(1000, () => { if(this.active) this.explode(); });
     }
     
     explode() {
@@ -1236,7 +1337,6 @@ class GrenadeProjEntity extends Phaser.Physics.Arcade.Sprite {
         let haz = this.scene.hazardPool.get();
         if(haz) haz.spawn(this.x, this.y, 'explosion');
         
-        // AoE Damage
         let checkHit = (pool) => {
             pool.getChildren().forEach(e => {
                 if(e.active && Phaser.Math.Distance.Between(this.x, this.y, e.x, e.y) <= this.blastRadius) {
@@ -1278,7 +1378,7 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
 
         this.body.setSize(14, 18); this.body.setOffset(5, 3);
         if(this.isBoss) { this.body.setSize(20, 24); this.body.setOffset(2, 0); }
-        else if(this.type === 'tank') { this.body.setSize(18, 20); this.body.setOffset(7, 6); }
+        else if(this.type === 'tank') { this.body.setSize(22, 24); this.body.setOffset(5, 4); }
         else if(this.type === 'sprinter') { this.body.setSize(12, 16); this.body.setOffset(6, 5); }
         
         this.body.setBounce(0,0);
@@ -1355,17 +1455,22 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
         let isTank = this.type === 'tank';
         let poolColor = Phaser.Utils.Array.GetRandom(BloodColors);
         
+        // Realistic dynamic blood splatter generated via Graphics to replace simple ovals
         let generateBloodSplatter = (cx, cy, scaleMult) => {
-            let parts = Phaser.Math.Between(4, 7);
-            for(let i=0; i<parts; i++) {
-                let px = cx + Phaser.Math.Between(-15 * scaleMult, 15 * scaleMult);
-                let py = cy + Phaser.Math.Between(-10 * scaleMult, 10 * scaleMult);
-                let pr = Phaser.Math.Between(5 * scaleMult, 20 * scaleMult);
-                let blood = this.scene.add.circle(px, py, pr, poolColor, 0.85).setDepth(RenderLayerDict.GoreBase);
-                blood.scaleY = Phaser.Math.FloatBetween(0.4, 0.8);
-                blood.rotation = Phaser.Math.FloatBetween(0, Math.PI);
-                this.scene.tweens.add({ targets: blood, alpha: 0, duration: 20000, ease: 'Sine.easeOut', onComplete: () => blood.destroy() });
+            let splatter = this.scene.add.graphics();
+            splatter.fillStyle(poolColor, 0.85);
+            splatter.beginPath();
+            let pts = Phaser.Math.Between(6, 12);
+            for(let i=0; i<pts; i++) {
+                let a = (i/pts) * Math.PI * 2;
+                let r = Phaser.Math.Between(5, 20) * scaleMult;
+                splatter.lineTo(Math.cos(a)*r, Math.sin(a)*r*0.6);
             }
+            splatter.closePath();
+            splatter.fillPath();
+            splatter.setPosition(cx, cy);
+            splatter.setDepth(RenderLayerDict.GoreBase);
+            this.scene.tweens.add({ targets: splatter, alpha: 0, duration: 25000, ease: 'Sine.easeOut', onComplete: () => splatter.destroy() });
         };
 
         if (isTank) {
@@ -1378,21 +1483,21 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
                 blood.body.setVelocity(Math.cos(angle)*speed, Math.sin(angle)*speed);
                 this.scene.tweens.add({ targets: blood, alpha: 0, duration: 1500, onComplete: () => blood.destroy() });
             }
-            generateBloodSplatter(this.x, this.y + 10, 2.5);
+            generateBloodSplatter(this.x, this.y + 10, 3.5);
             let haz = this.scene.hazardPool.get();
             if(haz) haz.spawn(this.x, this.y, 'explosion');
         } else {
-            generateBloodSplatter(this.x, this.y + 10, this.isBoss ? 2.5 : 1.0);
+            generateBloodSplatter(this.x, this.y + 10, this.isBoss ? 3.0 : 1.2);
             if (this.type === 'spitter') {
                 let haz = this.scene.hazardPool.get();
                 if(haz) haz.spawn(this.x, this.y, 'toxic');
             }
         }
         
-        currentRun.overchargeCharge = Math.min(100, currentRun.overchargeCharge + (this.isBoss ? 25 : 5));
+        currentRun.overchargeCharge = Math.min(200, currentRun.overchargeCharge + (this.isBoss ? 50 : 5));
         this.scene.uiManager.updateHUD(this.scene.director.budget);
         
-        let drops = this.isBoss ? Phaser.Math.Between(10, 15) : (Phaser.Math.Between(1, 100) <= 30 ? 1 : 0);
+        let drops = this.isBoss ? Phaser.Math.Between(25, 40) : (Phaser.Math.Between(1, 100) <= 30 ? 1 : 0);
         for (let d=0; d<drops; d++) {
             let coin = this.scene.coinPool.get();
             if (coin) coin.spawn(this.x + Phaser.Math.Between(-20, 20), this.y + Phaser.Math.Between(-20, 20));
@@ -1453,6 +1558,15 @@ class CoinEntity extends Phaser.Physics.Arcade.Sprite {
         this.scene.time.delayedCall(200, () => {
             if (this.active) this.setVelocityY(80);
         });
+
+        this.scene.tweens.add({
+            targets: this,
+            scaleX: -1.3,
+            duration: 450,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
     }
     collect() {
         this.despawn();
@@ -1488,7 +1602,7 @@ class BombPickupEntity extends Phaser.Physics.Arcade.Sprite {
     }
     collect() {
         this.despawn();
-        currentRun.bombs++;
+        if (currentRun.bombs < DefaultGameData.player.maxBombs) currentRun.bombs++;
         this.scene.uiManager.updateHUD(this.scene.director.budget);
     }
     despawn() {
@@ -1573,14 +1687,6 @@ class GameScene extends Phaser.Scene {
         
         this.killZone = this.add.rectangle(w/2, barricadeY + 150, w, 50).setAlpha(0);
         this.physics.add.existing(this.killZone, true);
-
-        let bottomUIY = h - 60;
-        this.barricadeHpBg = this.add.rectangle(w/2, bottomUIY, 450, 4, 0x1a1a1a).setDepth(RenderLayerDict.VirtualUI);
-        this.barricadeHpFill = this.add.rectangle(w/2 - 225, bottomUIY, 450, 4, 0xef4444).setOrigin(0, 0.5).setDepth(RenderLayerDict.VirtualUI);
-        
-        this.add.text(w/2, bottomUIY - 20, "BARRICADE INTEGRITY", { 
-            fontStyle: '600', fontSize: '14px', fontFamily: '"Inter", sans-serif', color: '#737373', letterSpacing: '4px' 
-        }).setOrigin(0.5).setDepth(RenderLayerDict.VirtualUI);
 
         this.player = new PlayerEntity(this, w / 2, barricadeY - 100); 
 
@@ -1682,12 +1788,12 @@ class GameScene extends Phaser.Scene {
                         if (!enemy.lastAttackTime || time > enemy.lastAttackTime + 1000) {
                             block.takeDamage(25);
                             enemy.lastAttackTime = time;
-                            this.updateBarricadeUI();
+                            this.uiManager.updateHUD(); // Triggers barricade ui update
                         }
                     } else {
                         block.takeDamage(10); 
                         enemy.die(); 
-                        this.updateBarricadeUI(); 
+                        this.uiManager.updateHUD(); 
                     }
                 }
             });
@@ -1732,24 +1838,11 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    updateBarricadeUI() {
-        let totalHp = 0; let maxHp = 0;
-        this.barricadeGroup.getChildren().forEach(b => { totalHp += b.hp; maxHp += b.maxHp; });
-        let pct = maxHp > 0 ? totalHp / maxHp : 0;
-        this.barricadeHpFill.scaleX = pct;
-        
-        if(pct < 0.3) this.barricadeHpFill.setFillStyle(0xef4444); // Red
-        else if(pct < 0.6) this.barricadeHpFill.setFillStyle(0xf59e0b); // Orange
-        else this.barricadeHpFill.setFillStyle(0x22c55e); // Green
-
-        if (pct <= 0) this.events.emit('GAME_OVER');
-    }
-
     setupEventBus() {
         this.events.on('APP_START_RUN', () => {
             currentRun.reset();
             this.barricadeGroup.getChildren().forEach(b => { b.hp = b.maxHp; b.setActive(true).setVisible(true); b.body.checkCollision.none = false; b.clearTint(); });
-            this.updateBarricadeUI();
+            this.uiManager.updateHUD();
             
             this.enemyPool.getChildren().forEach(e => e.despawn());
             this.bossPool.getChildren().forEach(e => e.despawn());
@@ -1818,14 +1911,6 @@ class GameScene extends Phaser.Scene {
         let isFiring = this.btnState.a || this.input.keyboard.addKey('SPACE').isDown || this.input.activePointer.leftButtonDown();
         let isDashing = this.btnState.x || this.input.keyboard.addKey('SHIFT').isDown;
 
-        let isBombing = this.btnState.b || this.input.keyboard.addKey('F').isDown;
-        if (isBombing && !this.prevBtnState.b) this.player.useBomb();
-        this.prevBtnState.b = isBombing;
-
-        let isOvercharge = this.btnState.y || this.input.keyboard.addKey('Q').isDown || this.input.activePointer.rightButtonDown();
-        if (isOvercharge && !this.prevBtnState.y) this.player.useOvercharge();
-        this.prevBtnState.y = isOvercharge;
-
         let aimAngle = null;
         if(this.input.activePointer.leftButtonDown() && !this.btnState.a && !this.btnState.x && !this.btnState.b && !this.btnState.y) {
             let wp = this.cameras.main.getWorldPoint(this.input.activePointer.x, this.input.activePointer.y);
@@ -1833,6 +1918,14 @@ class GameScene extends Phaser.Scene {
         } else if(isFiring && finalMove.lengthSq() > 0) {
             aimAngle = finalMove.angle();
         }
+
+        let isBombing = this.btnState.b || this.input.keyboard.addKey('F').isDown;
+        if (isBombing && !this.prevBtnState.b) this.player.useBomb(aimAngle !== null ? aimAngle : this.player.rotation - Math.PI/2);
+        this.prevBtnState.b = isBombing;
+
+        let isOvercharge = this.btnState.y || this.input.keyboard.addKey('Q').isDown || this.input.activePointer.rightButtonDown();
+        if (isOvercharge && !this.prevBtnState.y) this.player.useOvercharge();
+        this.prevBtnState.y = isOvercharge;
 
         this.player.tick(time, delta, aimAngle, isFiring, finalMove, isDashing);
         
