@@ -3,36 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Undead Barrage - Version 10.12</title>
+    <title>Undead Barrage - Version 10.16</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.80.0/phaser.min.js"></script>
     <style>
-        /* MINIMALIST MODERN UI & GRITTY REALISM */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        /* GRITTY ARCADE TYPOGRAPHY */
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;500;600;700&display=swap');
 
         body {
             margin: 0; padding: 0; background-color: #000;
-            color: #fff; font-family: 'Inter', sans-serif;
+            color: #fff; font-family: 'Share Tech Mono', monospace;
             display: flex; justify-content: center; align-items: center;
             height: 100vh; overflow: hidden; user-select: none;
         }
 
+        .teko { font-family: 'Teko', sans-serif; text-transform: uppercase; }
+        .mono { font-family: 'Share Tech Mono', monospace; }
+
+        /* RESPONSIVE FLUID CONTAINER */
         #game-wrapper {
-            position: relative;
-            width: 100%; max-width: 900px;
-            aspect-ratio: 3 / 4;
-            background-color: #0a0a0a;
-            border: 1px solid #222;
-            overflow: hidden;
-            box-shadow: 0 0 80px rgba(0,0,0,1);
+            position: relative; width: 100vw; height: 100vh;
+            max-width: min(900px, 75vh); max-height: min(1200px, 133.33vw);
+            background-color: #050505; border: 1px solid #111; overflow: hidden;
+            box-shadow: 0 0 100px rgba(0, 255, 204, 0.05), inset 0 0 50px rgba(0,0,0,1);
         }
 
-        #game-wrapper canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+        #game-wrapper canvas { display: block; width: 100%; height: 100%; touch-action: none; transition: filter 0.3s ease; }
 
-        /* GRITTY VIGNETTE OVERLAY */
+        /* GLOBAL SCANLINES & VIGNETTE (TECH POLISH) */
         #vignette {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.6) 100%);
-            pointer-events: none; z-index: 5;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none; z-index: 4;
+        }
+        #scanlines {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 3px, 3px 100%; pointer-events: none; z-index: 99; opacity: 0.35;
         }
 
         #ui-layer {
@@ -40,140 +46,166 @@
             pointer-events: none; z-index: 10;
         }
 
-        /* MINIMALIST TOP BAR */
+        /* TOP BAR */
         #top-bar {
             position: absolute; top: 0; left: 0; width: 100%;
-            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0,0,0,0.6) 100%);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.4);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5), 0 1px 5px rgba(34, 197, 94, 0.1);
+            backdrop-filter: blur(5px);
             display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 30px; box-sizing: border-box;
-            pointer-events: auto;
+            padding: 10px 20px; box-sizing: border-box; pointer-events: auto;
         }
 
-        .stat-group { display: flex; align-items: center; gap: 10px; color: #737373; font-size: 0.85em; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-        .stat-val { color: #fff; font-size: 1.4em; letter-spacing: 2px; }
+        .stat-group { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 1.2em; font-family: 'Teko', sans-serif; letter-spacing: 2px; }
+        .stat-val { color: #f8fafc; font-family: 'Share Tech Mono', monospace; font-size: 1.1em; letter-spacing: 0; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
         
         .icon-btn {
-            background: none; border: none; font-size: 1.5em; cursor: pointer;
-            transition: transform 0.2s, opacity 0.2s; filter: grayscale(100%); opacity: 0.5;
+            background: none; border: none; font-size: 1.5em; cursor: pointer; color: #fff;
+            transition: all 0.2s; filter: grayscale(100%); opacity: 0.6; text-shadow: 0 0 5px #fff;
         }
-        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
-        .icon-btn:active { transform: scale(0.9); }
+        .icon-btn:hover { opacity: 1; transform: scale(1.15); filter: grayscale(0%); }
 
         /* OVERCHARGE BAR */
         .oc-bar-bg {
-            width: 100px; height: 14px; background: rgba(0,0,0,0.8); 
-            border: 1px solid rgba(255,255,255,0.2); border-radius: 2px; 
-            position: relative; overflow: hidden;
+            width: 100px; height: 12px; background: rgba(0,0,0,0.8); 
+            border: 1px solid #475569; position: relative; overflow: hidden; box-shadow: inset 0 0 5px #000;
         }
         .oc-bar-fill {
             position: absolute; top: 0; left: 0; height: 100%; width: 0%;
-            background: #eab308; box-shadow: 0 0 10px #eab308; transition: width 0.2s;
+            background: linear-gradient(90deg, #ca8a04, #eab308); transition: width 0.2s;
         }
-        .oc-bar-fill.ready { background: #00ffcc; box-shadow: 0 0 15px #00ffcc; animation: pulse-oc 1s infinite alternate; }
-        @keyframes pulse-oc { from { opacity: 0.8; } to { opacity: 1; } }
+        .oc-bar-fill.ready { background: linear-gradient(90deg, #0891b2, #00ffcc); box-shadow: 0 0 10px #00ffcc; animation: pulse-oc 0.8s infinite alternate; }
+        @keyframes pulse-oc { from { filter: brightness(1); } to { filter: brightness(1.5); box-shadow: 0 0 15px #00ffcc; } }
 
-        /* MINIMALIST DATA COLUMN */
+        /* DATA COLUMN */
         #data-column {
-            position: absolute; top: 85px; left: 30px;
-            padding: 15px 20px; line-height: 1.8; color: #a3a3a3;
-            background: rgba(0, 0, 0, 0.6); border-left: 2px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(8px); font-size: 0.9em;
+            position: absolute; top: 75px; left: 20px;
+            padding: 15px 20px; line-height: 1.6; color: #a3a3a3;
+            background: linear-gradient(90deg, rgba(10,10,10,0.9) 0%, rgba(10,10,10,0.5) 100%); 
+            border: 1px solid #1e293b; border-left: 3px solid #22c55e;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            font-size: 1.1em; font-family: 'Teko', sans-serif; letter-spacing: 1px; backdrop-filter: blur(4px);
         }
-        .data-label { color: #525252; font-weight: 600; font-size: 0.85em; letter-spacing: 2px; text-transform: uppercase; margin-right: 8px; }
+        .data-label { color: #64748b; font-weight: 500; margin-right: 8px; text-shadow: 0 0 2px rgba(100,116,139,0.5); }
 
         /* SCREENS & MODALS */
         .overlay-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); display: flex;
+            background: rgba(5, 5, 5, 0.85); display: flex;
             flex-direction: column; justify-content: center; align-items: center;
             pointer-events: auto; display: none; z-index: 50;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(6px);
         }
 
         .modal-box {
-            background: rgba(10, 10, 10, 0.95); border: 1px solid rgba(255,255,255,0.1);
-            padding: 40px 50px; max-width: 80%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            max-height: 90vh; overflow-y: auto;
+            background: linear-gradient(0deg, rgba(0,255,204,0.02) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,255,204,0.02) 1px, transparent 1px),
+                        #0b0d10;
+            background-size: 20px 20px;
+            border: 1px solid #1e293b; border-top: 2px solid #0ea5e9;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.9), 0 0 20px rgba(14,165,233,0.1);
+            padding: 30px; text-align: center; max-height: 95vh; overflow-y: auto; width: 95%; max-width: 850px; box-sizing: border-box;
+            position: relative;
         }
-
-        .overlay-title {
-            font-size: 3.5em; color: #fff; margin-bottom: 30px;
-            text-transform: uppercase; letter-spacing: 12px; font-weight: 300;
+        /* Tech Corners for Modal */
+        .modal-box::before, .modal-box::after {
+            content: ''; position: absolute; width: 10px; height: 10px; border: 1px solid #0ea5e9; pointer-events: none;
         }
-        .overlay-title strong { font-weight: 800; color: #dc2626; }
+        .modal-box::before { top: 5px; left: 5px; border-right: none; border-bottom: none; }
+        .modal-box::after { bottom: 5px; right: 5px; border-left: none; border-top: none; }
 
-        /* MINIMALIST BUTTONS */
+        .overlay-title { font-family: 'Teko', sans-serif; font-size: 5em; color: #fff; margin-bottom: 20px; letter-spacing: 8px; line-height: 1; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        .overlay-title strong { color: #ef4444; text-shadow: 0 0 20px rgba(239,68,68,0.4); }
+
+        /* BUTTONS */
         .btn {
-            background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.3);
-            padding: 16px 40px; font-size: 0.95em; font-weight: 600; letter-spacing: 3px;
-            cursor: pointer; text-transform: uppercase;
-            transition: all 0.3s ease; font-family: inherit; margin-top: 15px; width: 300px;
+            background: rgba(0,0,0,0.6); color: #e2e8f0; border: 1px solid #475569;
+            padding: 12px 30px; font-size: 1.5em; font-family: 'Teko', sans-serif; letter-spacing: 3px;
+            cursor: pointer; transition: all 0.2s ease; max-width: 100%; position: relative; overflow: hidden;
         }
-        .btn:hover:not(:disabled) { background: #fff; color: #000; }
-        .btn:disabled { opacity: 0.2; cursor: not-allowed; border-color: rgba(255,255,255,0.1); }
-        .btn-action { border-color: #3b82f6; color: #3b82f6; }
-        .btn-action:hover:not(:disabled) { background: #3b82f6; color: #fff; }
+        .btn:hover:not(:disabled) { background: #1e293b; color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #1e293b; }
+        .btn-action { border-color: #0ea5e9; color: #0ea5e9; background: rgba(14, 165, 233, 0.05); }
+        .btn-action:hover:not(:disabled) { background: rgba(14,165,233,0.15); color: #fff; border-color: #38bdf8; box-shadow: 0 0 20px rgba(14, 165, 233, 0.4), inset 0 0 10px rgba(14, 165, 233, 0.2); text-shadow: 0 0 5px #fff; }
+        .btn-buy { border-color: #22c55e; color: #22c55e; background: rgba(34, 197, 94, 0.05); }
+        .btn-buy:hover:not(:disabled) { background: rgba(34,197,94,0.15); color: #fff; border-color: #4ade80; box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), inset 0 0 10px rgba(34, 197, 94, 0.2); text-shadow: 0 0 5px #fff; }
 
-        /* Settings Toggles */
-        .setting-row {
-            display: flex; justify-content: space-between; align-items: center;
-            margin: 20px 0; font-size: 1em; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; color: #a3a3a3;
-            letter-spacing: 1px; text-transform: uppercase;
+        /* THE ARMORY - PEGBOARD & RACK */
+        .pegboard {
+            background-color: #0a0a0a; border: 1px solid #1e293b; border-radius: 2px; padding: 20px; margin-bottom: 20px;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 14px 14px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
         }
-        .toggle-btn { background: transparent; border: 1px solid rgba(255,255,255,0.2); padding: 8px 30px; color: #737373; cursor: pointer; font-family: inherit; font-weight: 600;}
-        .toggle-btn.active { background: #fff; color: #000; border-color: #fff; }
+
+        .weapon-slot { 
+            border-radius: 2px; position: relative; flex-shrink: 0; background: rgba(0,0,0,0.8); overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        .weapon-slot:hover { border-color: #38bdf8 !important; box-shadow: 0 0 15px rgba(14,165,233,0.3), inset 0 0 10px rgba(0,0,0,0.8); }
+        .weapon-slot:hover::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 204, 0.05) 2px, rgba(0, 255, 204, 0.05) 4px);
+            z-index: 2; pointer-events: none;
+        }
+        .equipped-stamp {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg);
+            color: #ef4444; border: 2px solid #ef4444; padding: 2px 6px; z-index: 5;
+            font-family: 'Teko', sans-serif; font-size: 1.4em; letter-spacing: 2px;
+            text-shadow: 0 0 8px rgba(239,68,68,0.8); box-shadow: inset 0 0 8px rgba(239,68,68,0.5);
+            pointer-events: none; background: rgba(0,0,0,0.8); line-height: 1; border-radius: 2px;
+        }
+
+        /* UPGRADES & PIPS */
+        .upgrade-row {
+            background: rgba(0,0,0,0.4); border: 1px solid #1e293b; padding: 10px 15px; border-radius: 2px;
+            cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .upgrade-row:hover:not(.locked) { border-color: #fde047; background: rgba(253, 224, 71, 0.05); box-shadow: 0 0 10px rgba(253,224,71,0.2), inset 0 0 10px rgba(0,0,0,0.5); }
+        .upgrade-row.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); border-color: #0f1115; }
+
+        .field-gear-item {
+            background: rgba(0,0,0,0.4); border: 1px solid #1e293b; padding: 15px; border-radius: 2px;
+            cursor: pointer; transition: all 0.2s; text-align: left; display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .field-gear-item:hover:not(.locked) { border-color: #22c55e; background: rgba(34, 197, 94, 0.05); box-shadow: 0 0 10px rgba(34,197,94,0.2), inset 0 0 10px rgba(0,0,0,0.5); }
+        .field-gear-item.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); border-color: #0f1115; }
+
+        .pip-container { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;}
+        .pip { width: 12px; height: 12px; background: #0b0d10; border: 1px solid #1e293b; transition: all 0.3s; box-shadow: inset 0 0 3px #000; }
+        .pip.filled-dmg { background: #fde047; box-shadow: 0 0 8px rgba(253,224,71,0.6); border-color: #ca8a04; }
+        .pip.filled-rate { background: #fde047; box-shadow: 0 0 8px rgba(253,224,71,0.6); border-color: #ca8a04; }
+        .pip.filled-speed { background: #0ea5e9; box-shadow: 0 0 8px rgba(14,165,233,0.6); border-color: #0284c7; }
+        .pip.filled-grenade { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.6); border-color: #b91c1c; }
+        .pip.filled-armor { background: #cbd5e1; box-shadow: 0 0 8px rgba(203,213,225,0.6); border-color: #64748b; }
+        
+        #shop-weapon-grid::-webkit-scrollbar { height: 4px; }
+        #shop-weapon-grid::-webkit-scrollbar-track { background: #050505; }
+        #shop-weapon-grid::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        #shop-weapon-grid::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .qm-transmission {
+            background: linear-gradient(90deg, rgba(20,20,20,0.9) 0%, rgba(10,10,10,0.4) 100%);
+            border-left: 3px solid #f59e0b; padding: 10px 15px; margin-bottom: 20px;
+            font-size: 0.95em; color: #cbd5e1; text-align: left; font-style: italic; display: flex; align-items: center; gap: 15px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+        .qm-transmission::before {
+            content: 'QM'; font-family: 'Teko', sans-serif; font-size: 1.5em; font-style: normal;
+            color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 2px;
+            text-shadow: 0 0 5px rgba(245,158,11,0.5); border: 1px solid rgba(245,158,11,0.2);
+        }
 
         /* DEV TOOLS MENU */
         #dev-panel {
-            position: absolute; bottom: 30px; left: 30px;
-            background: rgba(0, 0, 0, 0.9); border: 1px solid #16a34a; color: #16a34a;
-            padding: 20px; display: none; pointer-events: auto; z-index: 100;
-            width: 300px; font-family: 'Courier New', monospace;
+            position: absolute; bottom: 30px; left: 30px; background: rgba(0, 0, 0, 0.9); border: 1px solid #16a34a; 
+            padding: 20px; display: none; pointer-events: auto; z-index: 100; width: 300px; box-shadow: 0 0 20px rgba(22,163,74,0.2);
         }
-        .dev-btn {
-            background: transparent; color: #16a34a; border: 1px solid #16a34a;
-            font-size: 0.85em; padding: 10px; margin: 5px 0; width: 100%;
-            cursor: pointer; font-family: inherit; text-transform: uppercase; letter-spacing: 1px;
-            transition: all 0.2s;
-        }
-        .dev-btn:hover { background: #16a34a; color: #000; }
+        .dev-btn { background: transparent; color: #16a34a; border: 1px solid #16a34a; padding: 8px; margin: 5px 0; width: 100%; cursor: pointer; font-family: inherit;}
+        .dev-btn:hover { background: #16a34a; color: #000; box-shadow: 0 0 10px #16a34a; }
         .dev-input { width: 60px; background: transparent; color: #16a34a; border: 1px solid #16a34a; font-family: inherit; padding: 4px; text-align: center; }
-
-        #damage-flash {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(220, 38, 38, 0.4); pointer-events: none;
-            opacity: 0; transition: opacity 0.1s; z-index: 8;
-        }
-
-        /* SHOP ITEMS & PIPS */
-        .shop-section-title {
-            color: #525252; font-weight: 800; font-size: 0.8em; letter-spacing: 4px; text-transform: uppercase;
-            border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-bottom: 15px; margin-top: 10px; text-align: left;
-        }
-
-        .shop-item {
-            border: 1px solid rgba(255,255,255,0.1); padding: 15px; 
-            cursor: pointer; transition: all 0.2s; background: rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; justify-content: space-between; border-radius: 4px;
-        }
-        .shop-item:hover:not(.locked) { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
-        .shop-item.locked { opacity: 0.5; cursor: not-allowed; }
-        
-        .weapon-slot { border-radius: 4px; position: relative; }
-        .weapon-slot:hover { border-color: #94a3b8 !important; }
-        
-        .pip-container { display: flex; gap: 4px; margin-top: 6px; }
-        .pip { width: 10px; height: 10px; background: rgba(255,255,255,0.1); border-radius: 2px; transition: all 0.3s;}
-        .pip.filled-dmg { background: #fde047; box-shadow: 0 0 5px rgba(253,224,71,0.5); }
-        .pip.filled-rate { background: #fde047; box-shadow: 0 0 5px rgba(253,224,71,0.5); }
-        .pip.filled-speed { background: #0ea5e9; box-shadow: 0 0 5px rgba(14,165,233,0.5); }
-        .pip.filled-grenade { background: #ef4444; box-shadow: 0 0 5px rgba(239,68,68,0.5); }
-        
-        #shop-weapon-grid::-webkit-scrollbar { height: 8px; }
-        #shop-weapon-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
-        #shop-weapon-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-        #shop-weapon-grid::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
     </style>
 </head>
@@ -181,45 +213,45 @@
 
 <div id="game-wrapper">
     <div id="vignette"></div>
+    <div id="scanlines"></div>
     <div id="ui-layer">
         <div id="damage-flash"></div>
         
         <!-- BARRICADE HUD -->
         <div id="barricade-hud" style="position:absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: 450px; pointer-events:none; display:none; flex-direction:column; align-items:center; z-index: 20;">
-            <div style="font-weight:600; font-size:13px; color:#737373; letter-spacing:4px; margin-bottom:6px; text-shadow: 0 2px 4px #000;">BARRICADE INTEGRITY</div>
-            <div style="width:100%; height:6px; background:rgba(0,0,0,0.8); border:1px solid rgba(255,255,255,0.2); border-radius: 2px; overflow:hidden;">
+            <div class="teko" style="font-size:1.2em; color:#737373; letter-spacing:4px; text-shadow: 0 2px 4px #000;">BARRICADE INTEGRITY</div>
+            <div style="width:100%; height:6px; background:rgba(0,0,0,0.8); border:1px solid #334155; overflow:hidden; box-shadow: 0 0 10px rgba(0,0,0,0.8);">
                 <div id="ui-barricade-fill" style="width:100%; height:100%; background:#22c55e; transition: width 0.2s, background-color 0.2s; box-shadow: 0 0 10px #22c55e;"></div>
             </div>
         </div>
 
-        <!-- Minimalist Top Bar -->
+        <!-- TOP BAR -->
         <div id="top-bar">
             <div class="stat-group">HP <span id="ui-hp" class="stat-val">❤️❤️❤️</span></div>
-            <div class="stat-group" style="margin-left:20px;">ARMOR <span id="ui-armor" class="stat-val" style="font-size:1.1em">🛡️ 0</span></div>
-            <div class="stat-group" style="margin-left:20px;">GRENADES <span id="ui-bombs" class="stat-val" style="font-size:1.1em">🍍 0</span></div>
-            <div class="stat-group" style="margin-left:20px;">
-                <span title="OVERCHARGE (RIGHT CLICK / Y)">⚡</span>
-                <div class="oc-bar-bg">
-                    <div id="ui-overcharge-bar" class="oc-bar-fill"></div>
-                </div>
+            <div class="stat-group">ARMOR <span id="ui-armor" class="stat-val">🛡️0</span></div>
+            <div class="stat-group">FRAGS <span id="ui-bombs" class="stat-val">🍍0</span></div>
+            <div class="stat-group">
+                <span title="OVERCHARGE (RIGHT CLICK / Y)" style="color:#eab308; text-shadow: 0 0 5px #ca8a04;">⚡</span>
+                <div class="oc-bar-bg"><div id="ui-overcharge-bar" class="oc-bar-fill"></div></div>
             </div>
             <div style="flex-grow: 1;"></div>
+            <button class="icon-btn" id="btn-pause" style="margin-right: 15px;">⏸️</button>
             <button class="icon-btn" id="btn-settings">⚙️</button>
         </div>
 
-        <!-- Minimalist Data Column -->
+        <!-- DATA COLUMN -->
         <div id="data-column">
-            <div><span class="data-label">WAVE</span> <span id="ui-wave" class="stat-val" style="color:#fff; font-size:1.2em;">1</span></div>
-            <div><span class="data-label">THREAT</span> <span id="ui-budget" class="stat-val" style="color:#ef4444; font-size:1.2em;">0</span></div>
-            <div style="margin: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05);"></div>
-            <div><span class="data-label">FUNDS</span> $<span id="ui-bank" class="stat-val" style="color:#22c55e; font-size:1.2em;">0</span></div>
-            <div style="margin: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05);"></div>
-            <div><span class="data-label">WPN</span> <span id="ui-wpn" class="stat-val" style="font-size:0.9em; letter-spacing:1px;">Crappy BB Gun</span></div>
-            <div><span class="data-label">DMG</span> <span id="ui-dmg" class="stat-val" style="font-size:0.9em;">1</span></div>
-            <div><span class="data-label">RTE</span> <span id="ui-rate" class="stat-val" style="font-size:0.9em;">300 BPM</span></div>
+            <div><span class="data-label">WAVE</span> <span id="ui-wave" class="stat-val" style="color:#fff; font-size:1.4em;">1</span></div>
+            <div><span class="data-label">THREAT</span> <span id="ui-budget" class="stat-val" style="color:#ef4444; font-size:1.4em; text-shadow: 0 0 8px rgba(239,68,68,0.5);">0</span></div>
+            <div style="margin: 10px 0; border-bottom: 1px dashed #334155;"></div>
+            <div><span class="data-label">FUNDS</span> $<span id="ui-bank" class="stat-val" style="color:#22c55e; font-size:1.4em; text-shadow: 0 0 8px rgba(34,197,94,0.5);">0</span></div>
+            <div style="margin: 10px 0; border-bottom: 1px dashed #334155;"></div>
+            <div style="line-height:1.2; margin-bottom:5px;"><span class="data-label">WPN</span> <br><span id="ui-wpn" style="color:#0ea5e9; text-shadow: 0 0 5px rgba(14,165,233,0.3);">Crappy BB Gun</span></div>
+            <div><span class="data-label">DMG</span> <span id="ui-dmg" class="stat-val">1</span></div>
+            <div><span class="data-label">RTE</span> <span id="ui-rate" class="stat-val">300 BPM</span></div>
         </div>
 
-        <!-- Dev Panel -->
+        <!-- DEV PANEL -->
         <div id="dev-panel">
             <div style="margin-bottom:20px; font-weight:bold; text-align:center; letter-spacing: 3px;">SYS.ADMIN.OVERRIDE</div>
             <button class="dev-btn" onclick="window.gameScene.devGodMode()">God Mode: <span id="dev-god-txt">OFF</span></button>
@@ -238,162 +270,194 @@
             </div>
         </div>
 
-        <!-- Boot Screen (Main Menu) -->
+        <!-- BOOT SCREEN -->
         <div id="screen-boot" class="overlay-screen" style="display: flex;">
-            <div class="overlay-title">UNDEAD <strong>BARRAGE</strong></div>
-            <button id="btn-new-game" class="btn">NEW GAME</button>
+            <div class="overlay-title" style="text-shadow: 0 0 30px rgba(255,255,255,0.3);">UNDEAD<br><strong>BARRAGE</strong></div>
+            <button id="btn-new-game" class="btn btn-action">NEW GAME</button>
             <button id="btn-continue" class="btn" disabled>CONTINUE</button>
-            <button id="btn-open-settings" class="btn">SETTINGS</button>
+            <button id="btn-open-settings" class="btn" style="border-color:#334155; color:#a3a3a3;">SETTINGS</button>
         </div>
 
-        <!-- Quartermaster Shop Tooltip Modal -->
+        <!-- PAUSE SCREEN -->
+        <div id="screen-pause" class="overlay-screen" style="background: rgba(5, 5, 5, 0.7);">
+            <div class="overlay-title" style="margin-bottom: 40px; color: #22c55e; text-shadow: 0 0 20px #22c55e;">PAUSED</div>
+            <button id="btn-resume" class="btn btn-buy">RESUME</button>
+        </div>
+
+        <!-- QM TRANSMISSION (First Time) -->
         <div id="screen-qm-tip" class="overlay-screen" style="z-index: 60;">
-            <div class="modal-box" style="border-color: #f59e0b; max-width: 500px; text-align:left;">
-                <h3 style="color:#f59e0b; margin-top:0; letter-spacing: 2px;">TRANSMISSION: QUARTERMASTER</h3>
-                <p style="color:#e2e8f0; line-height:1.6; font-size: 0.95em;">
+            <div class="modal-box" style="border-color: #f59e0b; max-width: 500px; text-align:left; box-shadow: 0 0 40px rgba(245,158,11,0.15), inset 0 0 20px rgba(0,0,0,0.9);">
+                <h3 class="teko" style="color:#f59e0b; margin-top:0; font-size:2em; letter-spacing: 2px; text-shadow: 0 0 10px rgba(245,158,11,0.5);">TRANSMISSION: QUARTERMASTER</h3>
+                <p style="color:#e2e8f0; line-height:1.6; font-size: 1.1em;">
                     "I don't know why corpses carry mint-condition gold, and I don't care. Pick it up before it sinks into the mud. Bring it to me, I give you guns. Dead customers don't pay."
                 </p>
-                <button id="btn-close-qm-tip" class="btn" style="width:100%; border-color:#f59e0b; color:#f59e0b;">DEAL.</button>
+                <button id="btn-close-qm-tip" class="btn" style="width:100%; border-color:#f59e0b; color:#f59e0b; background: rgba(245,158,11,0.05);">DEAL.</button>
             </div>
         </div>
 
-        <!-- Wave Cleared Transition Overlay -->
+        <!-- WAVE CLEARED ANIMATION -->
         <div id="screen-wave-clear" class="overlay-screen" style="background:transparent; pointer-events:none; z-index:90;">
-            <div id="wave-clear-text" class="overlay-title" style="transform:scale(0); opacity:0; color:#22c55e; text-shadow: 0 0 20px #22c55e; margin:0;">WAVE CLEARED</div>
+            <div id="wave-clear-text" class="overlay-title" style="transform:scale(0); opacity:0; color:#22c55e; text-shadow: 0 0 30px #22c55e; margin:0;">WAVE CLEARED</div>
         </div>
 
-        <!-- Tutorial Modal -->
+        <!-- TUTORIAL MODAL -->
         <div id="screen-tutorial" class="overlay-screen">
             <div class="modal-box" style="text-align: left; max-width: 600px;">
-                <h2 style="color:#fff; margin-top:0; letter-spacing: 4px; font-weight:300; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">TRANSMISSION</h2>
-                <p id="tutorial-text" style="font-size: 1em; line-height: 1.8; color:#a3a3a3; margin: 30px 0;"></p>
-                <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:20px;">
-                    <label style="cursor: pointer; color:#737373; font-weight: 600; font-size: 0.85em; letter-spacing: 1px; text-transform: uppercase;">
-                        <input type="checkbox" id="chk-skip-tutorial" style="margin-right: 10px;"> Permanently skip logs
+                <h2 class="teko" style="color:#0ea5e9; margin-top:0; font-size:2.5em; border-bottom: 1px solid #1e293b; padding-bottom: 10px; text-shadow: 0 0 10px rgba(14,165,233,0.5);">INCOMING TRANSMISSION</h2>
+                <p id="tutorial-text" style="font-size: 1.1em; line-height: 1.6; color:#e2e8f0; margin: 20px 0;"></p>
+                <div style="margin-top: 30px; border-top: 1px solid #1e293b; padding-top:15px;">
+                    <label style="cursor: pointer; color:#64748b; font-family:'Teko', sans-serif; font-size: 1.2em; letter-spacing: 1px; transition: color 0.2s;">
+                        <input type="checkbox" id="chk-skip-tutorial" style="margin-right: 10px;"> PERMANENTLY MUTE LOGS
                     </label>
                 </div>
-                <button id="btn-close-tutorial" class="btn" style="width: 100%; margin-top: 30px;">ACKNOWLEDGE</button>
+                <button id="btn-close-tutorial" class="btn btn-action" style="width: 100%; margin-top: 20px;">ACKNOWLEDGE</button>
             </div>
         </div>
 
-        <!-- Settings Modal -->
+        <!-- SETTINGS MODAL -->
         <div id="screen-settings" class="overlay-screen">
             <div class="modal-box" style="min-width: 450px;">
-                <h2 style="color:#fff; margin-top:0; letter-spacing: 4px; font-weight:300; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">SYSTEM OPTIONS</h2>
-                <div class="setting-row">
-                    <span>Virtual Gamepad</span>
-                    <button id="tog-controls" class="toggle-btn active">ON</button>
+                <h2 class="teko" style="color:#fff; margin-top:0; font-size:2.5em; border-bottom: 1px solid #1e293b; padding-bottom: 10px; text-shadow: 0 0 15px rgba(255,255,255,0.3);">SYSTEM OPTIONS</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                    <span class="teko" style="font-size:1.5em; color:#a3a3a3;">VIRTUAL GAMEPAD</span>
+                    <button id="tog-controls" class="btn" style="padding: 5px 20px; font-size:1.2em; margin:0; width:100px;">ON</button>
                 </div>
-                <div class="setting-row">
-                    <span>Impact Shake</span>
-                    <button id="tog-shake" class="toggle-btn active">ON</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                    <span class="teko" style="font-size:1.5em; color:#a3a3a3;">IMPACT SHAKE</span>
+                    <button id="tog-shake" class="btn" style="padding: 5px 20px; font-size:1.2em; margin:0; width:100px;">ON</button>
                 </div>
-                <div class="setting-row" style="border:none;">
-                    <span>Dev Tools</span>
-                    <button id="tog-dev" class="toggle-btn">OFF</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin: 20px 0;">
+                    <span class="teko" style="font-size:1.5em; color:#a3a3a3;">DEV TOOLS</span>
+                    <button id="tog-dev" class="btn" style="padding: 5px 20px; font-size:1.2em; margin:0; width:100px;">OFF</button>
                 </div>
-                <button id="btn-close-settings" class="btn" style="width: 100%; margin-top: 30px;">RESUME</button>
+                <button id="btn-close-settings" class="btn btn-action" style="width: 100%; margin-top: 30px;">RESUME</button>
             </div>
         </div>
 
-        <!-- Shop Screen (The Armory) -->
+        <!-- THE ARMORY -->
         <div id="screen-shop" class="overlay-screen">
-            <div class="modal-box" style="min-width: 850px; padding: 30px 40px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
-                    <h2 style="color:#fff; margin:0; letter-spacing: 4px; font-weight:300;">THE <strong>ARMORY</strong></h2>
-                    <div style="color:#22c55e; font-size: 1.3em; font-weight: bold; letter-spacing: 2px;">FUNDS: $<span id="shop-bank">0</span></div>
+            <div class="modal-box" style="padding: 25px 35px; max-width: 900px; display:flex; flex-direction:column; gap:15px; text-align:left;">
+                
+                <!-- HEADER -->
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+                    <h2 class="teko" style="color:#fff; margin:0; font-size:3em; letter-spacing: 4px; text-shadow: 0 0 15px rgba(255,255,255,0.3); line-height:1;">THE <strong>ARMORY</strong></h2>
+                    <div class="mono" style="color:#22c55e; font-size: 1.6em; font-weight: bold; text-shadow: 0 0 10px rgba(34,197,94,0.5);">FUNDS: $<span id="shop-bank">0</span></div>
                 </div>
 
-                <!-- The Weapon Grid -->
-                <div id="shop-weapon-grid" style="display:flex; gap:12px; overflow-x:auto; padding: 5px 0 15px 0; margin-bottom:20px;">
-                    <!-- JS populated -->
+                <!-- DYNAMIC QM MESSAGE -->
+                <div id="shop-qm-msg" class="qm-transmission">
+                    "Solid hardware. Keep it calibrated."
                 </div>
 
-                <!-- Selected Weapon & Upgrades Block -->
-                <div style="background: rgba(0,0,0,0.5); border: 1px solid #334155; border-radius: 4px; padding: 20px; margin-bottom: 25px; display:flex; gap:20px;">
-                    <!-- Left: Icon & Equip -->
-                    <div style="display:flex; flex-direction:column; align-items:center; min-width: 160px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 20px;">
-                        <div id="shop-sel-visual" style="width: 96px; height: 96px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3)); margin-bottom: 15px;"></div>
-                        <button id="btn-shop-action" class="btn btn-action" style="width: 100%; margin:0; padding: 12px 10px; font-size: 0.85em;">EQUIP</button>
-                    </div>
-                    
-                    <!-- Center: Stats -->
-                    <div style="flex:1; display:flex; flex-direction:column; text-align: left;">
-                        <h3 id="shop-sel-name" style="margin:0 0 15px 0; color:#3b82f6; letter-spacing: 1px; font-size: 1.3em;">Weapon Name</h3>
-                        <div style="font-size:0.9em; color:#a3a3a3; display:flex; flex-direction:column; gap:12px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="letter-spacing:1px; font-size:0.85em;">DAMAGE</span> 
-                                <span id="shop-sel-dmg" style="color:#fff; font-weight:bold; font-size:1.1em;">1.0</span>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="letter-spacing:1px; font-size:0.85em;">FIRE RATE</span> 
-                                <span id="shop-sel-rate" style="color:#fff; font-weight:bold; font-size:1.1em;">300 BPM</span>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid #1e293b; padding-top: 10px;">
-                                <span style="letter-spacing:1px; font-size:0.85em;">PATTERN</span> 
-                                <span id="shop-sel-spc" style="color:#3b82f6; font-weight:bold; text-transform: uppercase; font-size:0.9em;">None</span>
-                            </div>
-                        </div>
+                <!-- PEGBOARD & DIAGNOSTIC TERMINAL -->
+                <div class="pegboard">
+                    <!-- The Grid -->
+                    <div id="shop-weapon-grid" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:15px;">
+                        <!-- JS populated -->
                     </div>
 
-                    <!-- Right: Upgrades for this weapon -->
-                    <div style="flex:1.2; display:flex; flex-direction:column; gap:10px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px;">
-                        <div style="color:#525252; font-weight:800; font-size:0.75em; letter-spacing:2px; text-align:left;">WEAPON CALIBRATION</div>
+                    <!-- Diagnostic Terminal -->
+                    <div style="background: linear-gradient(180deg, #0b0d10 0%, #050505 100%); border:1px solid #1e293b; border-top:2px solid #334155; box-shadow: inset 0 0 30px rgba(0,0,0,0.9), 0 10px 20px rgba(0,0,0,0.5); display:flex; gap:20px; padding:20px; align-items:center; flex-wrap:wrap; border-radius: 2px;">
                         
-                        <div class="shop-item" id="btn-buy-dmg" style="padding:10px; margin:0;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="color:#fde047; font-size:0.85em; font-weight:bold; letter-spacing: 1px;">+ DAMAGE</span>
-                                <span style="color:#22c55e; font-weight:bold; font-size:0.9em;">$<span id="shop-cost-dmg">50</span></span>
-                            </div>
-                            <div id="shop-pips-dmg" class="pip-container"></div>
+                        <!-- Visual & Action -->
+                        <div style="flex:1; display:flex; flex-direction:column; align-items:center; border-right:1px dashed #334155; padding-right:20px; min-width:180px;">
+                            <div id="shop-sel-visual" style="width: 110px; height: 110px; margin-bottom: 15px;"></div>
+                            <button id="btn-shop-action" class="btn btn-action" style="width: 100%; margin:0; padding: 10px; font-size: 1.2em;">EQUIP</button>
                         </div>
                         
-                        <div class="shop-item" id="btn-buy-rate" style="padding:10px; margin:0;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="color:#fde047; font-size:0.85em; font-weight:bold; letter-spacing: 1px;">+ RATE</span>
-                                <span style="color:#22c55e; font-weight:bold; font-size:0.9em;">$<span id="shop-cost-rate">75</span></span>
+                        <!-- Details & Upgrades -->
+                        <div style="flex:2.5; display:flex; flex-direction:column; min-width:250px;">
+                            <h3 id="shop-sel-name" class="teko" style="color:#0ea5e9; font-size:2.2em; margin:0 0 10px 0; letter-spacing:1px; text-shadow: 0 0 10px rgba(14,165,233,0.5); line-height:1;">WEAPON NAME</h3>
+                            
+                            <div style="display:flex; gap:30px; align-items:center; flex-wrap:wrap;">
+                                <!-- Stat Readout -->
+                                <div style="flex:1; font-size:1.1em; color:#a3a3a3; line-height:1.8; min-width:150px;">
+                                    <div style="display:flex; justify-content:space-between;"><span style="color:#64748b;">DMG</span><span id="shop-sel-dmg" style="color:#fff; font-weight:bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);">1.0</span></div>
+                                    <div style="display:flex; justify-content:space-between;"><span style="color:#64748b;">RTE</span><span id="shop-sel-rate" style="color:#fff; font-weight:bold; text-shadow: 0 0 5px rgba(255,255,255,0.3);">300 BPM</span></div>
+                                    <div style="display:flex; justify-content:space-between; border-top:1px solid #1e293b; padding-top:5px; margin-top:5px;">
+                                        <span style="color:#64748b;">PTN</span><span id="shop-sel-spc" style="color:#0ea5e9;">SINGLE</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Upgrade Buttons -->
+                                <div style="flex:1.5; display:flex; flex-direction:column; gap:10px; min-width:200px;">
+                                    <div class="upgrade-row" id="btn-buy-dmg">
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <span class="teko" style="color:#fde047; font-size:1.3em; line-height:1; text-shadow: 0 0 5px rgba(253,224,71,0.3);">CALIBRATE DMG</span>
+                                            <span style="color:#22c55e; font-weight:bold;">$<span id="shop-cost-dmg">50</span></span>
+                                        </div>
+                                        <div id="shop-pips-dmg" class="pip-container"></div>
+                                    </div>
+                                    <div class="upgrade-row" id="btn-buy-rate">
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <span class="teko" style="color:#fde047; font-size:1.3em; line-height:1; text-shadow: 0 0 5px rgba(253,224,71,0.3);">CALIBRATE RTE</span>
+                                            <span style="color:#22c55e; font-weight:bold;">$<span id="shop-cost-rate">75</span></span>
+                                        </div>
+                                        <div id="shop-pips-rate" class="pip-container"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div id="shop-pips-rate" class="pip-container"></div>
                         </div>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 20px; text-align: left; margin-bottom: 30px;">
-                    <!-- FIELD GEAR -->
-                    <div style="flex: 1;">
-                        <div class="shop-section-title">FIELD GEAR & ORDNANCE</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                            <div class="shop-item" id="btn-buy-bomb">
-                                <h3 style="margin: 0 0 5px 0; color:#ef4444; letter-spacing: 1px; font-size: 0.85em;">BUY GRENADE</h3>
-                                <p style="margin:0 0 8px 0; color:#a3a3a3; font-size: 0.7em; line-height:1.4;">Restock frag ordnance. (Max 3)</p>
+                <!-- FIELD SUPPLIES & ORDNANCE -->
+                <div style="border-top: 1px solid #1e293b; padding-top: 15px;">
+                    <h3 class="teko" style="color:#64748b; font-size:1.8em; margin:0 0 15px 0; letter-spacing:2px; text-shadow: 0 0 5px rgba(100,116,139,0.3);">FIELD SUPPLIES & ORDNANCE</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                        
+                        <div class="field-gear-item" id="btn-buy-bomb">
+                            <div>
+                                <h4 class="teko" style="margin:0 0 5px 0; color:#ef4444; font-size:1.4em; text-shadow: 0 0 5px rgba(239,68,68,0.3);">BUY GRENADE</h4>
                                 <div id="shop-inv-bomb-pips" class="pip-container" style="margin-bottom:10px;"></div>
-                                <div style="display:flex; justify-content:flex-end;"><span style="color:#22c55e; font-weight:bold; font-size: 0.9em;">$<span id="shop-cost-bomb">150</span></span></div>
                             </div>
-                            <div class="shop-item" id="btn-buy-bomb-dmg">
-                                <h3 style="margin: 0 0 5px 0; color:#f97316; letter-spacing: 1px; font-size: 0.85em;">+ FRAG PAYLOAD</h3>
-                                <p style="margin:0 0 8px 0; color:#a3a3a3; font-size: 0.7em; line-height:1.4;">More explosive filler.</p>
-                                <div id="shop-pips-bomb-dmg" class="pip-container" style="margin-bottom:10px;"></div>
-                                <div style="display:flex; justify-content:flex-end;"><span style="color:#22c55e; font-weight:bold; font-size: 0.9em;">$<span id="shop-cost-bomb-dmg">100</span></span></div>
-                            </div>
-                            <div class="shop-item" id="btn-buy-speed">
-                                <h3 style="margin: 0 0 5px 0; color:#0ea5e9; letter-spacing: 1px; font-size: 0.85em;">+ LEG SERVOS</h3>
-                                <p style="margin:0 0 8px 0; color:#a3a3a3; font-size: 0.7em; line-height:1.4;">Boost movement speed.</p>
-                                <div id="shop-pips-speed" class="pip-container" style="margin-bottom:10px;"></div>
-                                <div style="display:flex; justify-content:flex-end;"><span style="color:#22c55e; font-weight:bold; font-size: 0.9em;">$<span id="shop-cost-speed">100</span></span></div>
-                            </div>
+                            <div style="text-align:right;"><span style="color:#22c55e; font-weight:bold; text-shadow: 0 0 5px rgba(34,197,94,0.3);">$<span id="shop-cost-bomb">150</span></span></div>
                         </div>
+
+                        <div class="field-gear-item" id="btn-buy-bomb-dmg">
+                            <div>
+                                <h4 class="teko" style="margin:0 0 5px 0; color:#f97316; font-size:1.4em; text-shadow: 0 0 5px rgba(249,115,22,0.3);">FRAG PAYLOAD</h4>
+                                <div id="shop-pips-bomb-dmg" class="pip-container" style="margin-bottom:10px;"></div>
+                            </div>
+                            <div style="text-align:right;"><span style="color:#22c55e; font-weight:bold; text-shadow: 0 0 5px rgba(34,197,94,0.3);">$<span id="shop-cost-bomb-dmg">100</span></span></div>
+                        </div>
+
+                        <div class="field-gear-item" id="btn-buy-speed">
+                            <div>
+                                <h4 class="teko" style="margin:0 0 5px 0; color:#0ea5e9; font-size:1.4em; text-shadow: 0 0 5px rgba(14,165,233,0.3);">LEG SERVOS</h4>
+                                <div id="shop-pips-speed" class="pip-container" style="margin-bottom:10px;"></div>
+                            </div>
+                            <div style="text-align:right;"><span style="color:#22c55e; font-weight:bold; text-shadow: 0 0 5px rgba(34,197,94,0.3);">$<span id="shop-cost-speed">100</span></span></div>
+                        </div>
+
+                        <div class="field-gear-item" id="btn-buy-armor">
+                            <div>
+                                <h4 class="teko" style="margin:0 0 5px 0; color:#cbd5e1; font-size:1.4em; text-shadow: 0 0 5px rgba(203,213,225,0.3);">TACTICAL PLATING</h4>
+                                <div id="shop-pips-armor" class="pip-container" style="margin-bottom:10px;"></div>
+                            </div>
+                            <div style="text-align:right;"><span style="color:#22c55e; font-weight:bold; text-shadow: 0 0 5px rgba(34,197,94,0.3);">$<span id="shop-cost-armor">150</span></span></div>
+                        </div>
+
+                        <div class="field-gear-item" id="btn-buy-repair">
+                            <div>
+                                <h4 class="teko" style="margin:0 0 5px 0; color:#4ade80; font-size:1.4em; text-shadow: 0 0 5px rgba(74,222,128,0.3);">WELD BARRICADE</h4>
+                                <div style="font-size:0.9em; color:#a3a3a3; font-weight:bold; margin-bottom:10px; font-family:'Teko', sans-serif; letter-spacing:1px;"><span id="shop-barricade-status">100% INT</span></div>
+                            </div>
+                            <div style="text-align:right;"><span style="color:#22c55e; font-weight:bold; text-shadow: 0 0 5px rgba(34,197,94,0.3);">$<span id="shop-cost-repair">200</span></span></div>
+                        </div>
+
                     </div>
                 </div>
 
-                <button id="btn-next-wave" class="btn" style="width: 100%;">DEPLOY</button>
+                <button id="btn-next-wave" class="btn btn-action" style="width: 100%; margin-top:15px; font-size: 2em; padding: 10px;">DEPLOY</button>
             </div>
         </div>
 
         <!-- Game Over Screen -->
         <div id="screen-game-over" class="overlay-screen">
-            <div class="overlay-title">TRENCH <strong>LOST</strong></div>
-            <p id="game-over-stats" style="color:#a3a3a3; font-size:1.2em; letter-spacing: 4px; font-weight: 600; margin-bottom: 40px;"></p>
-            <button id="btn-restart" class="btn">DEPLOY AGAIN</button>
+            <div class="overlay-title" style="text-shadow: 0 0 30px rgba(239,68,68,0.5);">BARRICADE<br><strong>BREACHED</strong></div>
+            <p id="game-over-stats" class="mono" style="color:#a3a3a3; font-size:1.5em; letter-spacing: 2px; margin-bottom: 40px; background: rgba(0,0,0,0.5); padding: 10px 20px; border: 1px solid #334155; border-radius: 2px;"></p>
+            <button id="btn-restart" class="btn btn-action">RESTART</button>
         </div>
     </div>
 </div>
@@ -403,7 +467,7 @@
  * DATA LAYER & CONFIG
  */
 const DefaultGameData = {
-    player: { maxHp: 5, startHp: 3, armor: 0, bombs: 1, maxBombs: 3, baseSpeed: 300, dashSpeed: 800, dashCooldown: 1000 },
+    player: { maxHp: 5, startHp: 3, armor: 0, maxArmor: 5, bombs: 1, maxBombs: 3, baseSpeed: 300, dashSpeed: 800, dashCooldown: 1000 },
     grenade: { baseDmg: 50, baseRadius: 100 },
     weapons: { 
         0: { name: "Crappy BB Gun", element: "kinetic", pattern: "single", cost: 0, baseDamage: 1.0, baseFireRate: 450, special: "Standard Issue" },
@@ -416,13 +480,26 @@ const DefaultGameData = {
         7: { name: "Meat Grinder 9000", element: "kinetic", pattern: "gatling", cost: 10000, baseDamage: 2.5, baseFireRate: 80, special: "Gatling Spray" }
     },
     budget: { base: 20, scalingFactor: 8 },
-    costs: { upgradeDmg: 50, upgradeRate: 75, upgradeSpeed: 100, bomb: 150, bombDmg: 100 }
+    costs: { upgradeDmg: 50, upgradeRate: 75, upgradeSpeed: 100, bomb: 150, bombDmg: 100, armor: 150, repair: 200 }
 };
 
+const QMQuotes = [
+    "Try not to drop it. I don't offer warranties for butterfingers.",
+    "I've seen better aim from a blindfolded conscript, but your money is green.",
+    "If you die out there, I'm looting your corpse. Just a heads up.",
+    "This one's got a kick. Try not to shoot your own kneecaps off.",
+    "I'd tell you to be careful, but I've got a bet running on how long you last.",
+    "Upgrades don't fix stupid, but they do make you slightly more lethal.",
+    "You break it, you bought it. Actually, you already bought it. Just don't break it.",
+    "I scraped the rust off this one myself. You're welcome.",
+    "Don't stare down the barrel. I don't want to hose out the trench again.",
+    "Remember: point the shiny end at the rotting meatbags."
+];
+
 const TutorialTexts = {
-    1: "Civilians are behind that wall. The horde is in front of it. You're the meat in the sandwich. Hold the line until evac arrives.<br><br><strong style='color:#fff'>CONTROLS:</strong><br>Keyboard: WASD to move, mouse to aim, LMB to shoot.<br>Touch: Joystick to move (auto-aims where you face), A to shoot.",
-    2: "Quartermaster here. I don't run a charity, but I need you alive. I'll open the armory between waves. Buy gear, upgrade your rig, or save your coin for the heavy ordnance. Try not to die.",
-    3: "Sourced some old-world frag grenades. They lob heavy and detonate on impact. Good for turning crowds into mist. I can pack them with more explosive filler, provided you have the funds."
+    1: "Civilians are behind that wall. The horde is in front of it. You're the meat in the sandwich. Hold the line until evac arrives.<br><br><strong style='color:#0ea5e9'>CONTROLS:</strong><br>Keyboard: WASD to move, mouse to aim, LMB to shoot.<br>Touch: Joystick to move (auto-aims where you face), A to shoot.",
+    2: "Quartermaster here. Keep your eyes peeled for Sprinters. They're squishy, but they move fast and will tear down those barricades before you can blink. Lead your targets.",
+    3: "Sourced some old-world frag grenades. They lob heavy and detonate on impact. I tossed a couple over the fence for you to test out. I can pack them with more explosive filler later, provided you have the funds."
 };
 
 // --- META PROGRESSION (SAVE MANAGER) ---
@@ -450,6 +527,7 @@ const AppSettings = {
 };
 
 const RawSVGs = {
+    crate: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1, 2)" fill="rgba(0,0,0,0.5)"><rect x="2" y="5" width="20" height="15" rx="1"/><rect x="10" y="9" width="4" height="3" rx="0.5"/></g><rect x="2" y="5" width="20" height="15" rx="1" fill="#15803d" stroke="#111" stroke-width="1.5"/><rect x="2" y="5" width="20" height="4" fill="#064e3b" stroke="#111" stroke-width="1.5"/><rect x="5" y="4" width="2" height="2" fill="#475569" stroke="#111" stroke-width="1.5"/><rect x="17" y="4" width="2" height="2" fill="#475569" stroke="#111" stroke-width="1.5"/><rect x="10" y="9" width="4" height="3" rx="0.5" fill="#cbd5e1" stroke="#111" stroke-width="1.5"/><line x1="2" y1="11" x2="22" y2="11" stroke="#111" stroke-width="1.5"/><line x1="2" y1="16" x2="22" y2="16" stroke="#111" stroke-width="1.5"/></svg>`,
     padlock: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="10" rx="2" fill="#334155" stroke="#111" stroke-width="1.5"/><path d="M8 11V7a4 4 0 018 0v4" stroke="#475569" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="#f8fafc"/></svg>`,
     player: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1, 2)" fill="rgba(0,0,0,0.5)"><rect x="5" y="10" width="14" height="8" rx="2"/><rect x="4" y="6" width="4" height="6" rx="1"/><rect x="16" y="6" width="4" height="6" rx="1"/><circle cx="12" cy="10" r="4.5"/></g><rect x="5" y="10" width="14" height="8" rx="2" fill="#2563eb" stroke="#111" stroke-width="1.5"/><rect x="4" y="6" width="4" height="6" rx="1" fill="#2563eb" stroke="#111" stroke-width="1.5"/><rect x="16" y="6" width="4" height="6" rx="1" fill="#2563eb" stroke="#111" stroke-width="1.5"/><rect x="10" y="0" width="4" height="12" fill="#475569" stroke="#111" stroke-width="1.5"/><rect x="9" y="4" width="6" height="6" fill="#1e293b" stroke="#111" stroke-width="1.5"/><circle cx="10" cy="6" r="2.5" fill="#fdba74" stroke="#111" stroke-width="1.5"/><circle cx="14" cy="8" r="2.5" fill="#fdba74" stroke="#111" stroke-width="1.5"/><circle cx="12" cy="10" r="4.5" fill="#fdba74" stroke="#111" stroke-width="1.5"/><path d="M 7.5 10 A 4.5 4.5 0 0 0 16.5 10 Z" fill="#451a03" stroke="#111" stroke-width="1.5"/></svg>`,
     
@@ -491,7 +569,19 @@ const RawSVGs = {
     explosion: `<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="22" fill="rgba(239, 68, 68, 0.8)" stroke="#fca5a5" stroke-width="2"/><circle cx="24" cy="24" r="14" fill="#f59e0b"/><circle cx="24" cy="24" r="6" fill="#fef08a"/></svg>`
 };
 
-const RenderLayerDict = { Sidewalk: 0, Street: 5, GoreBase: 8, Gore: 10, Pickups: 15, Hazards: 18, Barricade: 20, Enemies: 30, Player: 40, Projectiles: 50, VirtualUI: 100 };
+// Wireframe generator for locked prototype SVGs
+function getWireframeSVG(svgStr) {
+    return svgStr
+        .replace(/fill="[^"]*"/g, 'fill="rgba(0, 255, 204, 0.05)"')
+        .replace(/stroke="[^"]*"/g, 'stroke="#00ffcc"')
+        .replace(/stroke-width="1\.5"/g, 'stroke-width="1"')
+        .replace(/<rect|<circle|<path|<polygon|<ellipse/g, (match) => {
+            if (!match.includes('stroke=')) return match + ' stroke="#00ffcc" stroke-width="1"';
+            return match;
+        });
+}
+
+const RenderLayerDict = { Sidewalk: 0, Street: 5, GoreBase: 8, Gore: 10, Pickups: 15, Hazards: 18, Barricade: 20, VirtualUI: 25, Enemies: 30, Player: 40, Projectiles: 50 };
 const BloodColors = [0xb91c1c, 0x9f1239, 0x7f1d1d, 0x8a0303, 0xdc2626]; 
 
 class RunState {
@@ -523,6 +613,7 @@ class UIManager {
     constructor(scene) {
         this.scene = scene;
         this.selectedShopWeapon = 0;
+        this.currentQMQuote = "";
         
         this.uiHp = document.getElementById('ui-hp');
         this.uiArmor = document.getElementById('ui-armor');
@@ -546,6 +637,7 @@ class UIManager {
             settings: document.getElementById('screen-settings'),
             shop: document.getElementById('screen-shop'),
             qmTip: document.getElementById('screen-qm-tip'),
+            pause: document.getElementById('screen-pause'),
             gameOver: document.getElementById('screen-game-over') 
         };
         
@@ -554,8 +646,8 @@ class UIManager {
     }
 
     initSettingsUI() {
-        if (!AppSettings.controlsOn) document.getElementById('tog-controls').className = 'toggle-btn';
-        if (!AppSettings.shakeOn) document.getElementById('tog-shake').className = 'toggle-btn';
+        if (!AppSettings.controlsOn) document.getElementById('tog-controls').className = 'btn';
+        if (!AppSettings.shakeOn) document.getElementById('tog-shake').className = 'btn';
         document.getElementById('chk-skip-tutorial').checked = AppSettings.skipTutorial;
     }
 
@@ -584,9 +676,53 @@ class UIManager {
             this.hideAllScreens(); 
             this.scene.events.emit('APP_START_RUN');
         });
-        
-        document.getElementById('btn-open-settings').addEventListener('click', () => {
+
+        // SYSTEM PAUSE LOGIC
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            if(this.scene.gameState === 'TRENCH') {
+                this.scene.gameState = 'PAUSED';
+                this.scene.physics.world.pause();
+                this.scene.time.paused = true;
+                this.scene.tweens.pauseAll();
+                document.querySelector('#game-wrapper canvas').style.filter = 'grayscale(100%)';
+                this.showScreen('pause');
+            }
+        });
+
+        document.getElementById('btn-resume').addEventListener('click', () => {
+            if(this.scene.gameState === 'PAUSED') {
+                this.scene.gameState = 'TRENCH';
+                this.scene.physics.world.resume();
+                this.scene.time.paused = false;
+                this.scene.tweens.resumeAll();
+                document.querySelector('#game-wrapper canvas').style.filter = 'none';
+                this.hideAllScreens();
+            }
+        });
+
+        // SETTINGS LOGIC
+        document.getElementById('btn-settings').addEventListener('click', () => {
+            if(this.scene.gameState === 'TRENCH') {
+                this.scene.gameState = 'SETTINGS';
+                this.scene.physics.world.pause(); 
+                this.scene.time.paused = true;
+                this.scene.tweens.pauseAll();
+            }
             this.showScreen('settings');
+        });
+
+        document.getElementById('btn-close-settings').addEventListener('click', () => {
+            if (this.scene.gameState === 'BOOT') {
+                this.showScreen('boot');
+            } else if (this.scene.gameState === 'SETTINGS') {
+                this.scene.gameState = 'TRENCH';
+                this.scene.physics.world.resume();
+                this.scene.time.paused = false;
+                this.scene.tweens.resumeAll();
+                this.hideAllScreens(); 
+            } else {
+                this.hideAllScreens();
+            }
         });
 
         document.getElementById('btn-restart').addEventListener('click', () => {
@@ -629,7 +765,7 @@ class UIManager {
 
         document.getElementById('btn-buy-bomb').addEventListener('click', () => {
             let cost = DefaultGameData.costs.bomb; 
-            if (currentRun.bank >= cost && currentRun.bombs < DefaultGameData.player.maxBombs) {
+            if (currentRun.bank >= cost && currentRun.bombs < DefaultGameData.player.maxBombs && currentRun.wave >= 3) {
                 currentRun.bank -= cost;
                 currentRun.bombs++;
                 this.updateShop();
@@ -639,11 +775,37 @@ class UIManager {
         
         document.getElementById('btn-buy-bomb-dmg').addEventListener('click', () => {
             let cost = this.getCost(DefaultGameData.costs.bombDmg, currentRun.grenadeUpg.dmg);
-            if (currentRun.bank >= cost && currentRun.grenadeUpg.dmg < 10) {
+            if (currentRun.bank >= cost && currentRun.grenadeUpg.dmg < 10 && currentRun.wave >= 3) {
                 currentRun.bank -= cost;
                 currentRun.grenadeUpg.dmg++;
                 this.updateShop();
                 this.updateHUD(this.scene.director.budget);
+            }
+        });
+
+        document.getElementById('btn-buy-armor').addEventListener('click', () => {
+            let cost = DefaultGameData.costs.armor;
+            if (currentRun.bank >= cost && currentRun.armor < DefaultGameData.player.maxArmor) {
+                currentRun.bank -= cost;
+                currentRun.armor++;
+                this.updateShop();
+                this.updateHUD(this.scene.director.budget);
+            }
+        });
+
+        document.getElementById('btn-buy-repair').addEventListener('click', () => {
+            let cost = DefaultGameData.costs.repair;
+            let needsRepair = false;
+            this.scene.barricadeGroup.getChildren().forEach(b => { if(b.hp < b.maxHp) needsRepair = true; });
+            
+            if (currentRun.bank >= cost && needsRepair) {
+                currentRun.bank -= cost;
+                this.scene.barricadeGroup.getChildren().forEach(b => { 
+                    b.hp = b.maxHp; 
+                    b.updateHpBar(); 
+                    if(!b.active) { b.setActive(true).setVisible(true); b.body.checkCollision.none = false; b.clearTint(); }
+                });
+                this.updateShop();
             }
         });
 
@@ -673,20 +835,6 @@ class UIManager {
         document.getElementById('btn-next-wave').addEventListener('click', () => {
             this.hideAllScreens(); this.scene.events.emit('SHOP_CLOSED');
         });
-
-        document.getElementById('btn-settings').addEventListener('click', () => {
-            if(this.scene.gameState === 'TRENCH') this.scene.physics.world.pause(); 
-            this.showScreen('settings');
-        });
-        
-        document.getElementById('btn-close-settings').addEventListener('click', () => {
-            if (this.scene.gameState === 'BOOT') {
-                this.showScreen('boot');
-            } else {
-                this.hideAllScreens(); 
-                if(this.scene.gameState === 'TRENCH') this.scene.physics.world.resume();
-            }
-        });
         
         document.getElementById('btn-close-qm-tip').addEventListener('click', () => {
             AppSettings.seenArmoryTip = true;
@@ -697,19 +845,16 @@ class UIManager {
         document.getElementById('tog-controls').addEventListener('click', (e) => {
             AppSettings.controlsOn = !AppSettings.controlsOn;
             localStorage.setItem('UB_ControlsOn', AppSettings.controlsOn);
-            e.target.className = AppSettings.controlsOn ? 'toggle-btn active' : 'toggle-btn';
             e.target.innerText = AppSettings.controlsOn ? 'ON' : 'OFF';
             this.scene.toggleVirtualControls(AppSettings.controlsOn);
         });
         document.getElementById('tog-shake').addEventListener('click', (e) => {
             AppSettings.shakeOn = !AppSettings.shakeOn;
             localStorage.setItem('UB_ShakeOn', AppSettings.shakeOn);
-            e.target.className = AppSettings.shakeOn ? 'toggle-btn active' : 'toggle-btn';
             e.target.innerText = AppSettings.shakeOn ? 'ON' : 'OFF';
         });
         document.getElementById('tog-dev').addEventListener('click', (e) => {
             AppSettings.devOn = !AppSettings.devOn;
-            e.target.className = AppSettings.devOn ? 'toggle-btn active' : 'toggle-btn';
             e.target.innerText = AppSettings.devOn ? 'ON' : 'OFF';
             document.getElementById('dev-panel').style.display = AppSettings.devOn ? 'block' : 'none';
         });
@@ -730,6 +875,7 @@ class UIManager {
         
         if (key === 'shop') {
             this.selectedShopWeapon = currentRun.weaponTier;
+            this.currentQMQuote = Phaser.Utils.Array.GetRandom(QMQuotes); // Pick one quote per shop visit
             this.updateShop();
             
             if (currentRun.wave === 1 && !AppSettings.seenArmoryTip) {
@@ -737,7 +883,9 @@ class UIManager {
             }
         }
         
-        if (key === 'gameOver') document.getElementById('game-over-stats').innerText = `WAVES SURVIVED: ${currentRun.wave - 1}`;
+        if (key === 'gameOver') {
+            document.getElementById('game-over-stats').innerText = `WAVES SURVIVED: ${currentRun.wave - 1}`;
+        }
     }
     
     showTutorial(wave) {
@@ -765,17 +913,26 @@ class UIManager {
             let isUnlocked = i <= unlockedTier;
             let isNext = i === unlockedTier + 1;
             let isSelected = i === sel;
-            let svgStr = RawSVGs['wpn_side_'+i].replace('width="24"','width="100%"').replace('height="24"','height="100%"');
             
-            let opacity = isUnlocked ? 1 : 0.4;
-            let border = isSelected ? '#3b82f6' : '#334155';
-            let bg = isSelected ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0,0,0,0.5)';
+            let svgStr = '';
+            if (isUnlocked) {
+                svgStr = RawSVGs['wpn_side_'+i].replace('width="24"','width="100%"').replace('height="24"','height="100%"');
+            } else if (isNext) {
+                svgStr = getWireframeSVG(RawSVGs['wpn_side_'+i].replace('width="24"','width="100%"').replace('height="24"','height="100%"'));
+            } else {
+                svgStr = RawSVGs.crate.replace('width="24"','width="100%"').replace('height="24"','height="100%"');
+            }
             
-            let overlay = !isUnlocked ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); pointer-events:none;"><div style="width:32px; height:32px; opacity:0.8;">${RawSVGs.padlock}</div></div>` : '';
+            let opacity = 1;
+            let border = isSelected ? '#0ea5e9' : '#334155';
+            let bg = isSelected ? 'rgba(14, 165, 233, 0.15)' : 'rgba(0,0,0,0.8)';
+            
+            let overlay = !isUnlocked ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); pointer-events:none;"><div style="width:32px; height:32px; opacity:0.8;">${RawSVGs.padlock}</div></div>` : '';
+            let stamp = (isUnlocked && i === currentRun.weaponTier) ? `<div class="equipped-stamp">EQUIPPED</div>` : '';
 
-            gridHtml += `<div class="weapon-slot" data-index="${i}" style="width: 70px; height: 70px; flex-shrink: 0; border: 2px solid ${border}; background: ${bg}; cursor: pointer; padding: 5px; box-sizing: border-box; transition: all 0.2s; position:relative;">
-                <div style="opacity: ${opacity}; width:100%; height:100%; filter: ${!isUnlocked ? 'grayscale(100%)' : 'none'};">${svgStr}</div>
-                ${overlay}
+            gridHtml += `<div class="weapon-slot" data-index="${i}" style="width: 80px; height: 80px; border: 2px solid ${border}; background: ${bg}; cursor: pointer; padding: 5px; box-sizing: border-box; transition: all 0.2s;">
+                <div style="width:100%; height:100%; filter: ${!isUnlocked && !isNext ? 'grayscale(100%)' : 'none'};">${svgStr}</div>
+                ${overlay}${stamp}
             </div>`;
         }
         document.getElementById('shop-weapon-grid').innerHTML = gridHtml;
@@ -788,10 +945,27 @@ class UIManager {
             });
         });
 
+        // Dynamic QM Transmission
+        let qmMsg = this.currentQMQuote;
+        if (sel === unlockedTier + 1) qmMsg = "Fresh off the drawing board. I can mint the prototype if you have the funds.";
+        if (sel > unlockedTier + 1) qmMsg = "You don't have the clearance or the funds for this crate yet. Focus on surviving today.";
+        document.getElementById('shop-qm-msg').innerText = `"${qmMsg}"`;
+
         // Selected Weapon Details Panel
-        document.getElementById('shop-sel-name').innerText = isUnlockedSel || sel === unlockedTier + 1 ? wpnBase.name : "CLASSIFIED PROTOTYPE";
-        document.getElementById('shop-sel-visual').innerHTML = RawSVGs['wpn_side_' + sel].replace('width="24"', 'width="100%"').replace('height="24"', 'height="100%"');
-        document.getElementById('shop-sel-visual').style.filter = isUnlockedSel ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.3))' : 'grayscale(100%) opacity(0.3)';
+        if (isUnlockedSel || sel === unlockedTier + 1) {
+            document.getElementById('shop-sel-name').innerText = wpnBase.name;
+            if (isUnlockedSel) {
+                document.getElementById('shop-sel-visual').innerHTML = RawSVGs['wpn_side_' + sel].replace('width="24"', 'width="100%"').replace('height="24"', 'height="100%"');
+                document.getElementById('shop-sel-visual').style.filter = 'drop-shadow(0 0 15px rgba(14, 165, 233, 0.4))';
+            } else {
+                document.getElementById('shop-sel-visual').innerHTML = getWireframeSVG(RawSVGs['wpn_side_' + sel].replace('width="24"', 'width="100%"').replace('height="24"', 'height="100%"'));
+                document.getElementById('shop-sel-visual').style.filter = 'drop-shadow(0 0 15px rgba(0, 255, 204, 0.6))';
+            }
+        } else {
+            document.getElementById('shop-sel-name').innerText = "CLASSIFIED ORDNANCE";
+            document.getElementById('shop-sel-visual').innerHTML = RawSVGs.crate.replace('width="24"', 'width="100%"').replace('height="24"', 'height="100%"');
+            document.getElementById('shop-sel-visual').style.filter = 'none';
+        }
 
         // Stats Logic
         let bonusDmg = Math.round(Math.pow(upgs.dmg, 0.75) * wpnBase.baseDamage * 0.4 * 10) / 10;
@@ -801,12 +975,14 @@ class UIManager {
 
         document.getElementById('shop-sel-dmg').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? currentDmg : '???';
         document.getElementById('shop-sel-dmg').style.color = isUnlockedSel ? '#fff' : '#64748b';
+        document.getElementById('shop-sel-dmg').style.textShadow = isUnlockedSel ? '0 0 5px rgba(255,255,255,0.3)' : 'none';
         
         document.getElementById('shop-sel-rate').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? `${bpm} BPM` : '???';
         document.getElementById('shop-sel-rate').style.color = isUnlockedSel ? '#fff' : '#64748b';
+        document.getElementById('shop-sel-rate').style.textShadow = isUnlockedSel ? '0 0 5px rgba(255,255,255,0.3)' : 'none';
         
-        document.getElementById('shop-sel-spc').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? `${wpnBase.element} ${wpnBase.pattern}` : '???';
-        document.getElementById('shop-sel-spc').style.color = isUnlockedSel ? '#3b82f6' : '#64748b';
+        document.getElementById('shop-sel-spc').innerText = (isUnlockedSel || sel === unlockedTier + 1) ? `${wpnBase.element} ${wpnBase.pattern}` : 'REDACTED';
+        document.getElementById('shop-sel-spc').style.color = isUnlockedSel ? '#0ea5e9' : '#64748b';
 
         // Action Button Logic
         let actionBtn = document.getElementById('btn-shop-action');
@@ -815,21 +991,19 @@ class UIManager {
             actionBtn.disabled = true;
             actionBtn.className = "btn";
             actionBtn.style.borderColor = "rgba(255,255,255,0.1)";
-            actionBtn.style.color = "#a3a3a3";
+            actionBtn.style.color = "#64748b";
         } else if (isUnlockedSel) {
             actionBtn.innerText = "EQUIP";
             actionBtn.disabled = false;
             actionBtn.className = "btn btn-action";
-            actionBtn.style.borderColor = "#3b82f6";
-            actionBtn.style.color = "#3b82f6";
         } else if (sel === unlockedTier + 1) {
-            actionBtn.innerHTML = `BUY: $${wpnBase.cost}`;
+            actionBtn.innerHTML = `FUND PROTOTYPE: $${wpnBase.cost}`;
             actionBtn.disabled = currentRun.bank < wpnBase.cost;
             actionBtn.className = currentRun.bank >= wpnBase.cost ? "btn btn-action" : "btn";
-            actionBtn.style.borderColor = currentRun.bank >= wpnBase.cost ? "#22c55e" : "rgba(255,255,255,0.1)";
-            actionBtn.style.color = currentRun.bank >= wpnBase.cost ? "#22c55e" : "#a3a3a3";
+            actionBtn.style.borderColor = currentRun.bank >= wpnBase.cost ? "#00ffcc" : "rgba(255,255,255,0.1)";
+            actionBtn.style.color = currentRun.bank >= wpnBase.cost ? "#00ffcc" : "#64748b";
         } else {
-            actionBtn.innerText = "LOCKED";
+            actionBtn.innerText = "INSUFFICIENT CLEARANCE";
             actionBtn.disabled = true;
             actionBtn.className = "btn";
             actionBtn.style.borderColor = "rgba(255,255,255,0.05)";
@@ -848,67 +1022,101 @@ class UIManager {
         document.getElementById('shop-pips-rate').innerHTML = this.generatePips(upgs.rate, 10, 'rate');
         document.getElementById('shop-pips-speed').innerHTML = this.generatePips(currentRun.speedUpg, 10, 'speed');
         document.getElementById('shop-pips-bomb-dmg').innerHTML = this.generatePips(currentRun.grenadeUpg.dmg, 10, 'dmg');
-        
-        // Bomb Inventory (Max 3)
+        document.getElementById('shop-pips-armor').innerHTML = this.generatePips(currentRun.armor, DefaultGameData.player.maxArmor, 'armor');
         document.getElementById('shop-inv-bomb-pips').innerHTML = this.generatePips(currentRun.bombs, DefaultGameData.player.maxBombs, 'grenade');
+
+        let totalBarricadeHp = 0; let maxBarricadeHp = 0;
+        if(this.scene && this.scene.barricadeGroup) {
+            this.scene.barricadeGroup.getChildren().forEach(b => { totalBarricadeHp += b.hp; maxBarricadeHp += b.maxHp; });
+        }
+        let repairNeeded = totalBarricadeHp < maxBarricadeHp;
+        let barPct = maxBarricadeHp > 0 ? Math.round((totalBarricadeHp / maxBarricadeHp) * 100) : 0;
+        document.getElementById('shop-barricade-status').innerText = barPct + '% INT';
 
         document.getElementById('shop-cost-dmg').innerText = dmgCost;
         document.getElementById('shop-cost-rate').innerText = rateCost;
         document.getElementById('shop-cost-speed').innerText = speedCost;
-        document.getElementById('shop-cost-bomb').innerText = bombCost;
-        document.getElementById('shop-cost-bomb-dmg').innerText = bombDmgCost;
         
         let dmgCostContainer = document.getElementById('btn-buy-dmg');
         let rateCostContainer = document.getElementById('btn-buy-rate');
         let speedCostContainer = document.getElementById('btn-buy-speed');
         let bombCostContainer = document.getElementById('btn-buy-bomb');
         let bombDmgCostContainer = document.getElementById('btn-buy-bomb-dmg');
+        let armorCostContainer = document.getElementById('btn-buy-armor');
+        let repairCostContainer = document.getElementById('btn-buy-repair');
         
         if(!isUnlockedSel || upgs.dmg >= 10) {
-            dmgCostContainer.className = 'shop-item locked';
+            dmgCostContainer.className = 'upgrade-row locked';
             if(upgs.dmg >= 10) document.getElementById('shop-cost-dmg').innerText = 'MAX';
         } else {
-            dmgCostContainer.className = currentRun.bank >= dmgCost ? 'shop-item' : 'shop-item locked';
+            dmgCostContainer.className = currentRun.bank >= dmgCost ? 'upgrade-row' : 'upgrade-row locked';
         }
 
         if(!isUnlockedSel || upgs.rate >= 10) {
-            rateCostContainer.className = 'shop-item locked';
+            rateCostContainer.className = 'upgrade-row locked';
             if(upgs.rate >= 10) document.getElementById('shop-cost-rate').innerText = 'MAX';
         } else {
-            rateCostContainer.className = currentRun.bank >= rateCost ? 'shop-item' : 'shop-item locked';
+            rateCostContainer.className = currentRun.bank >= rateCost ? 'upgrade-row' : 'upgrade-row locked';
         }
         
         if(currentRun.speedUpg >= 10) {
-            speedCostContainer.className = 'shop-item locked';
+            speedCostContainer.className = 'field-gear-item locked';
             document.getElementById('shop-cost-speed').innerText = 'MAX';
         } else {
-            speedCostContainer.className = currentRun.bank >= speedCost ? 'shop-item' : 'shop-item locked';
+            speedCostContainer.className = currentRun.bank >= speedCost ? 'field-gear-item' : 'field-gear-item locked';
         }
 
-        if(currentRun.grenadeUpg.dmg >= 10) {
-            bombDmgCostContainer.className = 'shop-item locked';
-            document.getElementById('shop-cost-bomb-dmg').innerText = 'MAX';
+        // Grenade Wave 3 Lock
+        if(currentRun.wave < 3) {
+            bombCostContainer.className = 'field-gear-item locked';
+            document.getElementById('shop-cost-bomb').innerText = 'LCK';
+            bombDmgCostContainer.className = 'field-gear-item locked';
+            document.getElementById('shop-cost-bomb-dmg').innerText = 'LCK';
         } else {
-            bombDmgCostContainer.className = currentRun.bank >= bombDmgCost ? 'shop-item' : 'shop-item locked';
+            document.getElementById('shop-cost-bomb').innerText = bombCost;
+            document.getElementById('shop-cost-bomb-dmg').innerText = bombDmgCost;
+            
+            if(currentRun.grenadeUpg.dmg >= 10) {
+                bombDmgCostContainer.className = 'field-gear-item locked';
+                document.getElementById('shop-cost-bomb-dmg').innerText = 'MAX';
+            } else {
+                bombDmgCostContainer.className = currentRun.bank >= bombDmgCost ? 'field-gear-item' : 'field-gear-item locked';
+            }
+
+            if (currentRun.bombs >= DefaultGameData.player.maxBombs) {
+                bombCostContainer.className = 'field-gear-item locked';
+                document.getElementById('shop-cost-bomb').innerText = 'FULL';
+            } else {
+                bombCostContainer.className = currentRun.bank >= bombCost ? 'field-gear-item' : 'field-gear-item locked';
+            }
         }
 
-        if (currentRun.bombs >= DefaultGameData.player.maxBombs) {
-            bombCostContainer.className = 'shop-item locked';
-            document.getElementById('shop-cost-bomb').innerText = 'FULL';
+        if (currentRun.armor >= DefaultGameData.player.maxArmor) {
+            armorCostContainer.className = 'field-gear-item locked';
+            document.getElementById('shop-cost-armor').innerText = 'MAX';
         } else {
-            bombCostContainer.className = currentRun.bank >= bombCost ? 'shop-item' : 'shop-item locked';
+            armorCostContainer.className = currentRun.bank >= DefaultGameData.costs.armor ? 'field-gear-item' : 'field-gear-item locked';
+            document.getElementById('shop-cost-armor').innerText = DefaultGameData.costs.armor;
+        }
+
+        if (!repairNeeded) {
+            repairCostContainer.className = 'field-gear-item locked';
+            document.getElementById('shop-cost-repair').innerText = 'FULL';
+        } else {
+            repairCostContainer.className = currentRun.bank >= DefaultGameData.costs.repair ? 'field-gear-item' : 'field-gear-item locked';
+            document.getElementById('shop-cost-repair').innerText = DefaultGameData.costs.repair;
         }
     }
 
     updateHUD(activeBudget = 0) {
         let hearts = "";
         for(let i=0; i<DefaultGameData.player.maxHp; i++) {
-            hearts += (i < currentRun.hp) ? "❤️" : "<span style='opacity:0.1'>❤️</span>";
+            hearts += (i < currentRun.hp) ? "❤️" : "<span style='opacity:0.2'>❤️</span>";
         }
         this.uiHp.innerHTML = hearts;
         
-        this.uiArmor.innerText = `🛡️ ${currentRun.armor}`;
-        this.uiBombs.innerText = `🍍 ${currentRun.bombs}`;
+        this.uiArmor.innerText = `🛡️${currentRun.armor}`;
+        this.uiBombs.innerText = `🍍${currentRun.bombs}`;
         
         let chargePct = Math.min(100, (currentRun.overchargeCharge / 200) * 100);
         this.uiOverchargeBar.style.width = chargePct + '%';
@@ -924,7 +1132,7 @@ class UIManager {
         this.uiDmg.innerText = stats.damage.toFixed(1);
         this.uiRate.innerText = Math.round(60000 / stats.fireRate) + ' BPM';
 
-        if (this.scene.gameState === 'TRENCH') {
+        if (this.scene.gameState === 'TRENCH' || this.scene.gameState === 'PAUSED') {
             this.barricadeHud.style.display = 'flex';
         } else {
             this.barricadeHud.style.display = 'none';
@@ -985,12 +1193,28 @@ class DirectorAI {
         this.scene.uiManager.updateHUD(this.budget);
         
         let pausedForTutorial = this.scene.uiManager.showTutorial(currentRun.wave);
-        if(!pausedForTutorial) this.triggerNextCluster();
-        else {
-            const checkUnpause = setInterval(() => {
+        
+        // Setup Wave 3 Grenade Drop Sequence
+        let initialDelay = 0;
+        if (currentRun.wave === 3) {
+            initialDelay = 1500;
+            this.scene.time.delayedCall(500, () => {
                 if(!this.scene.physics.world.isPaused) {
+                    let b1 = this.scene.bombPickupPool.get();
+                    if(b1) b1.spawn(450, 400);
+                    let b2 = this.scene.bombPickupPool.get();
+                    if(b2) b2.spawn(630, 400);
+                }
+            });
+        }
+
+        if(!pausedForTutorial) {
+            this.scene.time.delayedCall(initialDelay, () => this.triggerNextCluster());
+        } else {
+            const checkUnpause = setInterval(() => {
+                if(!this.scene.physics.world.isPaused && this.scene.gameState === 'TRENCH') {
                     clearInterval(checkUnpause);
-                    this.triggerNextCluster();
+                    this.scene.time.delayedCall(initialDelay, () => this.triggerNextCluster());
                 }
             }, 100);
         }
@@ -1012,7 +1236,6 @@ class DirectorAI {
             if (!this.transitionStarted && (noLoot || this.clearWaitTime >= 10000)) {
                 this.transitionStarted = true;
                 
-                // Trigger visual wave clear flair
                 document.getElementById('screen-wave-clear').style.display = 'flex';
                 let txt = document.getElementById('wave-clear-text');
                 txt.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s';
@@ -1037,7 +1260,11 @@ class DirectorAI {
         let cluster = this.clusterQueue.shift();
         
         this.scene.time.delayedCall(cluster.delay, () => {
-            if(!this.active) return;
+            if(!this.active || this.scene.gameState !== 'TRENCH') {
+                this.clusterQueue.unshift(cluster);
+                this.scene.time.delayedCall(100, () => this.triggerNextCluster());
+                return;
+            }
             
             let spawnX = Phaser.Math.Between(350, 730);
             
@@ -1047,7 +1274,7 @@ class DirectorAI {
             } else {
                 for(let i=0; i<cluster.count; i++) {
                     this.scene.time.delayedCall(i * Phaser.Math.Between(100, 300), () => {
-                        if(!this.active) return;
+                        if(!this.active || this.scene.gameState !== 'TRENCH') return;
                         let enemy = this.scene.enemyPool.get();
                         if (enemy) {
                             let type = 'grunt';
@@ -1455,7 +1682,6 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
         let isTank = this.type === 'tank';
         let poolColor = Phaser.Utils.Array.GetRandom(BloodColors);
         
-        // Realistic dynamic blood splatter generated via Graphics to replace simple ovals
         let generateBloodSplatter = (cx, cy, scaleMult) => {
             let splatter = this.scene.add.graphics();
             splatter.fillStyle(poolColor, 0.85);
@@ -1504,7 +1730,7 @@ class EnemyEntity extends Phaser.Physics.Arcade.Sprite {
         }
 
         let bombDropRoll = Phaser.Math.Between(1, 100);
-        if (this.isBoss || bombDropRoll <= 2) {
+        if (currentRun.wave >= 3 && (this.isBoss || bombDropRoll <= 2)) {
             let bombPickup = this.scene.bombPickupPool.get();
             if (bombPickup) bombPickup.spawn(this.x + Phaser.Math.Between(-10, 10), this.y + Phaser.Math.Between(-10, 10));
         }
@@ -1531,18 +1757,44 @@ class BarricadeBlock extends Phaser.Physics.Arcade.Sprite {
         
         this.setScale(2.4); 
         this.refreshBody(); 
-        
         this.maxHp = 50; this.hp = 50;
+
+        // Individual Localized HP Bar
+        this.hpBarBg = scene.add.rectangle(x, y - 25, 40, 6, 0x000000, 0.8).setDepth(RenderLayerDict.VirtualUI);
+        this.hpBarFill = scene.add.rectangle(x - 20, y - 25, 40, 6, 0x22c55e).setOrigin(0, 0.5).setDepth(RenderLayerDict.VirtualUI);
+        this.hpBarBg.setVisible(false); this.hpBarFill.setVisible(false);
     }
+
     takeDamage(amount) {
         if (AppSettings.godMode) return;
         this.hp -= amount;
         this.setTint(0x111111);
         if(AppSettings.shakeOn) this.scene.cameras.main.shake(100, 0.005);
+        
+        this.updateHpBar();
+        
         this.scene.time.delayedCall(100, () => { if(this.active) this.clearTint(); });
+        
         if (this.hp <= 0) {
             this.setActive(false).setVisible(false);
             this.body.checkCollision.none = true;
+            this.hpBarBg.setVisible(false);
+            this.hpBarFill.setVisible(false);
+        }
+    }
+
+    updateHpBar() {
+        if (this.hp < this.maxHp && this.hp > 0) {
+            this.hpBarBg.setVisible(true);
+            this.hpBarFill.setVisible(true);
+            let pct = this.hp / this.maxHp;
+            this.hpBarFill.scaleX = pct;
+            if(pct < 0.3) this.hpBarFill.setFillStyle(0xef4444);
+            else if(pct < 0.6) this.hpBarFill.setFillStyle(0xf59e0b);
+            else this.hpBarFill.setFillStyle(0x22c55e);
+        } else {
+            this.hpBarBg.setVisible(false);
+            this.hpBarFill.setVisible(false);
         }
     }
 }
@@ -1562,7 +1814,7 @@ class CoinEntity extends Phaser.Physics.Arcade.Sprite {
         this.scene.tweens.add({
             targets: this,
             scaleX: -1.3,
-            duration: 450,
+            duration: 800,
             yoyo: true,
             repeat: -1,
             ease: 'Sine.easeInOut'
@@ -1788,7 +2040,7 @@ class GameScene extends Phaser.Scene {
                         if (!enemy.lastAttackTime || time > enemy.lastAttackTime + 1000) {
                             block.takeDamage(25);
                             enemy.lastAttackTime = time;
-                            this.uiManager.updateHUD(); // Triggers barricade ui update
+                            this.uiManager.updateHUD(); 
                         }
                     } else {
                         block.takeDamage(10); 
@@ -1841,7 +2093,13 @@ class GameScene extends Phaser.Scene {
     setupEventBus() {
         this.events.on('APP_START_RUN', () => {
             currentRun.reset();
-            this.barricadeGroup.getChildren().forEach(b => { b.hp = b.maxHp; b.setActive(true).setVisible(true); b.body.checkCollision.none = false; b.clearTint(); });
+            this.barricadeGroup.getChildren().forEach(b => { 
+                b.hp = b.maxHp; 
+                b.updateHpBar();
+                b.setActive(true).setVisible(true); 
+                b.body.checkCollision.none = false; 
+                b.clearTint(); 
+            });
             this.uiManager.updateHUD();
             
             this.enemyPool.getChildren().forEach(e => e.despawn());
@@ -1857,6 +2115,9 @@ class GameScene extends Phaser.Scene {
             
             this.gameState = 'TRENCH';
             this.physics.world.resume();
+            this.time.paused = false;
+            this.tweens.resumeAll();
+            document.querySelector('#game-wrapper canvas').style.filter = 'none';
             this.uiManager.hideAllScreens();
             
             this.player.setPosition(540, 1440 - 450); 
